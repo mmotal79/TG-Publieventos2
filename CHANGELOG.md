@@ -1,5 +1,13 @@
 # CHANGELOG - TG-Publieventos
 
+## [1.3.3] - 2026-04-10
+### Tipo: Cambio de Lógica / Corrección de Build
+### Descripción: 
+- Localizado y corregido error de ruta redundante en `Budgets.tsx` (doble referencia a src).
+- Corregida capitalización del componente `Tabs` mediante `git mv` para resolver incompatibilidad con el sistema de archivos de Render (Linux).
+- Optimización de la configuración de despliegue para Web Service.
+### Impacto: Módulo de Presupuestos (Budgets) y Pipeline de CI/CD.
+
 ## [1.3.2] - 2026-04-10
 ### Tipo: Corrección de Despliegue (Build & Config)
 ### Descripción: 
