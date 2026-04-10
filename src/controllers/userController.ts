@@ -15,6 +15,19 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 };
 
+export const getUserByEmail = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.params;
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching user by email', error });
+  }
+};
+
 export const createUser = async (req: Request, res: Response) => {
   try {
     const userData: Partial<IUser> = req.body;

@@ -1,5 +1,12 @@
 # CHANGELOG - TG-Publieventos
 
+## [1.3.5] - 2026-04-10
+### Tipo: Corrección de Lógica de Autenticación
+### Descripción: 
+- Se actualizó `AuthContext.tsx` para que el perfil del usuario y su rol se obtengan directamente desde la base de datos MongoDB (`/api/users/email/:email`) en lugar de Firestore.
+- Se corrigió el componente `UsuariosCatalog.tsx` para que valide el acceso utilizando el `profile.role` correcto, resolviendo el error de "Acceso Denegado" para los administradores.
+### Impacto: Control de Acceso (RBAC) y Sincronización de Usuarios.
+
 ## [1.3.4] - 2026-04-10
 ### Tipo: Corrección Definitiva de Build (Case Sensitivity)
 ### Descripción: 

@@ -39,27 +39,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !user.email) return;
 
-    const unsubscribeProfile = onSnapshot(doc(db, 'users', user.uid), (snapshot) => {
-      if (snapshot.exists()) {
-        setProfile(snapshot.data() as UserProfile);
-      } else {
-        // Fallback or initial profile creation could happen here
-        setProfile({
-          uid: user.uid,
-          email: user.email || '',
-          displayName: user.displayName || '',
-          role: UserRole.CLIENT, // Default role
-        });
+    let isMounted = true;
+
+    const fetchProfile = async () => {
+      try {
+        const res = await fetch(`/api/users/email/${user.email}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted) {
+            setProfile({
+              uid: user.uid,
+              email: data.email,
+              displayName: data.nombre,
+              role: data.rol,
+            });
+          }
+        } else {
+          // Fallback if user not found in MongoDB
+          if (isMounted) {
+            setProfile({
+              uid: user.uid,
+              email: user.email || '',
+              displayName: user.displayName || '',
+              role: 4, // Default role: Cliente
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching profile from MongoDB:", error);
+        if (isMounted) {
+          setProfile({
+            uid: user.uid,
+            email: user.email || '',
+            displayName: user.displayName || '',
+            role: 4,
+          });
+        }
+      } finally {
+        if (isMounted) setLoading(false);
       }
-      setLoading(false);
-    }, (error) => {
-      console.error("Error fetching profile:", error);
-      setLoading(false);
-    });
+    };
 
-    return () => unsubscribeProfile();
+    fetchProfile();
+
+    return () => {
+      isMounted = false;
+    };
   }, [user]);
 
   const value = {

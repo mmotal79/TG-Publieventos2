@@ -43,7 +43,7 @@ const ROLES = {
 };
 
 const UsuariosCatalog: React.FC = () => {
-  const { user: currentUser } = useAuth();
+  const { profile } = useAuth();
   const [users, setUsers] = useState<UserData[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
@@ -53,7 +53,7 @@ const UsuariosCatalog: React.FC = () => {
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Check access level
-  const currentRole = currentUser?.role ?? 4;
+  const currentRole = profile?.role ?? 4;
   const hasAccess = currentRole === 0 || currentRole === 1;
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<UserFormValues>({
