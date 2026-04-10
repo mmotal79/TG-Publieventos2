@@ -1,0 +1,30 @@
+# CHANGELOG - TG-Publieventos
+
+## [1.3.0] - 2026-04-10 | Tipo: Funcionalidad | Descripción: Modelos de Catálogos y Admin Setup | Impacto: Base de Datos y UI.
+
+- Creación de cuenta administradora base (mmotal@gmail.com) en MongoDB.
+- Creación de esquemas Mongoose para todas las colecciones del catálogo (Telas, Modelos, Cortes, Bordados, Estampados, Acabados, Configuración).
+- Implementación de API genérica para catálogos.
+- Desarrollo de interfaces UI para Modelos, Cortes y Acabados.
+
+## [1.2.0] - 2026-04-10 | Tipo: Funcionalidad | Descripción: Módulo de Usuarios y Nómina | Impacto: Seguridad y RRHH.
+
+- Creación de esquema de usuarios en MongoDB (Mongoose).
+- Integración de lógica de nómina en USD (Salario Base, Comisiones, Frecuencia).
+- Mecanismos de control de estado de cuenta (Activo, Bloqueado, Suspendido, Baja Laboral).
+- Interfaz de gestión de usuarios con control de acceso por roles (Admin/Gerente).
+
+## [1.1.0] - 2026-04-10 | Tipo: Funcionalidad | Descripción: Expansión de Catálogos y Transacciones | Impacto: UI/UX y Lógica de Negocio.
+
+- Implementación de menú acordeón en Sidebar para Catálogos.
+- Creación de interfaces TypeScript para entidades de catálogos (Telas, Modelos, Acabados, etc.).
+- Desarrollo de componente genérico de Tabla y Modals operativos con estados (Loading, Success, Error).
+- Integración de módulo de Transacciones para registro de abonos multimoneda.
+- Definición de rutas de backend (Express) para gestión de Usuarios y Nómina.
+
+## [1.0.0] - 2026-04-10 | Tipo: Funcionalidad | Descripción: Inicialización de arquitectura base | Impacto: Estructura inicial del proyecto.
+
+- Configuración de Express + Vite (Full-stack).
+- Integración de Firebase Auth & Firestore.
+- Configuración de Tailwind CSS y shadcn/ui.
+- Definición de rutas base y arquitectura de roles.

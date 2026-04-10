@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: {uid}
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required, email format)
+    //   - displayName: string
+    //   - role: number (required, 0-4)
+    //   - baseSalary: number (optional)
+    //   - commissionRate: number (optional)
+    //   - paymentFrequency: string (optional, weekly|biweekly|monthly)
+    //
+    // Collection: clients
+    // Document ID: {clientId}
+    // Fields:
+    //   - id: string (required)
+    //   - name: string (required)
+    //   - assignedSalesId: string (required)
+    //   - email: string
+    //   - phone: string
+    //   - address: string
+    //
+    // Collection: budgets
+    // Document ID: {budgetId}
+    // Fields:
+    //   - id: string (required)
+    //   - clientId: string (required)
+    //   - salesId: string (required)
+    //   - totalCost: number (required)
+    //   - status: string (required, pending|approved|rejected|in_production|completed)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && 
+        (getUserData().role == 0 || 
+         (request.auth.token.email == "mmotal@gmail.com" && request.auth.token.email_verified == true));
+    }
+    
+    function isManager() {
+      return isAuthenticated() && (getUserData().role == 0 || getUserData().role == 1);
+    }
+    
+    function isSales() {
+      return isAuthenticated() && getUserData().role == 2;
+    }
+
+    function isEmployee() {
+      return isAuthenticated() && getUserData().role == 3;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.role is number && data.role >= 0 && data.role <= 4;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{uid} {
+      allow read: if isOwner(uid) || isManager();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && (isOwner(uid) || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && (isAdmin() || (isOwner(uid) && request.resource.data.role == resource.data.role));
+    }
+
+    match /clients/{clientId} {
+      allow read: if isManager() || (isSales() && resource.data.assignedSalesId == request.auth.uid);
+      allow create: if isManager() || isSales();
+      allow update, delete: if isManager() || (isSales() && resource.data.assignedSalesId == request.auth.uid);
+    }
+
+    match /budgets/{budgetId} {
+      allow read: if isManager() || (isSales() && resource.data.salesId == request.auth.uid) || isEmployee();
+      allow create: if isManager() || isSales();
+      allow update: if isManager() || (isSales() && resource.data.salesId == request.auth.uid) || isEmployee();
+      allow delete: if isManager();
+    }
+
+    match /test/connection {
+      allow read: if true;
+    }
+  }
+}

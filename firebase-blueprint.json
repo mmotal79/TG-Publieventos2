@@ -1,0 +1,65 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile data including roles and payroll info",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "number", "enum": [0, 1, 2, 3, 4] },
+        "baseSalary": { "type": "number" },
+        "commissionRate": { "type": "number" },
+        "paymentFrequency": { "type": "string", "enum": ["weekly", "biweekly", "monthly"] }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "Customer information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "phone": { "type": "string" },
+        "address": { "type": "string" },
+        "assignedSalesId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "name", "assignedSalesId"]
+    },
+    "Budget": {
+      "title": "Budget",
+      "description": "Technical budget for a client",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clientId": { "type": "string" },
+        "salesId": { "type": "string" },
+        "description": { "type": "string" },
+        "items": { "type": "array" },
+        "totalCost": { "type": "number" },
+        "urgencyMultiplier": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected", "in_production", "completed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "clientId", "salesId", "totalCost", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "User profiles"
+    },
+    "/clients/{clientId}": {
+      "schema": "Client",
+      "description": "Client directory"
+    },
+    "/budgets/{budgetId}": {
+      "schema": "Budget",
+      "description": "Budgets and orders"
+    }
+  }
+}
