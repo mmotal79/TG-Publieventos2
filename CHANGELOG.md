@@ -1,5 +1,13 @@
 # CHANGELOG - TG-Publieventos
 
+## [1.3.6] - 2026-04-10
+### Tipo: Seguridad y UI (Login y Catálogo de Usuarios)
+### Descripción: 
+- Se implementó un flujo de login más seguro: el usuario ingresa su correo, el sistema verifica en MongoDB si existe y está activo, y solo entonces lanza el popup de Google Sign-In con el correo pre-cargado.
+- Se actualizó `AuthContext.tsx` para cerrar sesión automáticamente si el usuario no existe en MongoDB o no está activo, evitando accesos no autorizados o fallbacks inseguros.
+- Se rediseñó el modal de "Nuevo/Editar Usuario" en `UsuariosCatalog.tsx` para usar una sola columna, ajustando las etiquetas y manteniendo el selector de estado como un menú desplegable, tal como se solicitó.
+### Impacto: Prevención de accesos no autorizados y mejora en la experiencia de usuario.
+
 ## [1.3.5] - 2026-04-10
 ### Tipo: Corrección de Lógica de Autenticación
 ### Descripción: 

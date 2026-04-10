@@ -48,34 +48,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const res = await fetch(`/api/users/email/${user.email}`);
         if (res.ok) {
           const data = await res.json();
-          if (isMounted) {
-            setProfile({
-              uid: user.uid,
-              email: data.email,
-              displayName: data.nombre,
-              role: data.rol,
-            });
+          if (data.estado !== 'Activo') {
+            await auth.signOut();
+            if (isMounted) {
+              setProfile(null);
+              setUser(null);
+            }
+          } else {
+            if (isMounted) {
+              setProfile({
+                uid: user.uid,
+                email: data.email,
+                displayName: data.nombre,
+                role: data.rol,
+              });
+            }
           }
         } else {
-          // Fallback if user not found in MongoDB
+          // User not found in MongoDB
+          await auth.signOut();
           if (isMounted) {
-            setProfile({
-              uid: user.uid,
-              email: user.email || '',
-              displayName: user.displayName || '',
-              role: 4, // Default role: Cliente
-            });
+            setProfile(null);
+            setUser(null);
           }
         }
       } catch (error) {
         console.error("Error fetching profile from MongoDB:", error);
+        await auth.signOut();
         if (isMounted) {
-          setProfile({
-            uid: user.uid,
-            email: user.email || '',
-            displayName: user.displayName || '',
-            role: 4,
-          });
+          setProfile(null);
+          setUser(null);
         }
       } finally {
         if (isMounted) setLoading(false);

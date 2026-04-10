@@ -261,34 +261,32 @@ const UsuariosCatalog: React.FC = () => {
       </Card>
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
-            <DialogTitle>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
-            <DialogDescription>
-              Configure los datos de acceso y nómina del usuario.
-            </DialogDescription>
+            <DialogTitle className="text-xl font-bold">{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
           </DialogHeader>
           
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2 col-span-2 md:col-span-1">
-                <Label htmlFor="nombre">Nombre Completo</Label>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-2">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="nombre">Nombre</Label>
                 <Input id="nombre" {...register('nombre')} />
                 {errors.nombre && <p className="text-xs text-destructive">{errors.nombre.message}</p>}
               </div>
               
-              <div className="space-y-2 col-span-2 md:col-span-1">
-                <Label htmlFor="email">Email</Label>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email (Cuenta de Google)</Label>
                 <Input id="email" type="email" {...register('email')} disabled={!!editingUser} />
+                <p className="text-xs text-muted-foreground">El usuario iniciará sesión con esta cuenta de Google.</p>
                 {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="rol">Rol del Sistema</Label>
+                <Label htmlFor="rol">Rol</Label>
                 <Select 
                   value={selectedRole.toString()} 
                   onValueChange={(v) => setValue('rol', parseInt(v))}
-                  disabled={currentRole === 1 && selectedRole === 0} // Gerente no puede asignar/quitar Admin
+                  disabled={currentRole === 1 && selectedRole === 0}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -296,8 +294,8 @@ const UsuariosCatalog: React.FC = () => {
                   <SelectContent>
                     {currentRole === 0 && <SelectItem value="0">Admin</SelectItem>}
                     <SelectItem value="1">Gerente</SelectItem>
-                    <SelectItem value="2">Vendedor / Asesor</SelectItem>
-                    <SelectItem value="3">Empleado (Planta)</SelectItem>
+                    <SelectItem value="2">Vendedor</SelectItem>
+                    <SelectItem value="3">Empleado</SelectItem>
                     <SelectItem value="4">Cliente</SelectItem>
                   </SelectContent>
                 </Select>
@@ -305,7 +303,7 @@ const UsuariosCatalog: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="estado">Estado de Cuenta</Label>
+                <Label htmlFor="estado">Estado</Label>
                 <Select 
                   value={watch('estado')} 
                   onValueChange={(v: any) => setValue('estado', v)}
@@ -314,29 +312,26 @@ const UsuariosCatalog: React.FC = () => {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Activo">Activo</SelectItem>
+                    <SelectItem value="Activo">Activo (Permitir acceso)</SelectItem>
                     <SelectItem value="Bloqueado">Bloqueado</SelectItem>
                     <SelectItem value="Suspendido">Suspendido</SelectItem>
                     <SelectItem value="Baja Laboral">Baja Laboral</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            {selectedRole !== 4 && (
-              <div className="mt-6 border-t pt-4">
-                <h4 className="text-sm font-medium mb-4">Configuración de Nómina</h4>
-                <div className="grid grid-cols-3 gap-4">
+              {selectedRole !== 4 && (
+                <>
                   <div className="space-y-2">
-                    <Label htmlFor="salarioBaseUSD">Salario Base (USD)</Label>
-                    <Input id="salarioBaseUSD" type="number" step="0.01" {...register('salarioBaseUSD', { valueAsNumber: true })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="porcentajeComision">Comisión (%)</Label>
+                    <Label htmlFor="porcentajeComision">% Comisión</Label>
                     <Input id="porcentajeComision" type="number" step="0.1" {...register('porcentajeComision', { valueAsNumber: true })} />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="frecuenciaPago">Frecuencia</Label>
+                    <Label htmlFor="salarioBaseUSD">Salario Periódico (USD)</Label>
+                    <Input id="salarioBaseUSD" type="number" step="0.01" {...register('salarioBaseUSD', { valueAsNumber: true })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="frecuenciaPago">Frecuencia de Salario</Label>
                     <Select 
                       value={watch('frecuenciaPago')} 
                       onValueChange={(v: any) => setValue('frecuenciaPago', v)}
@@ -351,9 +346,9 @@ const UsuariosCatalog: React.FC = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-              </div>
-            )}
+                </>
+              )}
+            </div>
 
             {status === 'error' && (
               <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm">
@@ -367,13 +362,13 @@ const UsuariosCatalog: React.FC = () => {
               </div>
             )}
 
-            <DialogFooter className="pt-4">
+            <DialogFooter className="pt-4 flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} disabled={status === 'loading'}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={status === 'loading' || status === 'success'}>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white" disabled={status === 'loading' || status === 'success'}>
                 {status === 'loading' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {status === 'success' ? 'Guardado' : 'Guardar Usuario'}
+                {status === 'success' ? 'Guardado' : 'Guardar'}
               </Button>
             </DialogFooter>
           </form>
