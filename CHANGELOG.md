@@ -1,5 +1,12 @@
 # CHANGELOG - TG-Publieventos
 
+## [1.3.7] - 2026-04-10
+### Tipo: Corrección de Seguridad (Login Popup Blocker)
+### Descripción: 
+- Se rediseñó el flujo de Login para solucionar el bloqueo de popups del navegador que causaba el error "Inicio de sesión cancelado o fallido".
+- **Mejor Solución Implementada:** Ahora el sistema abre el popup de Google *primero* (lo cual es permitido por los navegadores al ser una acción directa del usuario) y *después* valida el correo contra MongoDB. Si el usuario no existe o está inactivo, el sistema cierra la sesión de Firebase inmediatamente y deniega el acceso.
+### Impacto: Resolución del error de inicio de sesión y mejora en la robustez del login.
+
 ## [1.3.6] - 2026-04-10
 ### Tipo: Seguridad y UI (Login y Catálogo de Usuarios)
 ### Descripción: 

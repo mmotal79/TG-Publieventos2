@@ -28,11 +28,8 @@ async function testConnection() {
 }
 testConnection();
 
-export const loginWithGoogle = async (emailHint?: string) => {
+export const loginWithGoogle = async () => {
   try {
-    if (emailHint) {
-      googleProvider.setCustomParameters({ login_hint: emailHint });
-    }
     const result = await signInWithPopup(auth, googleProvider);
     return result.user;
   } catch (error) {
