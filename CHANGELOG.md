@@ -1,5 +1,12 @@
 # CHANGELOG - TG-Publieventos
 
+## [1.3.2] - 2026-04-10
+### Tipo: Corrección de Despliegue (Build & Config)
+### Descripción: 
+- Corregida discrepancia de mayúsculas en la importación del componente Button en `Login.tsx` para compatibilidad con sistemas Linux (Render).
+- Corregido el "Start Command" en los ajustes de Render; se cambió la ejecución directa de archivos fuente por el servicio de archivos estáticos de producción.
+### Impacto: Proceso de despliegue (CI/CD) y estabilidad del entorno de producción.
+
 ## [1.3.0] - 2026-04-10 | Tipo: Funcionalidad | Descripción: Modelos de Catálogos y Admin Setup | Impacto: Base de Datos y UI.
 
 - Creación de cuenta administradora base (mmotal@gmail.com) en MongoDB.
