@@ -22,14 +22,14 @@ import {
   Palette,
   Layers
 } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/Accordion";
+} from '@/components/ui/accordion';
 
 interface LayoutProps {
   children: React.ReactNode;

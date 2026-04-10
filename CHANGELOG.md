@@ -1,5 +1,13 @@
 # CHANGELOG - TG-Publieventos
 
+## [1.3.4] - 2026-04-10
+### Tipo: Corrección Definitiva de Build (Case Sensitivity)
+### Descripción: 
+- Reversión total de la capitalización en las importaciones de componentes UI (`Tabs`, `Button`, `Card`, etc.).
+- Se unificó todo el código fuente para que utilice exclusivamente minúsculas (`@/components/ui/tabs`), coincidiendo exactamente con el estándar de `shadcn/ui` y el estado actual del repositorio en GitHub.
+- Esto elimina la necesidad de forzar a Git en Windows a detectar cambios de mayúsculas (`git mv`), resolviendo el error `ENOENT` en Linux (Render) de forma nativa y a prueba de fallos.
+### Impacto: Pipeline de CI/CD (Render) estabilizado al 100%.
+
 ## [1.3.3] - 2026-04-10
 ### Tipo: Cambio de Lógica / Corrección de Build
 ### Descripción: 
