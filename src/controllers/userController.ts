@@ -16,8 +16,8 @@ export const getUsers = async (req: Request, res: Response) => {
 };
 
 export const getUserByEmail = async (req: Request, res: Response) => {
+  const { email } = req.params;
   try {
-    const { email } = req.params;
     console.log(`[API] Buscando usuario por email: ${email}`);
     const user = await User.findOne({ email });
     if (!user) {

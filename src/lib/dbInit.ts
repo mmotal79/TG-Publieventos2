@@ -22,7 +22,7 @@ export const initializeAdmin = async () => {
       await newAdmin.save();
       console.log('[DB-INIT] Administrador principal creado exitosamente.');
     } else {
-      console.log(`[DB-INIT] Administrador ${adminEmail} ya existe en el sistema.`);
+      console.log(`[DB-INIT] Confirmado: Usuario ${adminEmail} existe y está configurado.`);
     }
   } catch (error) {
     console.error('[DB-INIT] Error al inicializar administrador:', error);

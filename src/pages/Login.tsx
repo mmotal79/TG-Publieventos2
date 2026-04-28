@@ -54,7 +54,11 @@ const Login: React.FC = () => {
       } else {
         const errorText = await res.text();
         console.warn(`API retornó error ${res.status}:`, errorText);
-        setError('Este correo no está registrado en el sistema.');
+        if (errorText.includes('<!doctype html>') || errorText.includes('<!DOCTYPE html>')) {
+          setError('Error de Configuración: El servidor no reconoce la ruta de API (404 API).');
+        } else {
+          setError('Este correo no está registrado en el sistema.');
+        }
       }
     } catch (err: any) {
       console.error("Error de red/fetch:", err);
