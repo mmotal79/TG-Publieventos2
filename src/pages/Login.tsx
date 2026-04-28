@@ -12,10 +12,17 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [steps, setSteps] = useState<string[]>([]);
+
+  const addStep = (msg: string) => {
+    setSteps(prev => [...prev, `${new Date().toLocaleTimeString()} - ${msg}`]);
+    console.log(`[MONITOR] ${msg}`);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSteps([]);
     
     if (!email) {
       setError('Por favor ingrese su correo electrónico.');
@@ -26,43 +33,60 @@ const Login: React.FC = () => {
     setIsLoading(true);
     
     try {
-      console.log(`Intentando conectar con API: /api/users/email/${cleanEmail}`);
-      // 1. Verify if user exists and is active in MongoDB
+      addStep(`INICIO: Consultando cuenta ${cleanEmail}`);
+      addStep("ENVIANDO: Petición a /api/users/email/...");
+      
       const res = await fetch(`/api/users/email/${cleanEmail}`);
+      addStep(`RECIBIDO: Estatus HTTP ${res.status}`);
       
       if (res.ok) {
-        const data = await res.json();
-        console.log("Respuesta de API recibida:", data);
+        let data;
+        try {
+          addStep("PROCESANDO: Parseando respuesta JSON...");
+          data = await res.json();
+          addStep("ÉXITO: Perfil de usuario cargado.");
+        } catch (jsonErr) {
+          addStep("!! ERROR CRÍTICO: La respuesta no es JSON (Se recibió HTML)");
+          throw new Error("ERROR_INFRAESTRUCTURA: El servidor devolvió código HTML. Esto indica que Render no está encontrando la ruta de la API y está devolviendo la página principal.");
+        }
+
         if (data.estado === 'Activo') {
-          // 2. Proceed with Google Login
+          addStep(`VALIDADO: Usuario '${data.nombre}' está activo.`);
+          addStep("GOOGLE AUTH: Abriendo ventana emergente de identidad...");
           try {
             await loginWithGoogle(cleanEmail);
+            addStep("AUTENTICADO: Identidad verificada. Preparando entrada...");
             navigate('/');
           } catch (loginErr: any) {
-            console.error("Login mapping error:", loginErr);
+            addStep(`!! FALLA GOOGLE: ${loginErr.code || loginErr.message}`);
             if (loginErr.code === 'auth/popup-closed-by-user') {
-              setError('Inicio de sesión cancelado por el usuario.');
-            } else if (loginErr.code === 'auth/popup-blocked') {
-              setError('El navegador bloqueó la ventana emergente. Por favor, permita las ventanas emergentes para este sitio.');
+              setError('Has cerrado la ventana de Google antes de completar el acceso.');
             } else {
-              setError('Error al iniciar sesión con Google.');
+              setError(`Falla técnica en Google Auth: ${loginErr.message}`);
             }
           }
         } else {
-          setError(`Acceso denegado. El usuario se encuentra: ${data.estado}.`);
+          addStep(`!! BLOQUEADO: Estado de cuenta: ${data.estado}`);
+          setError(`Acceso bloqueado: Su cuenta está en estado '${data.estado}'. Contacte al administrador.`);
         }
       } else {
+        addStep(`!! FALLA API: Estatus ${res.status}`);
         const errorText = await res.text();
-        console.warn(`API retornó error ${res.status}:`, errorText);
+        
         if (errorText.includes('<!doctype html>') || errorText.includes('<!DOCTYPE html>')) {
-          setError('Error de Configuración: El servidor no reconoce la ruta de API (404 API).');
+          addStep("!! DIAGNÓSTICO: Error de Rutas en Render (404 API Overlap)");
+          setError('ERROR DE ENRUTAMIENTO: El servidor no encontró la API y respondió con la web principal. Esto es un problema de configuración del Servidor en Render.');
         } else {
-          setError('Este correo no está registrado en el sistema.');
+          setError('El correo electrónico no se encuentra en nuestra base de datos de personal.');
         }
       }
     } catch (err: any) {
-      console.error("Error de red/fetch:", err);
-      setError(`Error de conexión al verificar el usuario: ${err.message || 'Desconocido'}`);
+      addStep(`!! INTERRUPCIÓN: ${err.message}`);
+      if (err.message.includes('Unexpected token') || err.message.includes('JSON')) {
+        setError('FALLA DE INFRAESTRUCTURA: Se recibió una respuesta HTML del servidor en una ruta que debería ser de datos (API). Verifique que los proxies de Render apunten correctamente al backend.');
+      } else {
+        setError(`Falla de conexión: ${err.message || 'El servicio no responde'}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -70,26 +94,29 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md shadow-xl border-t-4 border-t-primary">
         <CardHeader className="space-y-1 text-center">
           <div className="flex justify-center mb-4">
-            <div className="bg-primary p-3 rounded-2xl">
+            <div className="bg-primary p-3 rounded-2xl shadow-lg">
               <LogIn className="w-8 h-8 text-white" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">TG-Publieventos</CardTitle>
+          <CardTitle className="text-2xl font-bold tracking-tight">TG-Publieventos</CardTitle>
           <CardDescription>
-            Ingrese su correo para acceder al sistema
+            Plataforma de Control de Personal
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Correo Electrónico (Cuenta de Google)</Label>
+              <Label htmlFor="email" className="text-xs uppercase tracking-wider font-semibold text-slate-500">
+                Correo Institucional
+              </Label>
               <Input 
                 id="email" 
                 type="email" 
-                placeholder="usuario@gmail.com" 
+                placeholder="ejemplo@gmail.com" 
+                className="h-12 border-slate-200 focus:border-primary transition-all"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required 
@@ -98,16 +125,33 @@ const Login: React.FC = () => {
             </div>
             
             {error && (
-              <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm text-center">
-                {error}
+              <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-lg text-sm font-medium">
+                <div className="flex items-start">
+                  <span className="mr-2">⚠️</span>
+                  <span>{error}</span>
+                </div>
               </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            {steps.length > 0 && (
+              <div className="p-3 bg-slate-900 text-emerald-400 rounded-lg text-[10px] font-mono shadow-inner border border-slate-800 overflow-hidden">
+                <div className="mb-2 border-b border-slate-700 pb-1 flex justify-between">
+                  <span>SYSTEM_MONITOR</span>
+                  <span className="animate-pulse">● LIVE</span>
+                </div>
+                {steps.map((step, idx) => (
+                  <div key={idx} className={`${step.includes('!!') ? 'text-red-400' : ''}`}>
+                    {">"} {step}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <Button type="submit" className="w-full h-12 text-md font-medium shadow-md hover:shadow-lg transition-all" disabled={isLoading}>
               {isLoading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verificando...</>
+                <><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Procesando...</>
               ) : (
-                <><svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path></svg> Continuar con Google</>
+                <><svg className="mr-2 h-5 w-5" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 123 24.5 166.3 64.9l-67.5 64.9C258.5 52.6 94.3 116.6 94.3 256c0 86.5 69.1 156.6 153.7 156.6 98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path></svg> Ingresar con Google</>
               )}
             </Button>
           </form>
