@@ -18,12 +18,16 @@ export const getUsers = async (req: Request, res: Response) => {
 export const getUserByEmail = async (req: Request, res: Response) => {
   try {
     const { email } = req.params;
+    console.log(`[API] Buscando usuario por email: ${email}`);
     const user = await User.findOne({ email });
     if (!user) {
+      console.log(`[API] Usuario no encontrado: ${email}`);
       return res.status(404).json({ message: 'User not found' });
     }
+    console.log(`[API] Usuario encontrado: ${email}, Estado: ${user.estado}`);
     res.json(user);
   } catch (error) {
+    console.error(`[API] Error al buscar usuario ${email}:`, error);
     res.status(500).json({ message: 'Error fetching user by email', error });
   }
 };

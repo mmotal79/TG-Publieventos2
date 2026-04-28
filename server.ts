@@ -17,18 +17,29 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Logging middleware for API
+  app.use((req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      console.log(`[SERVER] ${req.method} ${req.path}`);
+    }
+    next();
+  });
+
   // Connect to MongoDB
   const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://mmotal:mmotal5379@cluster0.lcdpyvx.mongodb.net/uniformes_db?appName=Cluster0";
   try {
-    await mongoose.connect(MONGODB_URI);
-    console.log("Connected to MongoDB Atlas");
+    console.log("[SERVER] Conectando a MongoDB...");
+    await mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000 // 5 seconds timeout
+    });
+    console.log("[SERVER] Conectado exitosamente a MongoDB Atlas");
   } catch (error) {
-    console.error("MongoDB connection error:", error);
+    console.error("[SERVER] Error de conexión a MongoDB:", error);
   }
 
   // API routes
   app.get("/api/health", (req, res) => {
-    res.json({ status: "ok" });
+    res.json({ status: "ok", db: mongoose.connection.readyState === 1 ? "connected" : "disconnected" });
   });
 
   // User Management (Payroll) Routes

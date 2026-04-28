@@ -22,20 +22,24 @@ const Login: React.FC = () => {
       return;
     }
 
+    const cleanEmail = email.trim().toLowerCase();
     setIsLoading(true);
     
     try {
+      console.log(`Intentando conectar con API: /api/users/email/${cleanEmail}`);
       // 1. Verify if user exists and is active in MongoDB
-      const res = await fetch(`/api/users/email/${email}`);
+      const res = await fetch(`/api/users/email/${cleanEmail}`);
+      
       if (res.ok) {
         const data = await res.json();
+        console.log("Respuesta de API recibida:", data);
         if (data.estado === 'Activo') {
-          // 2. Proceed with Google Login, passing the email as hint
+          // 2. Proceed with Google Login
           try {
-            await loginWithGoogle(email);
+            await loginWithGoogle(cleanEmail);
             navigate('/');
           } catch (loginErr: any) {
-            console.error("Login error:", loginErr);
+            console.error("Login mapping error:", loginErr);
             if (loginErr.code === 'auth/popup-closed-by-user') {
               setError('Inicio de sesión cancelado por el usuario.');
             } else if (loginErr.code === 'auth/popup-blocked') {
@@ -48,10 +52,13 @@ const Login: React.FC = () => {
           setError(`Acceso denegado. El usuario se encuentra: ${data.estado}.`);
         }
       } else {
+        const errorText = await res.text();
+        console.warn(`API retornó error ${res.status}:`, errorText);
         setError('Este correo no está registrado en el sistema.');
       }
-    } catch (err) {
-      setError('Error de conexión al verificar el usuario.');
+    } catch (err: any) {
+      console.error("Error de red/fetch:", err);
+      setError(`Error de conexión al verificar el usuario: ${err.message || 'Desconocido'}`);
     } finally {
       setIsLoading(false);
     }
