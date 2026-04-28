@@ -7,6 +7,7 @@ import userRoutes from "./src/routes/userRoutes.js";
 import catalogRoutes from "./src/routes/catalogRoutes.js";
 import clientRoutes from "./src/routes/clientRoutes.js";
 import configRoutes from "./src/routes/configRoutes.js";
+import { initializeAdmin } from "./src/lib/dbInit.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +34,10 @@ async function startServer() {
       serverSelectionTimeoutMS: 5000 // 5 seconds timeout
     });
     console.log("[SERVER] Conectado exitosamente a MongoDB Atlas");
+    
+    // Initialize default admin
+    await initializeAdmin();
+    
   } catch (error) {
     console.error("[SERVER] Error de conexión a MongoDB:", error);
   }
@@ -53,6 +58,11 @@ async function startServer() {
 
   // Global Config Routes
   app.use("/api/config", configRoutes);
+
+  // 404 for API routes - Stop them from falling through to Vite
+  app.use("/api/*", (req, res) => {
+    res.status(404).json({ message: `API route not found: ${req.originalUrl}` });
+  });
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
