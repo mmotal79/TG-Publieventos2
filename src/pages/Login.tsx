@@ -59,7 +59,9 @@ const Login: React.FC = () => {
             navigate('/');
           } catch (loginErr: any) {
             addStep(`!! FALLA GOOGLE: ${loginErr.code || loginErr.message}`);
-            if (loginErr.code === 'auth/popup-closed-by-user') {
+            if (loginErr.code === 'auth/popup-blocked') {
+              setError('BLOQUEO DE POPUP: El navegador impidió abrir la ventana de Google. Por favor, haz clic de nuevo o abre la app en una nueva pestaña.');
+            } else if (loginErr.code === 'auth/popup-closed-by-user') {
               setError('Has cerrado la ventana de Google antes de completar el acceso.');
             } else {
               setError(`Falla técnica en Google Auth: ${loginErr.message}`);

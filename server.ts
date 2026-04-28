@@ -62,37 +62,39 @@ async function startServer() {
   }
 
   // ==========================================
-  // 3. RUTAS DE LA API
+  // 3. RUTAS DE LA API (Prioridad Absoluta)
   // ==========================================
+  
+  // Middleware para forzar JSON en todas las respuestas de API
+  app.use("/api", (req, res, next) => {
+    res.setHeader('Content-Type', 'application/json');
+    next();
+  });
+
   app.get("/api/health", (req, res) => {
-    res.json({ 
+    res.status(200).json({ 
       status: "ok", 
       db: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
-      env: process.env.NODE_ENV || 'development'
+      timestamp: new Date().toISOString()
     });
   });
 
-  // User Management
+  // Montaje de Routers Específicos
   app.use("/api/users", userRoutes);
-  
-  // Catalogs
   app.use("/api/catalogs", catalogRoutes);
-
-  // Clients
   app.use("/api/clients", clientRoutes);
-
-  // Global Configuration
   app.use("/api/config", configRoutes);
 
   // ==========================================
-  // 4. API GUARD (Protección 404 para API)
+  // 4. API FAIL-SAFE (Guardia Final)
   // ==========================================
-  // Evita que rutas /api/* caigan accidentalmente en el catch-all de la SPA
-  app.use("/api/*", (req, res) => {
-    console.warn(`[404 API] Intento de acceso a ruta inexistente: ${req.originalUrl}`);
+  // Si llega aquí y empieza por /api, es un 404 real de API, NO de React
+  app.all("/api/*", (req, res) => {
+    console.error(`[404 API] Ruta no encontrada: ${req.method} ${req.originalUrl}`);
     res.status(404).json({ 
-      message: `La ruta de API '${req.originalUrl}' no existe en este servidor.`,
-      error: "API_ROUTE_NOT_FOUND"
+      error: "ENDPOINT_NOT_FOUND",
+      message: `El servidor no reconoce el endpoint: ${req.originalUrl}`,
+      tip: "Verifica que el prefijo /api/ esté bien escrito y que el método HTTP sea el correcto."
     });
   });
 
