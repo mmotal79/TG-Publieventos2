@@ -19,6 +19,8 @@ import { Loader2 } from 'lucide-react';
 const schema = z.object({
   tipoPrenda: z.string().min(1, "El tipo de prenda es requerido"),
   nivelComplejidad: z.enum(['Bajo', 'Medio', 'Alto']),
+  costoBase: z.number().min(0, "Debe ser positivo"),
+  factorComplejidad: z.number().min(1, "Debe ser al menos 1.0"),
   tiempoEstimadoMinutos: z.number().min(1, "El tiempo debe ser mayor a 0"),
   activo: z.boolean()
 });
@@ -33,7 +35,7 @@ const ModelosCatalog: React.FC = () => {
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { nivelComplejidad: 'Medio', activo: true }
+    defaultValues: { nivelComplejidad: 'Medio', costoBase: 0, factorComplejidad: 1.0, activo: true }
   });
 
   useEffect(() => { fetchData(); }, []);
@@ -53,7 +55,7 @@ const ModelosCatalog: React.FC = () => {
       reset(item);
     } else {
       setEditingItem(null);
-      reset({ tipoPrenda: '', nivelComplejidad: 'Medio', tiempoEstimadoMinutos: 0, activo: true });
+      reset({ tipoPrenda: '', nivelComplejidad: 'Medio', costoBase: 0, factorComplejidad: 1.0, tiempoEstimadoMinutos: 0, activo: true });
     }
     setStatus('idle');
     setIsModalOpen(true);
@@ -83,6 +85,8 @@ const ModelosCatalog: React.FC = () => {
   const columns = [
     { header: 'Tipo de Prenda', accessor: 'tipoPrenda' as any },
     { header: 'Complejidad', accessor: 'nivelComplejidad' as any },
+    { header: 'Costo Base ($)', accessor: 'costoBase' as any },
+    { header: 'Factor', accessor: 'factorComplejidad' as any },
     { header: 'Tiempo (min)', accessor: 'tiempoEstimadoMinutos' as any },
     { header: 'Estado', accessor: (item: any) => (
       <Badge variant={item.activo ? "default" : "secondary"}>{item.activo ? 'Activo' : 'Inactivo'}</Badge>
@@ -112,21 +116,32 @@ const ModelosCatalog: React.FC = () => {
               <Input {...register('tipoPrenda')} placeholder="Ej: Camisa Polo" />
               {errors.tipoPrenda && <p className="text-xs text-destructive">{errors.tipoPrenda.message}</p>}
             </div>
-            <div className="space-y-2">
-              <Label>Nivel de Complejidad</Label>
-              <Select value={watch('nivelComplejidad')} onValueChange={(v: any) => setValue('nivelComplejidad', v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Bajo">Bajo</SelectItem>
-                  <SelectItem value="Medio">Medio</SelectItem>
-                  <SelectItem value="Alto">Alto</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Nivel de Complejidad</Label>
+                <Select value={watch('nivelComplejidad')} onValueChange={(v: any) => setValue('nivelComplejidad', v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Bajo">Bajo</SelectItem>
+                    <SelectItem value="Medio">Medio</SelectItem>
+                    <SelectItem value="Alto">Alto</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Costo Base ($)</Label>
+                <Input type="number" step="0.01" {...register('costoBase', { valueAsNumber: true })} />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Tiempo Estimado (Minutos)</Label>
-              <Input type="number" {...register('tiempoEstimadoMinutos', { valueAsNumber: true })} />
-              {errors.tiempoEstimadoMinutos && <p className="text-xs text-destructive">{errors.tiempoEstimadoMinutos.message}</p>}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Factor Complejidad</Label>
+                <Input type="number" step="0.1" {...register('factorComplejidad', { valueAsNumber: true })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Tiempo (Minutos)</Label>
+                <Input type="number" {...register('tiempoEstimadoMinutos', { valueAsNumber: true })} />
+              </div>
             </div>
             {status === 'error' && <p className="text-sm text-destructive">Error al guardar.</p>}
             <DialogFooter>

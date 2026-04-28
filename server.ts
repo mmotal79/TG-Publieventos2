@@ -5,6 +5,8 @@ import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import userRoutes from "./src/routes/userRoutes.js";
 import catalogRoutes from "./src/routes/catalogRoutes.js";
+import clientRoutes from "./src/routes/clientRoutes.js";
+import configRoutes from "./src/routes/configRoutes.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,6 +36,12 @@ async function startServer() {
   
   // Catalog Routes
   app.use("/api/catalogs", catalogRoutes);
+
+  // Client Routes
+  app.use("/api/clients", clientRoutes);
+
+  // Global Config Routes
+  app.use("/api/config", configRoutes);
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

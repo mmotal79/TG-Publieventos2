@@ -1,5 +1,12 @@
 # CHANGELOG - TG-Publieventos
 
+## [1.3.8] - 2026-04-10
+### Tipo: Corrección de Seguridad (Login Popup Blocker Revert)
+### Descripción: 
+- Se revirtió el flujo de Login a la versión que solicita el correo electrónico primero.
+- Se añadió el parámetro `prompt: 'select_account'` a la configuración de GoogleAuthProvider en `firebase.ts` para forzar la selección de cuenta y evitar que Firebase intente usar una sesión en caché que pueda estar causando conflictos con el popup blocker.
+### Impacto: Restauración del flujo de login con correo y mitigación del error de popup.
+
 ## [1.3.7] - 2026-04-10
 ### Tipo: Corrección de Seguridad (Login Popup Blocker)
 ### Descripción: 

@@ -26,7 +26,7 @@ interface GenericTableProps<T> {
   searchPlaceholder?: string;
 }
 
-export function GenericTable<T extends { id: string }>({
+export function GenericTable<T extends { id?: string; _id?: string }>({
   title,
   description,
   data,
@@ -78,12 +78,12 @@ export function GenericTable<T extends { id: string }>({
                 </TableRow>
               ) : (
                 data.map((item) => (
-                  <TableRow key={item.id}>
+                  <TableRow key={item.id || item._id}>
                     {columns.map((col, index) => (
                       <TableCell key={index}>
                         {typeof col.accessor === 'function' 
                           ? col.accessor(item) 
-                          : String(item[col.accessor])}
+                          : String((item as any)[col.accessor])}
                       </TableCell>
                     ))}
                     {(onEdit || onDelete) && (

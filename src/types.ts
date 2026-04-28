@@ -21,37 +21,70 @@ export interface UserProfile {
   paymentFrequency?: 'weekly' | 'biweekly' | 'monthly';
 }
 
-export interface Client {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  assignedSalesId: string; // Role 2 UID
-  createdAt: string;
+export interface GlobalConfig {
+  _id?: string;
+  nombreComercial: string;
+  razonSocial: string;
+  rif: string;
+  telefonoCorporativo: string;
+  informacionPago: string;
+  logoBase64: string;
+  updatedAt?: string;
 }
 
-export interface Budget {
-  id: string;
-  clientId: string;
-  salesId: string;
-  description: string;
-  items: BudgetItem[];
-  totalCost: number;
-  urgencyMultiplier: number; // e.g., 1.0, 1.2, 1.5
-  status: 'pending' | 'approved' | 'rejected' | 'in_production' | 'completed';
-  createdAt: string;
+export interface Client {
+  _id?: string;
+  celular: string; // Primary Key
+  razonSocial: string;
+  contacto: string;
+  rif: string;
+  email: string;
+  direccion?: string;
+  createdAt?: string;
+}
+
+export interface Tela {
+  _id: string;
+  nombre: string;
+  costoPorMetro: number;
+}
+
+export interface Modelo {
+  _id: string;
+  tipoPrenda: string;
+  nivelComplejidad: 'Bajo' | 'Medio' | 'Alto';
+  costoBase: number;
+  factorComplejidad: number;
+}
+
+export interface Corte {
+  _id: string;
+  nombre: string;
+  factorConsumoTela: number;
 }
 
 export interface BudgetItem {
   id: string;
-  tela: number;
-  corte: number;
-  modelo: number;
-  complejidad: number;
-  personalizacion: number;
-  acabados: number;
-  volumen: number;
+  modeloId: string;
+  telaId: string;
+  corteId: string;
+  personalizacion: number; // Sum of extra costs
+  acabados: number; // Sum of extra costs
+  cantidad: number;
+  precioUnitario: number; // Calculated
+  totalItem: number; // Calculated
+}
+
+export interface Budget {
+  _id?: string;
+  clientId: string;
+  estructuraCostosId: string;
+  urgencia: 'normal' | 'urgente' | 'planificada';
+  description: string;
+  items: BudgetItem[];
+  totalCost: number;
+  status: 'pending' | 'approved' | 'rejected' | 'in_production' | 'completed';
+  createdAt?: string;
 }
 
 export interface Payment {
@@ -72,4 +105,41 @@ export interface Order {
   paidAmount: number; // In USD
   balance: number; // In USD (Calculated)
   status: string;
+}
+
+export interface CostoAdicional {
+  id?: string;
+  nombre: string;
+  monto: number;
+  tipo: 'Unitario' | 'Distribuido';
+  activo: boolean;
+}
+
+export interface FactorVolumen {
+  minUnidades: number;
+  hastaUnidades: number;
+  multiplicador: number;
+}
+
+export interface RecargosUrgencia {
+  normal: number;
+  urgente: number;
+  planificada: number;
+}
+
+export interface EstructuraCostos {
+  _id?: string;
+  nombre: string;
+  descripcion: string;
+  margenGanancia: number;
+  porcentajeComision: number;
+  iva: number;
+  ajusteComplejidadBajo: number;
+  ajusteComplejidadMedio: number;
+  ajusteComplejidadAlto: number;
+  costosAdicionales: CostoAdicional[];
+  factoresVolumen: FactorVolumen[];
+  recargosUrgencia: RecargosUrgencia;
+  imagenReferencial?: string;
+  activo: boolean;
 }

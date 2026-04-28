@@ -28,9 +28,16 @@ async function testConnection() {
 }
 testConnection();
 
-export const loginWithGoogle = async () => {
+export const loginWithGoogle = async (emailHint?: string) => {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
+    const provider = new GoogleAuthProvider();
+    if (emailHint) {
+      provider.setCustomParameters({
+        login_hint: emailHint,
+        prompt: 'select_account' // Force account selection if needed
+      });
+    }
+    const result = await signInWithPopup(auth, provider);
     return result.user;
   } catch (error) {
     console.error("Error logging in with Google:", error);

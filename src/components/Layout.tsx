@@ -20,25 +20,32 @@ import {
   Scissors,
   Shirt,
   Palette,
-  Layers
+  Layers,
+  Calculator
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { Toaster } from '@/components/ui/toaster';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const { profile } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const currentRole = profile?.role ?? 4;
+  const isAdminOrManager = currentRole === 0 || currentRole === 1;
 
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -49,14 +56,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   ];
 
   const catalogItems = [
-    { name: 'Clientes', path: '/clients', icon: Users },
-    { name: 'Telas', path: '/catalogs/telas', icon: Layers },
-    { name: 'Modelos', path: '/catalogs/modelos', icon: Shirt },
-    { name: 'Cortes', path: '/catalogs/cortes', icon: Scissors },
-    { name: 'Personalización', path: '/catalogs/personalizacion', icon: Palette },
-    { name: 'Acabados', path: '/catalogs/acabados', icon: BookOpen },
-    { name: 'Usuarios', path: '/catalogs/usuarios', icon: Users },
-    { name: 'Configuración', path: '/catalogs/configuracion', icon: Settings },
+    { name: 'Clientes', path: '/clients', icon: Users, show: true },
+    { name: 'Telas', path: '/catalogs/telas', icon: Layers, show: true },
+    { name: 'Modelos', path: '/catalogs/modelos', icon: Shirt, show: true },
+    { name: 'Cortes', path: '/catalogs/cortes', icon: Scissors, show: true },
+    { name: 'Personalización', path: '/catalogs/personalizacion', icon: Palette, show: true },
+    { name: 'Acabados', path: '/catalogs/acabados', icon: BookOpen, show: true },
+    { name: 'Estructura de Costos', path: '/catalogs/estructura-costos', icon: Calculator, show: isAdminOrManager },
+    { name: 'Usuarios', path: '/catalogs/usuarios', icon: Users, show: isAdminOrManager },
+    { name: 'Configuración', path: '/catalogs/configuracion', icon: Settings, show: isAdminOrManager },
   ];
 
   const handleLogout = () => {
@@ -118,7 +126,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </AccordionTrigger>
               <AccordionContent className="pt-1 pb-0">
                 <div className="flex flex-col space-y-1 pl-9 pr-2">
-                  {catalogItems.map((item) => {
+                  {catalogItems.filter(item => item.show).map((item) => {
                     const Icon = item.icon;
                     const isActive = location.pathname === item.path;
                     return (
@@ -170,6 +178,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {children}
         </div>
       </main>
+      <Toaster />
     </div>
   );
 };
