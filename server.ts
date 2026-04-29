@@ -66,8 +66,10 @@ async function startServer() {
   // ==========================================
   
   // Middleware para forzar JSON en todas las respuestas de API
+  // IMPORTANTE: Este debe ir antes de cualquier router
   app.use("/api", (req, res, next) => {
     res.setHeader('Content-Type', 'application/json');
+    console.log(`[API ROUTING] Verificando ruta: ${req.method} ${req.path}`);
     next();
   });
 
@@ -75,12 +77,17 @@ async function startServer() {
     res.status(200).json({ 
       status: "ok", 
       db: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      node_env: process.env.NODE_ENV
     });
   });
 
   // Montaje de Routers Específicos
-  app.use("/api/users", userRoutes);
+  app.use("/api/users", (req, res, next) => {
+    console.log(`[API ROUTING] Accediendo a UserRoutes: ${req.path}`);
+    next();
+  }, userRoutes);
+  
   app.use("/api/catalogs", catalogRoutes);
   app.use("/api/clients", clientRoutes);
   app.use("/api/config", configRoutes);
@@ -88,13 +95,15 @@ async function startServer() {
   // ==========================================
   // 4. API FAIL-SAFE (Guardia Final)
   // ==========================================
-  // Si llega aquí y empieza por /api, es un 404 real de API, NO de React
   app.all("/api/*", (req, res) => {
-    console.error(`[404 API] Ruta no encontrada: ${req.method} ${req.originalUrl}`);
+    console.error(`[404 API CRITICAL] Endpoint no capturado por routers: ${req.method} ${req.originalUrl}`);
     res.status(404).json({ 
       error: "ENDPOINT_NOT_FOUND",
-      message: `El servidor no reconoce el endpoint: ${req.originalUrl}`,
-      tip: "Verifica que el prefijo /api/ esté bien escrito y que el método HTTP sea el correcto."
+      message: `La ruta '${req.originalUrl}' no existe en el servidor o el método ${req.method} no es válido.`,
+      debug: {
+        path: req.path,
+        method: req.method
+      }
     });
   });
 
@@ -102,12 +111,16 @@ async function startServer() {
   // 5. STATIC FILES / FRONTEND (SPA)
   // ==========================================
   if (process.env.NODE_ENV === "production") {
-    // Configuración para Producción (Render, etc.)
-    const distPath = path.resolve(__dirname, 'dist');
-    app.use(express.static(distPath));
+    const distPath = path.resolve(process.cwd(), 'dist');
+    console.log(`[SERVING] Archivos estáticos desde: ${distPath}`);
     
-    // El "Catch-all" para manejar el routing de React (Single Page Application)
-    app.get('*', (req, res) => {
+    // Servir archivos estáticos (JS, CSS, Imágenes)
+    app.use(express.static(distPath, { index: false }));
+    
+    // CATCH-ALL DEFINITIVO PARA SPA
+    // Usamos una expresión regular para que NUNCA capture rutas que empiecen por /api
+    // Esto garantiza que si una API falla, devuelva el 404 JSON que definimos arriba
+    app.get(/^(?!\/api).+/, (req, res) => {
       res.sendFile(path.resolve(distPath, 'index.html'));
     });
   } else {
