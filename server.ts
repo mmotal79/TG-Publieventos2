@@ -65,61 +65,70 @@ async function startServer() {
   // 3. RUTAS DE LA API (Prioridad Absoluta)
   // ==========================================
   
-  // Create an API Router to encapsulate all backend logic
-  const apiRouter = express.Router();
-
-  // Middleware para forzar JSON y Logging de Rutas en la API
-  apiRouter.use((req, res, next) => {
-    res.setHeader('Content-Type', 'application/json');
-    console.log(`[API_TRACE] ${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
-    next();
-  });
-
-  apiRouter.get("/health", (req, res) => {
+  // Health check - Simple y directo para verificar el servidor
+  app.get("/api/health", (req, res) => {
     res.status(200).json({ 
       status: "ok", 
       db: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
       timestamp: new Date().toISOString(),
-      node_env: process.env.NODE_ENV
+      node_env: process.env.NODE_ENV,
+      port: PORT
     });
   });
 
-  // Montaje de Routers en el apiRouter (sin el prefijo /api aquí, se añade al montar el router en app)
-  apiRouter.use("/users", userRoutes);
-  apiRouter.use("/catalogs", catalogRoutes);
-  apiRouter.use("/clients", clientRoutes);
-  apiRouter.use("/config", configRoutes);
+  // Middleware de trazado de API para depuración en producción
+  app.use("/api", (req, res, next) => {
+    res.setHeader('Content-Type', 'application/json');
+    console.log(`[API_CALL] ${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
+    next();
+  });
 
-  // API 404 - Si llega aquí dentro de apiRouter, definitivamente no existe el endpoint
-  apiRouter.all("*", (req, res) => {
-    console.warn(`[404_API] Endpoint no encontrado: ${req.method} ${req.originalUrl}`);
+  // Montaje de Routers directamente en app para evitar problemas de anidación
+  app.use("/api/users", userRoutes);
+  app.use("/api/catalogs", catalogRoutes);
+  app.use("/api/clients", clientRoutes);
+  app.use("/api/config", configRoutes);
+
+  // GUARDIA FINAL PARA API: 
+  // Cualquier petición que empiece por /api y llegue aquí es un 404 REAL de API
+  app.all("/api/*", (req, res) => {
+    console.error(`[404_API_HALT] Endpoint no encontrado: ${req.method} ${req.originalUrl}`);
     res.status(404).json({ 
-      error: "ENDPOINT_NOT_FOUND",
-      message: `La ruta de API '${req.originalUrl}' no existe o el método ${req.method} es incorrecto.`,
-      path: req.originalUrl
+      error: "API_ENDPOINT_NOT_FOUND",
+      message: `El servidor no reconoce la ruta '${req.originalUrl}'. Verifica el prefijo /api/.`,
+      method: req.method,
+      path: req.path
     });
   });
-
-  // Montar el Router de API completo en el prefijo /api
-  app.use("/api", apiRouter);
 
   // ==========================================
   // 4. STATIC FILES / FRONTEND (SPA)
   // ==========================================
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.NODE_ENV === "production" || process.env.RENDER === "true") {
     const distPath = path.resolve(process.cwd(), 'dist');
-    console.log(`[PROD] Sirviendo frontend desde: ${distPath}`);
+    console.log(`[PROD_MODE] Sirviendo archivos desde: ${distPath}`);
     
-    // 1. Archivos estáticos con prioridad (assets, images, etc.)
+    // Sirve archivos estáticos (JS, CSS, Imágenes)
     app.use(express.static(distPath, { index: false }));
     
-    // 2. Catch-all para la SPA
-    // IMPORTANTE: Solo atendemos peticiones que NO empiecen por /api
-    app.get('*', (req, res, next) => {
-      if (req.path.startsWith('/api')) {
-        return next(); // Seguir al siguiente middleware (que no debería existir o devolver 404)
+    // Catch-all para la SPA (React Router)
+    app.get('*', (req, res) => {
+      // Verificación de seguridad redundante
+      if (req.originalUrl.startsWith('/api')) {
+        console.warn(`[CATCHALL_LEAK] Una petición de API llegó al catch-all de SPA: ${req.originalUrl}`);
+        return res.status(404).json({ 
+          error: "API_REACHED_FRONTEND_CATCHALL",
+          message: "Esta ruta de API no existe y casi se sirve como HTML." 
+        });
       }
-      res.sendFile(path.resolve(distPath, 'index.html'));
+      
+      const indexPath = path.resolve(distPath, 'index.html');
+      res.sendFile(indexPath, (err) => {
+        if (err) {
+          console.error(`[SPA_ERROR] No se pudo enviar index.html: ${err.message}`);
+          res.status(500).send("Error interno: No se encontró el archivo de la aplicación (dist/index.html). Verifica el comando de build.");
+        }
+      });
     });
   } else {
     // Configuración para Desarrollo con Vite
