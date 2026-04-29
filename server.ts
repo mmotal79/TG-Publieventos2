@@ -65,15 +65,17 @@ async function startServer() {
   // 3. RUTAS DE LA API (Prioridad Absoluta)
   // ==========================================
   
-  // Middleware para forzar JSON en todas las respuestas de API
-  // IMPORTANTE: Este debe ir antes de cualquier router
-  app.use("/api", (req, res, next) => {
+  // Create an API Router to encapsulate all backend logic
+  const apiRouter = express.Router();
+
+  // Middleware para forzar JSON y Logging de Rutas en la API
+  apiRouter.use((req, res, next) => {
     res.setHeader('Content-Type', 'application/json');
-    console.log(`[API ROUTING] Verificando ruta: ${req.method} ${req.path}`);
+    console.log(`[API_TRACE] ${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
     next();
   });
 
-  app.get("/api/health", (req, res) => {
+  apiRouter.get("/health", (req, res) => {
     res.status(200).json({ 
       status: "ok", 
       db: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
@@ -82,45 +84,41 @@ async function startServer() {
     });
   });
 
-  // Montaje de Routers Específicos
-  app.use("/api/users", (req, res, next) => {
-    console.log(`[API ROUTING] Accediendo a UserRoutes: ${req.path}`);
-    next();
-  }, userRoutes);
-  
-  app.use("/api/catalogs", catalogRoutes);
-  app.use("/api/clients", clientRoutes);
-  app.use("/api/config", configRoutes);
+  // Montaje de Routers en el apiRouter (sin el prefijo /api aquí, se añade al montar el router en app)
+  apiRouter.use("/users", userRoutes);
+  apiRouter.use("/catalogs", catalogRoutes);
+  apiRouter.use("/clients", clientRoutes);
+  apiRouter.use("/config", configRoutes);
 
-  // ==========================================
-  // 4. API FAIL-SAFE (Guardia Final)
-  // ==========================================
-  app.all("/api/*", (req, res) => {
-    console.error(`[404 API CRITICAL] Endpoint no capturado por routers: ${req.method} ${req.originalUrl}`);
+  // API 404 - Si llega aquí dentro de apiRouter, definitivamente no existe el endpoint
+  apiRouter.all("*", (req, res) => {
+    console.warn(`[404_API] Endpoint no encontrado: ${req.method} ${req.originalUrl}`);
     res.status(404).json({ 
       error: "ENDPOINT_NOT_FOUND",
-      message: `La ruta '${req.originalUrl}' no existe en el servidor o el método ${req.method} no es válido.`,
-      debug: {
-        path: req.path,
-        method: req.method
-      }
+      message: `La ruta de API '${req.originalUrl}' no existe o el método ${req.method} es incorrecto.`,
+      path: req.originalUrl
     });
   });
 
+  // Montar el Router de API completo en el prefijo /api
+  app.use("/api", apiRouter);
+
   // ==========================================
-  // 5. STATIC FILES / FRONTEND (SPA)
+  // 4. STATIC FILES / FRONTEND (SPA)
   // ==========================================
   if (process.env.NODE_ENV === "production") {
     const distPath = path.resolve(process.cwd(), 'dist');
-    console.log(`[SERVING] Archivos estáticos desde: ${distPath}`);
+    console.log(`[PROD] Sirviendo frontend desde: ${distPath}`);
     
-    // Servir archivos estáticos (JS, CSS, Imágenes)
+    // 1. Archivos estáticos con prioridad (assets, images, etc.)
     app.use(express.static(distPath, { index: false }));
     
-    // CATCH-ALL DEFINITIVO PARA SPA
-    // Usamos una expresión regular para que NUNCA capture rutas que empiecen por /api
-    // Esto garantiza que si una API falla, devuelva el 404 JSON que definimos arriba
-    app.get(/^(?!\/api).+/, (req, res) => {
+    // 2. Catch-all para la SPA
+    // IMPORTANTE: Solo atendemos peticiones que NO empiecen por /api
+    app.get('*', (req, res, next) => {
+      if (req.path.startsWith('/api')) {
+        return next(); // Seguir al siguiente middleware (que no debería existir o devolver 404)
+      }
       res.sendFile(path.resolve(distPath, 'index.html'));
     });
   } else {
