@@ -101,22 +101,22 @@ async function startServer() {
   // ==========================================
   // 5. STATIC FILES / FRONTEND (SPA)
   // ==========================================
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV === "production") {
+    // Configuración para Producción (Render, etc.)
+    const distPath = path.resolve(__dirname, 'dist');
+    app.use(express.static(distPath));
+    
+    // El "Catch-all" para manejar el routing de React (Single Page Application)
+    app.get('*', (req, res) => {
+      res.sendFile(path.resolve(distPath, 'index.html'));
+    });
+  } else {
     // Configuración para Desarrollo con Vite
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
-  } else {
-    // Configuración para Producción (Render, etc.)
-    const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
-    
-    // El "Catch-all" para manejar el routing de React (Single Page Application)
-    app.all('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
   }
 
   app.listen(Number(PORT), "0.0.0.0", () => {

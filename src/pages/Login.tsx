@@ -41,13 +41,16 @@ const Login: React.FC = () => {
       
       if (res.ok) {
         let data;
+        const responseText = await res.text();
         try {
           addStep("PROCESANDO: Parseando respuesta JSON...");
-          data = await res.json();
+          data = JSON.parse(responseText);
           addStep("ÉXITO: Perfil de usuario cargado.");
         } catch (jsonErr) {
-          addStep("!! ERROR CRÍTICO: La respuesta no es JSON (Se recibió HTML)");
-          throw new Error("ERROR_INFRAESTRUCTURA: El servidor devolvió código HTML. Esto indica que Render no está encontrando la ruta de la API y está devolviendo la página principal.");
+          addStep("!! ERROR CRÍTICO: La respuesta no es JSON.");
+          addStep(`!! HTML RECIBIDO: ${responseText.substring(0, 300)}...`);
+          console.error("CONTENIDO COMPLETO:", responseText);
+          throw new Error("ERROR_INFRAESTRUCTURA: El servidor devolvió código HTML en lugar de datos JSON. Esto confirma que la ruta de API no fue capturada correctamente por el backend.");
         }
 
         if (data.estado === 'Activo') {
@@ -60,7 +63,7 @@ const Login: React.FC = () => {
           } catch (loginErr: any) {
             addStep(`!! FALLA GOOGLE: ${loginErr.code || loginErr.message}`);
             if (loginErr.code === 'auth/popup-blocked') {
-              setError('BLOQUEO DE POPUP: El navegador impidió abrir la ventana de Google. Por favor, haz clic de nuevo o abre la app en una nueva pestaña.');
+              setError('ACCESO BLOQUEADO POR EL NAVEGADOR: Por seguridad, tu navegador ha bloqueado la ventana de Google. Por favor, habilita las ventanas emergentes (popups) para este sitio en la barra de direcciones e intenta de nuevo.');
             } else if (loginErr.code === 'auth/popup-closed-by-user') {
               setError('Has cerrado la ventana de Google antes de completar el acceso.');
             } else {
