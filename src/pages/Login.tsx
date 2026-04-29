@@ -40,22 +40,23 @@ const Login: React.FC = () => {
       addStep(`RECIBIDO: Estatus HTTP ${res.status}`);
       
       if (res.ok) {
-        let data;
+        const contentType = res.headers.get("content-type");
         const responseText = await res.text();
         
-        // Detección Crítica de respuesta HTML (Indica fallo de ruteo en el servidor)
-        if (responseText.toLowerCase().startsWith('<!doctype html')) {
-          addStep("!! FALLO DE INFRAESTRUCTURA: Se recibió HTML en lugar de JSON.");
-          throw new Error("ERROR_INFRAESTRUCTURA: El servidor devolvió el código de la página web en lugar de datos. Esto suele ocurrir cuando el Backend en Render no está respondiendo en las rutas /api.");
+        // 1. VALIDACIÓN TÉCNICA DEL SERVIDOR: ¿Estamos recibiendo datos o la web principal?
+        if (!contentType || !contentType.includes("application/json") || responseText.toLowerCase().startsWith('<!doctype html')) {
+          addStep("!! ERROR DE INFRAESTRUCTURA: El servidor devolvió HTML en una ruta de datos.");
+          throw new Error("ERROR_CONFIGURACION_SERVIDOR: El servidor en Render está mal configurado y devolvió el index.html en lugar de JSON. Detener proceso.");
         }
 
+        let data;
         try {
           addStep("PROCESANDO: Parseando respuesta JSON...");
           data = JSON.parse(responseText);
           addStep("ÉXITO: Perfil de usuario cargado.");
         } catch (jsonErr) {
-          addStep("!! ERROR DE FORMATO: Respuesta JSON inválida.");
-          throw new Error("ERROR_SERIALIZACION: La respuesta del servidor no tiene un formato válido.");
+          addStep("!! ERROR DE SERIALIZACIÓN: Los datos no son un JSON válido.");
+          throw new Error("ERROR_DATOS_CORRUPTOS: La respuesta del servidor no tiene un formato válido para procesar el acceso.");
         }
 
         if (data.estado === 'Activo') {
@@ -68,40 +69,36 @@ const Login: React.FC = () => {
           } catch (loginErr: any) {
             addStep(`!! FALLA GOOGLE: ${loginErr.code || loginErr.message}`);
             if (loginErr.code === 'auth/popup-blocked') {
-              setError('ACCESO BLOQUEADO POR EL NAVEGADOR: Por seguridad, tu navegador ha bloqueado la ventana de Google. Por favor, habilita las ventanas emergentes (popups) para este sitio en la barra de direcciones e intenta de nuevo.');
+              setError('⚠️ VENTANA BLOQUEADA: Tu navegador bloqueó la ventana de autenticación de Google. Por favor, habilite las ventanas emergentes en la configuración de su navegador para este sitio e intente de nuevo.');
             } else if (loginErr.code === 'auth/popup-closed-by-user') {
-              setError('Has cerrado la ventana de Google antes de completar el acceso.');
+              setError('El inicio de sesión fue cancelado al cerrar la ventana de Google.');
             } else {
-              setError(`Falla técnica en Google Auth: ${loginErr.message}`);
+              setError(`Error de autenticación: ${loginErr.message}`);
             }
           }
         } else {
           addStep(`!! BLOQUEADO: Estado de cuenta: ${data.estado}`);
-          setError(`Acceso bloqueado: Su cuenta está en estado '${data.estado}'. Contacte al administrador.`);
+          setError(`Acceso restringido: Su cuenta está '${data.estado}'. Contacte a Soporte.`);
         }
       } else {
         addStep(`!! FALLA API: Estatus ${res.status}`);
         const errorText = await res.text();
         
-        if (errorText.includes('<!doctype html>') || errorText.includes('<!DOCTYPE html>')) {
-          addStep("!! DIAGNÓSTICO: Error de Rutas en Render (404 API Overlap)");
-          setError('ERROR DE ENRUTAMIENTO: El servidor no encontró la API y respondió con la web principal. Esto es un problema de configuración del Servidor en Render.');
+        if (errorText.toLowerCase().includes('<!doctype html')) {
+          setError('❌ ERROR DE ENRUTAMIENTO: El servidor no detectó la API y devolvió la página web principal. Verifique la configuración del backend.');
         } else {
-          setError('El correo electrónico no se encuentra en nuestra base de datos de personal.');
+          setError('El correo institucional no está registrado en el sistema de Publieventos.');
         }
       }
     } catch (err: any) {
-      addStep(`!! INTERRUPCIÓN: ${err.message}`);
+      addStep(`!! INTERRUPCIÓN CRÍTICA: ${err.message}`);
       
-      // Manejo específico de Firebase Popups
-      if (err.code === 'auth/popup-blocked') {
-        setError('⚠️ Ventana emergente bloqueada por el navegador. Por favor, habilítalas para iniciar sesión.');
-      } else if (err.code === 'auth/cancelled-popup-request') {
-        setError('Inicio de sesión cancelado.');
-      } else if (err.message.includes('Unexpected token') || err.message.includes('JSON') || err.message.includes('<!doctype')) {
-        setError('FALLA CRÍTICA: El servidor de Render está devolviendo HTML en una ruta de datos. Esto indica que el proceso de ruteo falló. Intenta recargar la página.');
+      if (err.message.includes('ERROR_CONFIGURACION_SERVIDOR') || err.message.includes('Unexpected token') || err.message.includes('<!doctype')) {
+        setError('❌ FALLA DE SISTEMA: El servidor devolvió HTML en una ruta de datos. Esto indica que el proceso en Render no está ruteando las peticiones a la API correctamente.');
+      } else if (err.message.includes('POPUP_BLOQUEADO')) {
+        setError(err.message);
       } else {
-        setError(`Error del sistema: ${err.message || 'El servicio no responde'}`);
+        setError(`Error crítico: ${err.message || 'El servicio no responde'}`);
       }
     } finally {
       setIsLoading(false);

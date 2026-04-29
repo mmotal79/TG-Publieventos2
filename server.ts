@@ -65,21 +65,20 @@ async function startServer() {
   // 3. RUTAS DE LA API (Prioridad Absoluta)
   // ==========================================
   
-  // Forzamos que cualquier ruta que empiece por /api sea tratada como JSON
-  app.use("/api", (req, res, next) => {
-    res.setHeader('Content-Type', 'application/json');
-    console.log(`[BACKEND_API] Recibida petición: ${req.method} ${req.originalUrl}`);
-    next();
-  });
-
   // Health check
   app.get("/api/health", (req, res) => {
     res.status(200).json({ 
       status: "ok", 
-      db: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
       timestamp: new Date().toISOString(),
       env: process.env.NODE_ENV
     });
+  });
+
+  // Middleware de trazado (Opcional, para debug)
+  app.use("/api", (req, res, next) => {
+    res.setHeader('Content-Type', 'application/json');
+    console.log(`[API] ${req.method} ${req.originalUrl}`);
+    next();
   });
 
   // Montaje de Routers de Negocio
@@ -89,14 +88,13 @@ async function startServer() {
   app.use("/api/config", configRoutes);
 
   // --- API GUARD (Filtro de Seguridad) ---
-  // Si llegamos aquí y la ruta empieza por /api, es un 404 de API real.
-  // Evita que caiga accidentalmente en el catch-all del Frontend.
+  // Cualquier petición que empiece por /api/ y llegue aquí es un 404 real.
+  // Evita que caiga en el catch-all del frontend.
   app.all("/api/*", (req, res) => {
-    console.error(`[API_404] Ruta inexistente solicitada: ${req.method} ${req.originalUrl}`);
+    console.warn(`[404_API] Endpoint inexistente: ${req.method} ${req.originalUrl}`);
     res.status(404).json({ 
-      error: "API_ENDPOINT_NOT_FOUND",
-      message: `El servidor TG-Publieventos no reconoce el endpoint: ${req.originalUrl}`,
-      tip: "Verifica que el nombre del recurso esté bien escrito en el Frontend."
+      error: "Ruta de API no encontrada",
+      message: `El recurso '${req.originalUrl}' no existe en el servidor.` 
     });
   });
 
@@ -104,20 +102,13 @@ async function startServer() {
   // 4. ARCHIVOS ESTÁTICOS Y SPA (Frontend)
   // ==========================================
   if (process.env.NODE_ENV === "production") {
-    // Usamos process.cwd() para asegurar que dist se encuentre en la raíz del proyecto en Render
     const distPath = path.resolve(process.cwd(), 'dist');
-    console.log(`[FRONTEND] Sirviendo archivos estáticos desde: ${distPath}`);
     
-    // Servir assets (JS, CSS, Imágenes)
+    // Servir assets estáticos
     app.use(express.static(distPath, { index: false }));
     
-    // El "Catch-all" para manejar el routing de React (Single Page Application)
-    // Usamos app.get('*') al FINAL de todo para capturar el resto de rutas web
+    // Catch-all para la SPA
     app.get('*', (req, res) => {
-      // Doble verificación: Si por alguna razón llegó una petición de API aquí, abortamos
-      if (req.originalUrl.startsWith('/api')) {
-        return; // Ya debería haber sido manejado por el API GUARD arriba
-      }
       res.sendFile(path.resolve(distPath, 'index.html'));
     });
   } else {
