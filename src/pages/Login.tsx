@@ -42,15 +42,20 @@ const Login: React.FC = () => {
       if (res.ok) {
         let data;
         const responseText = await res.text();
+        
+        // Detección Crítica de respuesta HTML (Indica fallo de ruteo en el servidor)
+        if (responseText.toLowerCase().startsWith('<!doctype html')) {
+          addStep("!! FALLO DE INFRAESTRUCTURA: Se recibió HTML en lugar de JSON.");
+          throw new Error("ERROR_INFRAESTRUCTURA: El servidor devolvió el código de la página web en lugar de datos. Esto suele ocurrir cuando el Backend en Render no está respondiendo en las rutas /api.");
+        }
+
         try {
           addStep("PROCESANDO: Parseando respuesta JSON...");
           data = JSON.parse(responseText);
           addStep("ÉXITO: Perfil de usuario cargado.");
         } catch (jsonErr) {
-          addStep("!! ERROR CRÍTICO: La respuesta no es JSON.");
-          addStep(`!! HTML RECIBIDO: ${responseText.substring(0, 300)}...`);
-          console.error("CONTENIDO COMPLETO:", responseText);
-          throw new Error("ERROR_INFRAESTRUCTURA: El servidor devolvió código HTML en lugar de datos JSON. Esto confirma que la ruta de API no fue capturada correctamente por el backend.");
+          addStep("!! ERROR DE FORMATO: Respuesta JSON inválida.");
+          throw new Error("ERROR_SERIALIZACION: La respuesta del servidor no tiene un formato válido.");
         }
 
         if (data.estado === 'Activo') {
@@ -87,10 +92,16 @@ const Login: React.FC = () => {
       }
     } catch (err: any) {
       addStep(`!! INTERRUPCIÓN: ${err.message}`);
-      if (err.message.includes('Unexpected token') || err.message.includes('JSON')) {
-        setError('FALLA DE INFRAESTRUCTURA: Se recibió una respuesta HTML del servidor en una ruta que debería ser de datos (API). Verifique que los proxies de Render apunten correctamente al backend.');
+      
+      // Manejo específico de Firebase Popups
+      if (err.code === 'auth/popup-blocked') {
+        setError('⚠️ Ventana emergente bloqueada por el navegador. Por favor, habilítalas para iniciar sesión.');
+      } else if (err.code === 'auth/cancelled-popup-request') {
+        setError('Inicio de sesión cancelado.');
+      } else if (err.message.includes('Unexpected token') || err.message.includes('JSON') || err.message.includes('<!doctype')) {
+        setError('FALLA CRÍTICA: El servidor de Render está devolviendo HTML en una ruta de datos. Esto indica que el proceso de ruteo falló. Intenta recargar la página.');
       } else {
-        setError(`Falla de conexión: ${err.message || 'El servicio no responde'}`);
+        setError(`Error del sistema: ${err.message || 'El servicio no responde'}`);
       }
     } finally {
       setIsLoading(false);

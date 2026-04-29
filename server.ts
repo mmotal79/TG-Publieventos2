@@ -65,70 +65,60 @@ async function startServer() {
   // 3. RUTAS DE LA API (Prioridad Absoluta)
   // ==========================================
   
-  // Health check - Simple y directo para verificar el servidor
+  // Forzamos que cualquier ruta que empiece por /api sea tratada como JSON
+  app.use("/api", (req, res, next) => {
+    res.setHeader('Content-Type', 'application/json');
+    console.log(`[BACKEND_API] Recibida petición: ${req.method} ${req.originalUrl}`);
+    next();
+  });
+
+  // Health check
   app.get("/api/health", (req, res) => {
     res.status(200).json({ 
       status: "ok", 
       db: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
       timestamp: new Date().toISOString(),
-      node_env: process.env.NODE_ENV,
-      port: PORT
+      env: process.env.NODE_ENV
     });
   });
 
-  // Middleware de trazado de API para depuración en producción
-  app.use("/api", (req, res, next) => {
-    res.setHeader('Content-Type', 'application/json');
-    console.log(`[API_CALL] ${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
-    next();
-  });
-
-  // Montaje de Routers directamente en app para evitar problemas de anidación
+  // Montaje de Routers de Negocio
   app.use("/api/users", userRoutes);
   app.use("/api/catalogs", catalogRoutes);
   app.use("/api/clients", clientRoutes);
   app.use("/api/config", configRoutes);
 
-  // GUARDIA FINAL PARA API: 
-  // Cualquier petición que empiece por /api y llegue aquí es un 404 REAL de API
+  // --- API GUARD (Filtro de Seguridad) ---
+  // Si llegamos aquí y la ruta empieza por /api, es un 404 de API real.
+  // Evita que caiga accidentalmente en el catch-all del Frontend.
   app.all("/api/*", (req, res) => {
-    console.error(`[404_API_HALT] Endpoint no encontrado: ${req.method} ${req.originalUrl}`);
+    console.error(`[API_404] Ruta inexistente solicitada: ${req.method} ${req.originalUrl}`);
     res.status(404).json({ 
       error: "API_ENDPOINT_NOT_FOUND",
-      message: `El servidor no reconoce la ruta '${req.originalUrl}'. Verifica el prefijo /api/.`,
-      method: req.method,
-      path: req.path
+      message: `El servidor TG-Publieventos no reconoce el endpoint: ${req.originalUrl}`,
+      tip: "Verifica que el nombre del recurso esté bien escrito en el Frontend."
     });
   });
 
   // ==========================================
-  // 4. STATIC FILES / FRONTEND (SPA)
+  // 4. ARCHIVOS ESTÁTICOS Y SPA (Frontend)
   // ==========================================
-  if (process.env.NODE_ENV === "production" || process.env.RENDER === "true") {
+  if (process.env.NODE_ENV === "production") {
+    // Usamos process.cwd() para asegurar que dist se encuentre en la raíz del proyecto en Render
     const distPath = path.resolve(process.cwd(), 'dist');
-    console.log(`[PROD_MODE] Sirviendo archivos desde: ${distPath}`);
+    console.log(`[FRONTEND] Sirviendo archivos estáticos desde: ${distPath}`);
     
-    // Sirve archivos estáticos (JS, CSS, Imágenes)
+    // Servir assets (JS, CSS, Imágenes)
     app.use(express.static(distPath, { index: false }));
     
-    // Catch-all para la SPA (React Router)
+    // El "Catch-all" para manejar el routing de React (Single Page Application)
+    // Usamos app.get('*') al FINAL de todo para capturar el resto de rutas web
     app.get('*', (req, res) => {
-      // Verificación de seguridad redundante
+      // Doble verificación: Si por alguna razón llegó una petición de API aquí, abortamos
       if (req.originalUrl.startsWith('/api')) {
-        console.warn(`[CATCHALL_LEAK] Una petición de API llegó al catch-all de SPA: ${req.originalUrl}`);
-        return res.status(404).json({ 
-          error: "API_REACHED_FRONTEND_CATCHALL",
-          message: "Esta ruta de API no existe y casi se sirve como HTML." 
-        });
+        return; // Ya debería haber sido manejado por el API GUARD arriba
       }
-      
-      const indexPath = path.resolve(distPath, 'index.html');
-      res.sendFile(indexPath, (err) => {
-        if (err) {
-          console.error(`[SPA_ERROR] No se pudo enviar index.html: ${err.message}`);
-          res.status(500).send("Error interno: No se encontró el archivo de la aplicación (dist/index.html). Verifica el comando de build.");
-        }
-      });
+      res.sendFile(path.resolve(distPath, 'index.html'));
     });
   } else {
     // Configuración para Desarrollo con Vite
