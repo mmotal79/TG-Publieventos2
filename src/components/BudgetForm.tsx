@@ -614,7 +614,9 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                           render={({ field }) => (
                             <Select value={field.value || ""} onValueChange={field.onChange}>
                               <SelectTrigger className="h-11 border-2 border-slate-50 rounded-xl font-bold uppercase italic text-sm">
-                                <SelectValue placeholder="Modelo..." />
+                                <SelectValue placeholder="Modelo...">
+                                  {modelos.find(m => m._id === field.value)?.tipoPrenda}
+                                </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 {modelos.map(m => (
@@ -635,7 +637,9 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                             render={({ field }) => (
                               <Select value={field.value || ""} onValueChange={field.onChange}>
                                 <SelectTrigger className="h-11 border-2 border-slate-50 rounded-xl font-bold uppercase italic text-sm">
-                                  <SelectValue placeholder="Tela..." />
+                                  <SelectValue placeholder="Tela...">
+                                    {telas.find(t => t._id === field.value)?.nombre}
+                                  </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                   {telas.map(t => (
@@ -654,7 +658,9 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                             render={({ field }) => (
                               <Select value={field.value || ""} onValueChange={field.onChange}>
                                 <SelectTrigger className="h-11 border-2 border-slate-50 rounded-xl font-bold uppercase italic text-sm">
-                                  <SelectValue placeholder="Corte..." />
+                                  <SelectValue placeholder="Corte...">
+                                    {cortes.find(c => c._id === field.value)?.nombre}
+                                  </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
                                   {cortes.map(c => (
