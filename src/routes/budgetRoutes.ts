@@ -13,10 +13,30 @@ router.get("/", async (req, res) => {
   try {
     const budgets = await BudgetModel.find()
       .populate('clientId')
+      .populate('items.modeloId')
+      .populate('items.telaId')
+      .populate('items.corteId')
+      .populate('estructuraCostosId')
       .sort({ createdAt: -1 });
     res.json(budgets);
   } catch (error) {
     res.status(500).json({ error: "Error al obtener presupuestos" });
+  }
+});
+
+// Get individual budget
+router.get("/:id", async (req, res) => {
+  try {
+    const budget = await BudgetModel.findById(req.params.id)
+      .populate('clientId')
+      .populate('items.modeloId')
+      .populate('items.telaId')
+      .populate('items.corteId')
+      .populate('estructuraCostosId');
+    if (!budget) return res.status(404).json({ error: "Presupuesto no encontrado" });
+    res.json(budget);
+  } catch (error) {
+    res.status(500).json({ error: "Error al obtener el presupuesto" });
   }
 });
 

@@ -21,8 +21,11 @@ const BudgetSchema = new Schema({
   estructuraCostosId: { type: Schema.Types.ObjectId, ref: 'EstructuraCostos', required: true },
   urgencia: { type: String, enum: ['normal', 'urgente', 'planificada'], default: 'normal' },
   description: { type: String, required: true },
+  observations: { type: String },
   items: [BudgetItemSchema],
   totalCost: { type: Number, required: true },
+  volumeDiscountAmount: { type: Number, default: 0 },
+  volumeDiscountPercent: { type: Number, default: 0 },
   status: { type: String, enum: ['pending', 'approved', 'rejected', 'in_production'], default: 'pending' },
   fecha: { type: Date, default: Date.now }
 }, { timestamps: true });

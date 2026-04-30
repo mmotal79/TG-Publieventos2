@@ -4,9 +4,21 @@
  */
 
 import User from '../models/User.model.js';
+import mongoose from 'mongoose';
 
 export const initializeAdmin = async () => {
   try {
+    // 1. Eliminar colección antigua si el usuario lo solicitó (Migración rápida)
+    try {
+      const collections = await mongoose.connection.db.listCollections({ name: 'presupuestos' }).toArray();
+      if (collections.length > 0) {
+        console.log('[DB-INIT] Eliminando colección obsoleta "presupuestos"...');
+        await mongoose.connection.db.dropCollection('presupuestos');
+      }
+    } catch (e) {
+      console.log('[DB-INIT] No se pudo limpiar colecciones antiguas:', e);
+    }
+
     const adminEmail = 'mmotal@gmail.com';
     const existingAdmin = await User.findOne({ email: adminEmail });
 

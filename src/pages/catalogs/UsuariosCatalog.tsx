@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,7 +56,7 @@ const UsuariosCatalog: React.FC = () => {
   const currentRole = profile?.role ?? 4;
   const hasAccess = currentRole === 0 || currentRole === 1;
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<UserFormValues>({
+  const { register, control, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<UserFormValues>({
     resolver: zodResolver(userSchema),
     defaultValues: {
       rol: 3,
@@ -312,41 +312,61 @@ const UsuariosCatalog: React.FC = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="rol">Rol</Label>
-                <Select 
-                  value={selectedRole.toString()} 
-                  onValueChange={(v) => setValue('rol', parseInt(v))}
-                  disabled={currentRole === 1 && selectedRole === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {currentRole === 0 && <SelectItem value="0">Admin</SelectItem>}
-                    <SelectItem value="1">Gerente</SelectItem>
-                    <SelectItem value="2">Vendedor</SelectItem>
-                    <SelectItem value="3">Empleado</SelectItem>
-                    <SelectItem value="4">Cliente</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  control={control}
+                  name="rol"
+                  render={({ field }) => (
+                    <Select 
+                      value={field.value?.toString() || "3"} 
+                      onValueChange={(v) => field.onChange(parseInt(v))}
+                      disabled={currentRole === 1 && selectedRole === 0}
+                    >
+                      <SelectTrigger id="rol">
+                        <SelectValue placeholder="Seleccione un rol">
+                          {field.value === 0 ? "Administrador" : 
+                           field.value === 1 ? "Gerente" : 
+                           field.value === 2 ? "Vendedor" : 
+                           field.value === 3 ? "Empleado" : 
+                           field.value === 4 ? "Cliente" : ""}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {currentRole === 0 && <SelectItem value="0">Administrador</SelectItem>}
+                        <SelectItem value="1">Gerente</SelectItem>
+                        <SelectItem value="2">Vendedor</SelectItem>
+                        <SelectItem value="3">Empleado</SelectItem>
+                        <SelectItem value="4">Cliente</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 {errors.rol && <p className="text-xs text-destructive">{errors.rol.message}</p>}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="estado">Estado</Label>
-                <Select 
-                  value={watch('estado')} 
-                  onValueChange={(v: any) => setValue('estado', v)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Activo">Activo (Permitir acceso)</SelectItem>
-                    <SelectItem value="Bloqueado">Bloqueado</SelectItem>
-                    <SelectItem value="Suspendido">Suspendido</SelectItem>
-                    <SelectItem value="Baja Laboral">Baja Laboral</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  control={control}
+                  name="estado"
+                  render={({ field }) => (
+                    <Select 
+                      value={field.value || ""} 
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger id="user-status-select">
+                        <SelectValue placeholder="Seleccione un estado">
+                          {field.value}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Activo">Activo (Permitir acceso)</SelectItem>
+                        <SelectItem value="Bloqueado">Bloqueado</SelectItem>
+                        <SelectItem value="Suspendido">Suspendido</SelectItem>
+                        <SelectItem value="Baja Laboral">Baja Laboral</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
 
               {selectedRole !== 4 && (
@@ -361,19 +381,27 @@ const UsuariosCatalog: React.FC = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="frecuenciaPago">Frecuencia de Salario</Label>
-                    <Select 
-                      value={watch('frecuenciaPago')} 
-                      onValueChange={(v: any) => setValue('frecuenciaPago', v)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Semanal">Semanal</SelectItem>
-                        <SelectItem value="Quincenal">Quincenal</SelectItem>
-                        <SelectItem value="Mensual">Mensual</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Controller
+                      control={control}
+                      name="frecuenciaPago"
+                      render={({ field }) => (
+                        <Select 
+                          value={field.value || ""} 
+                          onValueChange={field.onChange}
+                        >
+                          <SelectTrigger id="user-pay-freq-select">
+                            <SelectValue>
+                              {field.value}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Semanal">Semanal</SelectItem>
+                            <SelectItem value="Quincenal">Quincenal</SelectItem>
+                            <SelectItem value="Mensual">Mensual</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
+                    />
                   </div>
                 </>
               )}

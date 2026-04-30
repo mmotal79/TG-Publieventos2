@@ -4,10 +4,10 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Plus, Trash2, Calculator, UserPlus, Info, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Calculator, UserPlus, Info, Loader2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,15 +16,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ClientFormModal } from './ClientFormModal';
 import { formatCurrency } from '@/services/budgetService';
+import { cn } from '@/lib/utils';
 import { Client, Tela, Modelo, Corte, EstructuraCostos, Budget } from '@/types';
+import BudgetPreviewDialog from './BudgetPreviewDialog';
 
 const budgetItemSchema = z.object({
   id: z.string(),
   modeloId: z.string().min(1, "Requerido"),
   telaId: z.string().min(1, "Requerido"),
   corteId: z.string().min(1, "Requerido"),
-  personalizacion: z.number().min(0),
-  acabados: z.number().min(0),
+  personalizacion: z.number().min(0).optional().default(0),
+  acabados: z.number().min(0).optional().default(0),
   cantidad: z.number().min(1),
 });
 
@@ -33,6 +35,7 @@ const budgetSchema = z.object({
   estructuraCostosId: z.string().min(1, "Seleccione una estructura"),
   urgencia: z.enum(['normal', 'urgente', 'planificada']),
   description: z.string().min(1, "Ingrese una descripción"),
+  observations: z.string().optional(),
   items: z.array(budgetItemSchema).min(1, "Agregue al menos un item"),
 });
 
@@ -51,6 +54,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
   const [estructuras, setEstructuras] = useState<EstructuraCostos[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetSchema),
@@ -62,7 +66,10 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
 
   useEffect(() => {
     if (initialData) {
-      reset(initialData);
+      reset({
+        ...initialData,
+        observations: initialData.observations || initialData.notes || ""
+      });
     }
   }, [initialData, reset]);
 
@@ -71,9 +78,11 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
     name: "items"
   });
 
-  const watchedItems = watch("items");
-  const watchedEstructuraId = watch("estructuraCostosId");
-  const watchedUrgencia = watch("urgencia");
+  const watchedItems = useWatch({ control, name: "items" }) || [];
+  const watchedEstructuraId = useWatch({ control, name: "estructuraCostosId" });
+  const watchedUrgencia = useWatch({ control, name: "urgencia" });
+
+  const watchedClientId = useWatch({ control, name: "clientId" });
 
   useEffect(() => {
     const loadData = async () => {
@@ -87,8 +96,8 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
         ]);
         
         if (cRes.ok) {
-          const clientData: Client[] = await cRes.json();
-          setClients(clientData.sort((a, b) => a.razonSocial.localeCompare(b.razonSocial)));
+          const clientData = await cRes.json();
+          setClients(clientData.sort((a: Client, b: Client) => a.razonSocial.localeCompare(b.razonSocial)));
         }
         if (tRes.ok) setTelas(await tRes.json());
         if (mRes.ok) setModelos(await mRes.json());
@@ -102,58 +111,96 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
     };
     loadData();
   }, []);
+  const selectedClient = useMemo(() => 
+    clients.find(c => c._id === watchedClientId),
+    [clients, watchedClientId]
+  );
 
   const selectedEstructura = useMemo(() => 
     estructuras.find(e => e._id === watchedEstructuraId),
     [estructuras, watchedEstructuraId]
   );
 
-  const itemCalculations = useMemo(() => {
-    if (!selectedEstructura) return [];
+  const { itemCalculations, volumeDiscountInfo } = useMemo(() => {
+    if (!selectedEstructura) {
+      return { 
+        itemCalculations: watchedItems.map(() => ({ unit: 0, total: 0, baseUnit: 0 })),
+        volumeDiscountInfo: { hasDiscount: false, amount: 0, percent: 0 }
+      };
+    }
 
-    return watchedItems.map(item => {
+    let totalSavingsAccumulator = 0;
+    let totalBaseAmountAccumulator = 0;
+
+    const calculations = watchedItems.map(item => {
       const modelo = modelos.find(m => m._id === item.modeloId);
       const tela = telas.find(t => t._id === item.telaId);
       const corte = cortes.find(c => c._id === item.corteId);
 
-      if (!modelo || !tela || !corte) return { unit: 0, total: 0 };
+      if (!modelo || !tela || !corte) return { unit: 0, total: 0, baseUnit: 0 };
 
-      // Total_Item = (((Costo_Tela * Factor_Corte) + (Costo_Modelo * Factor_Complejidad) + Costos_Personalización + Acabados) * Factor_Volumen) * Recargo_Urgencia
-      
-      const Costo_Tela = tela.costoPorMetro;
-      const Factor_Corte = corte.factorConsumoTela;
+      const Costo_Tela = tela.costoPorMetro || 0;
+      const Factor_Corte = corte.factorConsumoTela || 0;
       const Costo_Modelo = modelo.costoBase || 0;
       const Factor_Complejidad = modelo.factorComplejidad || 1.0;
+      const personalizacion = isNaN(item.personalizacion) ? 0 : (item.personalizacion || 0);
+      const acabados = isNaN(item.acabados) ? 0 : (item.acabados || 0);
+      const cantidad = isNaN(item.cantidad) ? 0 : (item.cantidad || 0);
 
-      // Base: (Costo_Tela * Factor_Corte) + (Costo_Modelo * Factor_Complejidad) + Personalización + Acabados
-      const baseCost = (Costo_Tela * Factor_Corte) + (Costo_Modelo * Factor_Complejidad) + (item.personalizacion || 0) + (item.acabados || 0);
+      if (cantidad <= 0) return { unit: 0, total: 0, baseUnit: 0 };
 
-      // Factor Volumen
-      let factorVolumen = 1.0;
-      const range = selectedEstructura.factoresVolumen.find(f => 
-        item.cantidad >= f.minUnidades && item.cantidad <= f.hastaUnidades
-      );
-      if (range) factorVolumen = range.multiplicador;
+      const baseCost = (Costo_Tela * Factor_Corte) + (Costo_Modelo * Factor_Complejidad) + personalizacion + acabados;
+      const margen = selectedEstructura.margenGanancia || 0;
+      const totalConMargen = baseCost * (1 + (margen / 100));
 
-      // Recargo Urgencia
-      const recargos = selectedEstructura.recargosUrgencia;
-      let recargoUrgent = 0;
-      if (watchedUrgencia === 'urgente') recargoUrgent = recargos.urgente;
-      else if (watchedUrgencia === 'planificada') recargoUrgent = recargos.planificada;
-      else recargoUrgent = recargos.normal;
-
+      const recargos = selectedEstructura.recargosUrgencia || { normal: 0, urgente: 0, planificada: 0 };
+      const recargoUrgent = watchedUrgencia === 'urgente' ? (recargos.urgente || 0) : 
+                          watchedUrgencia === 'planificada' ? (recargos.planificada || 0) : 
+                          (recargos.normal || 0);
       const urgencyMultiplier = 1 + (recargoUrgent / 100);
 
-      // Margen de ganancia de la estructura
-      const totalConMargen = baseCost * (1 + (selectedEstructura.margenGanancia / 100));
+      // Current Volume Factor
+      let factorVolumen = 1.0;
+      if (selectedEstructura.factoresVolumen) {
+        const range = selectedEstructura.factoresVolumen.find(f => 
+          cantidad >= f.minUnidades && cantidad <= f.hastaUnidades
+        );
+        if (range) factorVolumen = range.multiplicador;
+      }
 
-      const precioUnitario = (totalConMargen * factorVolumen) * urgencyMultiplier;
+      // 1-Unit Volume Factor (Reference)
+      let factorVolumenOne = 1.0;
+      if (selectedEstructura.factoresVolumen) {
+        const rangeOne = selectedEstructura.factoresVolumen.find(f => 
+          1 >= f.minUnidades && 1 <= f.hastaUnidades
+        );
+        if (rangeOne) factorVolumenOne = rangeOne.multiplicador;
+      }
+
+      const baseUnitPrice = totalConMargen * urgencyMultiplier * factorVolumenOne;
+      const precioUnitario = (totalConMargen * urgencyMultiplier) * factorVolumen;
+
+      const lineSavings = (baseUnitPrice - precioUnitario) * cantidad;
+      totalSavingsAccumulator += Math.max(0, lineSavings);
+      totalBaseAmountAccumulator += baseUnitPrice * cantidad;
       
       return {
-        unit: precioUnitario,
-        total: precioUnitario * item.cantidad
+        unit: isNaN(precioUnitario) ? 0 : precioUnitario,
+        total: isNaN(precioUnitario * cantidad) ? 0 : precioUnitario * cantidad,
+        baseUnit: isNaN(baseUnitPrice) ? 0 : baseUnitPrice
       };
     });
+
+    const percentResult = totalBaseAmountAccumulator > 0 ? Math.round((totalSavingsAccumulator / totalBaseAmountAccumulator) * 100) : 0;
+    
+    return {
+      itemCalculations: calculations,
+      volumeDiscountInfo: {
+        hasDiscount: totalSavingsAccumulator > 0.01,
+        amount: totalSavingsAccumulator,
+        percent: percentResult
+      }
+    };
   }, [watchedItems, selectedEstructura, watchedUrgencia, modelos, telas, cortes]);
 
   const grandTotal = useMemo(() => 
@@ -172,6 +219,8 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
         totalItem: itemCalculations[idx].total
       })),
       totalCost: grandTotal,
+      volumeDiscountAmount: volumeDiscountInfo.amount,
+      volumeDiscountPercent: volumeDiscountInfo.percent,
       status: 'pending',
       fecha: new Date().toISOString()
     };
@@ -210,211 +259,357 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-1 space-y-4">
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-bold uppercase text-slate-500">Configuración de Cliente</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+      {/* Top Section: General Info & Totalizer */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Info className="w-5 h-5 text-primary" />
+              Información General
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Cliente</Label>
                 <div className="flex gap-2">
-                  <Select onValueChange={(v: string) => setValue("clientId", v)}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder="Buscar cliente..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {clients.map(c => (
-                        <SelectItem key={c._id} value={c._id!}>{c.razonSocial}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Controller
+                    control={control}
+                    name="clientId"
+                    render={({ field }) => (
+                      <Select 
+                        value={field.value || ""} 
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger id="budgets-client-select" className="flex-1">
+                          <SelectValue placeholder="Seleccionar cliente...">
+                            {clients.find(c => c._id === field.value)?.razonSocial}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clients.map(c => (
+                            <SelectItem key={c._id} value={c._id!}>{c.razonSocial}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
                   <Button type="button" size="icon" variant="outline" onClick={() => setIsClientModalOpen(true)}>
                     <UserPlus size={18} />
                   </Button>
                 </div>
+                {selectedClient && (
+                  <div className="text-[10px] bg-slate-50 p-2 rounded border mt-2 flex flex-wrap gap-x-4">
+                    <span><strong>Email:</strong> {selectedClient.email}</span>
+                    <span><strong>Tel:</strong> {selectedClient.telefono}</span>
+                    <span><strong>NIT:</strong> {selectedClient.nit}</span>
+                  </div>
+                )}
                 {errors.clientId && <p className="text-xs text-destructive">{errors.clientId.message}</p>}
               </div>
 
               <div className="space-y-2">
                 <Label>Estructura de Costos</Label>
-                <Select onValueChange={(v: string) => setValue("estructuraCostosId", v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccione lógica..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {estructuras.map(e => (
-                      <SelectItem key={e._id} value={e._id!}>{e.nombre}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  control={control}
+                  name="estructuraCostosId"
+                  render={({ field }) => (
+                    <Select 
+                      value={field.value || ""} 
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger id="budgets-structure-select">
+                        <SelectValue placeholder="Seleccione lógica de cálculo...">
+                          {estructuras.find(e => e._id === field.value)?.nombre}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {estructuras.map(e => (
+                          <SelectItem key={e._id} value={e._id!}>{e.nombre}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {selectedEstructura && (
+                  <div className="text-[10px] bg-blue-50 p-2 rounded border border-blue-100 text-blue-700 mt-2">
+                    Margen: {selectedEstructura.margenGanancia}% | IVA: {selectedEstructura.iva}%
+                  </div>
+                )}
                 {errors.estructuraCostosId && <p className="text-xs text-destructive">{errors.estructuraCostosId.message}</p>}
               </div>
+            </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Nivel de Urgencia</Label>
-                <Select defaultValue="normal" onValueChange={(v: any) => setValue("urgencia", v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="planificada">Planificada (Descuento)</SelectItem>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="urgente">Urgente (Recargo)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Descripción / Referencia</Label>
-                <Input {...register("description")} placeholder="Ej: Uniformes Evento Mayo" />
+                <Label>Descripción del Proyecto</Label>
+                <Input {...register("description")} placeholder="Ej: Uniformes Corporativos para Evento Anual" />
                 {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
               </div>
-            </CardContent>
-          </Card>
+              <div className="space-y-2">
+                <Label>Notas de la Solicitud (Comentarios del cliente)</Label>
+                <Input {...register("observations")} placeholder="Ej: Reclamo por entrega anterior, requiere bordado extra..." />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-          {selectedEstructura && (
-            <Card className="bg-blue-50 border-blue-200">
-              <CardContent className="pt-4 space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-blue-700">Margen de Estructura:</span>
-                  <span className="font-bold">{selectedEstructura.margenGanancia}%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-blue-700">IVA:</span>
-                  <span className="font-bold">{selectedEstructura.iva}%</span>
-                </div>
-                <div className="flex justify-between border-t border-blue-100 pt-1">
-                  <span className="text-blue-700">Factor Volumen Activo:</span>
-                  <span className="font-bold text-blue-900">
-                    {itemCalculations[0]?.unit > 0 ? "Aplicado" : "N/A"}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+        <Card className="bg-slate-950 border-slate-800 text-white flex flex-col justify-between shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-t-4 border-t-primary">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-white text-xs uppercase tracking-widest font-black flex items-center gap-2">
+              <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+              Resumen del Presupuesto
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="text-center py-6 bg-white/5 rounded-2xl border border-white/10 backdrop-blur-sm overflow-hidden px-2 min-h-[140px] flex flex-col justify-center">
+              <p className={cn(
+                "font-black text-white drop-shadow-[0_2px_15px_rgba(255,255,255,0.3)] transition-all duration-300 break-all leading-tight",
+                grandTotal.toString().length > 16 ? "text-xl" :
+                grandTotal.toString().length > 14 ? "text-2xl" :
+                grandTotal.toString().length > 12 ? "text-3xl" : 
+                grandTotal.toString().length > 10 ? "text-4xl" : "text-5xl"
+              )}>
+                {formatCurrency(grandTotal)}
+              </p>
+              <p className="text-[10px] text-slate-400 mt-2 uppercase font-bold tracking-widest opacity-80">Total Estimado (Inc. Margen)</p>
+            </div>
 
-        <div className="md:col-span-2 space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              Líneas de Producción
-              <Badge variant="outline" className="ml-2">{fields.length}</Badge>
-            </h3>
-            <Button type="button" variant="default" size="sm" onClick={() => append({ id: crypto.randomUUID(), modeloId: '', telaId: '', corteId: '', personalizacion: 0, acabados: 0, cantidad: 12 })}>
-              <Plus className="w-4 h-4 mr-2" /> Agregar Item
-            </Button>
-          </div>
+            <div className="space-y-4 pt-4 border-t border-white/10">
+              <div className="grid grid-cols-2 gap-3 items-start">
+                <div className="space-y-2">
+                  <Label className="text-white text-[10px] font-bold uppercase tracking-widest opacity-60">Nivel de Urgencia</Label>
+                  <Controller
+                    control={control}
+                    name="urgencia"
+                    render={({ field }) => (
+                      <Select 
+                        value={field.value || ""} 
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger className="bg-slate-800 border-slate-700 text-white h-9 transition-all hover:bg-slate-700">
+                          <SelectValue>
+                            {field.value === 'planificada' ? '🕒 Planificada' : 
+                             field.value === 'normal' ? '✅ Normal' : 
+                             field.value === 'urgente' ? '🔥 Urgente' : ''}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="planificada">🕒 Planificada</SelectItem>
+                          <SelectItem value="normal">✅ Normal</SelectItem>
+                          <SelectItem value="urgente">🔥 Urgente</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
 
-          <div className="space-y-4">
-            {fields.map((field, index) => (
-              <Card key={field.id} className="overflow-hidden border-l-4 border-l-primary">
-                <CardContent className="p-4 md:p-6 pb-4">
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded uppercase">Item #{index + 1}</span>
-                    {fields.length > 1 && (
-                      <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => remove(index)}>
-                        <Trash2 size={14} />
-                      </Button>
+                <div className="space-y-2">
+                  <Label className="text-white text-[10px] font-black uppercase tracking-widest opacity-60 flex justify-between">
+                    <span>DESC. X VOLUMEN: {volumeDiscountInfo.hasDiscount ? `-${volumeDiscountInfo.percent}%` : ''}</span>
+                  </Label>
+                  <div className="bg-slate-800 border border-slate-700 text-white h-9 flex items-center px-3 rounded-md transition-all shadow-inner group overflow-hidden">
+                    {volumeDiscountInfo.hasDiscount ? (
+                      <span className="text-sm font-bold text-emerald-400 group-hover:scale-105 transition-transform duration-300 animate-in fade-in slide-in-from-bottom-1">
+                        {formatCurrency(volumeDiscountInfo.amount)}
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 italic text-[10px] w-full text-center opacity-50">No aplica</span>
                     )}
                   </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-3">
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase text-slate-500 font-bold">Modelo / Prenda</Label>
-                      <Select onValueChange={(v: string) => setValue(`items.${index}.modeloId`, v)}>
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Seleccione..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {modelos.map(m => (
-                            <SelectItem key={m._id} value={m._id}>{m.tipoPrenda} ({m.nivelComplejidad})</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase text-slate-500 font-bold">Tela / Material</Label>
-                      <Select onValueChange={(v: string) => setValue(`items.${index}.telaId`, v)}>
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Seleccione..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {telas.map(t => (
-                            <SelectItem key={t._id} value={t._id}>{t.nombre} (${t.costoPorMetro}/m)</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase text-slate-500 font-bold">Corte / Consumo</Label>
-                      <Select onValueChange={(v: string) => setValue(`items.${index}.corteId`, v)}>
-                        <SelectTrigger className="h-9">
-                          <SelectValue placeholder="Seleccione..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {cortes.map(c => (
-                            <SelectItem key={c._id} value={c._id}>{c.nombre} ({c.factorConsumoTela}m)</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 col-span-1 md:col-span-2 lg:col-span-3">
-                      <div className="space-y-1">
-                        <Label className="text-[10px] uppercase text-slate-500 font-bold">Personalización ($)</Label>
-                        <Input type="number" step="0.01" className="h-9" {...register(`items.${index}.personalizacion`, { valueAsNumber: true })} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] uppercase text-slate-500 font-bold">Acabados ($)</Label>
-                        <Input type="number" step="0.01" className="h-9" {...register(`items.${index}.acabados`, { valueAsNumber: true })} />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] uppercase text-slate-500 font-bold">Cantidad (Unds)</Label>
-                        <Input type="number" className="h-9 border-primary/50" {...register(`items.${index}.cantidad`, { valueAsNumber: true })} />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 pt-3 border-t flex justify-between items-center text-sm">
-                    <span className="text-muted-foreground italic flex items-center gap-1">
-                      <Info size={12} /> Unitario: {formatCurrency(itemCalculations[index]?.unit || 0)}
-                    </span>
-                    <span className="font-bold text-lg text-primary">
-                      {formatCurrency(itemCalculations[index]?.total || 0)}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <Card className="bg-slate-900 text-white shadow-xl sticky bottom-4 z-10 mx-[-1rem] md:mx-0">
-            <CardContent className="p-6 flex flex-col md:flex-row justify-between items-center gap-4">
-              <div className="flex items-center gap-4 w-full md:w-auto">
-                <div className="bg-primary/20 p-3 rounded-full">
-                  <Calculator className="w-8 h-8 text-primary" />
-                </div>
-                <div>
-                  <p className="text-[10px] text-slate-400 uppercase tracking-widest font-black">Subtotal Presupuestado</p>
-                  <p className="text-4xl font-black">{formatCurrency(grandTotal)}</p>
                 </div>
               </div>
-              <div className="flex gap-2 w-full md:w-auto">
-                <Button type="button" variant="outline" className="flex-1 bg-white/5 border-white/20 hover:bg-white/10" onClick={() => window.location.reload()}>
-                  Limpiar
+
+              <div className="grid grid-cols-1 gap-2 pt-2">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full bg-white/5 border-white/20 hover:bg-white/10 hover:text-white flex items-center gap-2"
+                  onClick={() => setIsPreviewOpen(true)}
+                  disabled={watchedItems.length === 0 || !watchedClientId || !watchedEstructuraId}
+                >
+                  <Eye size={16} /> Visualizar Presupuesto
                 </Button>
-                <Button type="submit" size="lg" className="flex-[2] md:flex-none md:min-w-[200px] shadow-lg shadow-primary/20 transition-all hover:scale-[1.02]">
-                  Generar Presupuesto
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    className="flex-1 bg-white/5 border-white/20 hover:bg-white/10 hover:text-white" 
+                    onClick={() => onCancel ? onCancel() : window.location.reload()}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button type="submit" className="flex-1 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-white font-bold">
+                    {initialData?._id ? 'Actualizar' : 'Guardar'}
+                  </Button>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Item Table Selection */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="text-lg">Detalle del Pedido</CardTitle>
+            <p className="text-xs text-muted-foreground">Especifique modelos, materiales y cantidades.</p>
+          </div>
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm" 
+            className="gap-2 border-primary text-primary hover:bg-primary/10 transition-all font-bold"
+            onClick={() => append({ id: crypto.randomUUID(), modeloId: '', telaId: '', corteId: '', personalizacion: 0, acabados: 0, cantidad: 12 })}
+          >
+            <Plus size={16} /> Nuevo Item
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto border rounded-lg">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b">
+                <tr>
+                  <th className="px-4 py-3 min-w-[200px]">Modelo / Prenda</th>
+                  <th className="px-4 py-3 min-w-[200px]">Tela / Material</th>
+                  <th className="px-4 py-3 min-w-[150px]">Corte / Consumo</th>
+                  <th className="px-4 py-3 min-w-[120px]">Pers. ($)</th>
+                  <th className="px-4 py-3 min-w-[120px]">Acab. ($)</th>
+                  <th className="px-4 py-3 min-w-[100px]">Cant.</th>
+                  <th className="px-4 py-3 text-right">Unitario</th>
+                  <th className="px-4 py-3 text-right">Total</th>
+                  <th className="px-4 py-3 text-center w-10"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {fields.map((field, index) => (
+                  <tr key={field.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="px-4 py-3">
+                      <Controller
+                        control={control}
+                        name={`items.${index}.modeloId`}
+                        render={({ field }) => (
+                          <Select 
+                            value={field.value || ""} 
+                            onValueChange={field.onChange}
+                          >
+                            <SelectTrigger className="h-8 text-xs border-transparent hover:border-slate-200 transition-all">
+                              <SelectValue placeholder="Modelo...">
+                                {modelos.find(m => m._id === field.value)?.tipoPrenda}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {modelos.map(m => (
+                                <SelectItem key={m._id} value={m._id}>{m.tipoPrenda} ({m.nivelComplejidad})</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Controller
+                        control={control}
+                        name={`items.${index}.telaId`}
+                        render={({ field }) => (
+                          <Select 
+                            value={field.value || ""} 
+                            onValueChange={field.onChange}
+                          >
+                            <SelectTrigger className="h-8 text-xs border-transparent hover:border-slate-200 transition-all">
+                              <SelectValue placeholder="Tela...">
+                                {telas.find(t => t._id === field.value)?.nombre}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {telas.map(t => (
+                                <SelectItem key={t._id} value={t._id}>{t.nombre} (${t.costoPorMetro})</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Controller
+                        control={control}
+                        name={`items.${index}.corteId`}
+                        render={({ field }) => (
+                          <Select 
+                            value={field.value || ""} 
+                            onValueChange={field.onChange}
+                          >
+                            <SelectTrigger className="h-8 text-xs border-transparent hover:border-slate-200 transition-all">
+                              <SelectValue placeholder="Corte...">
+                                {cortes.find(c => c._id === field.value)?.nombre}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {cortes.map(c => (
+                                <SelectItem key={c._id} value={c._id}>{c.nombre} ({c.factorConsumoTela}m)</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        className="h-8 text-xs w-full" 
+                        {...register(`items.${index}.personalizacion`, { valueAsNumber: true })} 
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Input 
+                        type="number" 
+                        step="0.01" 
+                        className="h-8 text-xs w-full" 
+                        {...register(`items.${index}.acabados`, { valueAsNumber: true })} 
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Input 
+                        type="number" 
+                        className="h-8 text-xs w-full font-bold" 
+                        {...register(`items.${index}.cantidad`, { valueAsNumber: true })} 
+                      />
+                    </td>
+                    <td className="px-4 py-3 text-right font-mono text-xs text-muted-foreground">
+                      {formatCurrency(itemCalculations[index]?.unit || 0)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-bold text-primary">
+                      {formatCurrency(itemCalculations[index]?.total || 0)}
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-6 w-6 text-destructive opacity-50 hover:opacity-100"
+                        onClick={() => remove(index)}
+                        disabled={fields.length === 1}
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="bg-slate-50 uppercase text-[10px] font-black border-t">
+                <tr>
+                  <td colSpan={7} className="px-4 py-4 text-right text-slate-500">Total Detalle:</td>
+                  <td className="px-4 py-4 text-right text-lg text-primary">{formatCurrency(grandTotal)}</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          {errors.items && <p className="text-xs text-destructive mt-2">{errors.items.message}</p>}
+        </CardContent>
+      </Card>
 
       <ClientFormModal 
         isOpen={isClientModalOpen} 
@@ -422,6 +617,30 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
         onSuccess={(newClient) => {
           setClients(prev => [...prev, newClient].sort((a, b) => a.razonSocial.localeCompare(b.razonSocial)));
           setValue("clientId", newClient._id!);
+        }}
+      />
+
+      <BudgetPreviewDialog 
+        isOpen={isPreviewOpen}
+        onClose={() => setIsPreviewOpen(false)}
+        budget={{
+          description: watch("description"),
+          observations: watch("observations"),
+          fecha: new Date().toISOString(),
+          clientId: selectedClient,
+          estructuraCostosId: selectedEstructura,
+          urgencia: watchedUrgencia,
+          items: watchedItems.map((item, idx) => ({
+            ...item,
+            modeloId: modelos.find(m => m._id === item.modeloId),
+            telaId: telas.find(t => t._id === item.telaId),
+            corteId: cortes.find(c => c._id === item.corteId),
+            precioUnitario: itemCalculations[idx]?.unit || 0,
+            totalItem: itemCalculations[idx]?.total || 0
+          })),
+          totalCost: grandTotal,
+          volumeDiscountAmount: volumeDiscountInfo.amount,
+          volumeDiscountPercent: volumeDiscountInfo.percent
         }}
       />
     </form>

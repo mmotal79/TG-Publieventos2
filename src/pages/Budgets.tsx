@@ -10,14 +10,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2, Search, Loader2 } from 'lucide-react';
+import { Pencil, Trash2, Search, Loader2, Printer, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/services/budgetService';
+import BudgetPreviewDialog from '@/components/BudgetPreviewDialog';
 
 const Budgets: React.FC = () => {
   const [budgets, setBudgets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [previewingBudget, setPreviewingBudget] = useState<any | null>(null);
 
   useEffect(() => {
     fetchBudgets();
@@ -128,6 +130,15 @@ const Budgets: React.FC = () => {
                         <TableCell>{getStatusBadge(b.status)}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="text-primary hover:text-primary"
+                              onClick={() => setPreviewingBudget(b)}
+                              title="Visualizar"
+                            >
+                              <Printer size={16} />
+                            </Button>
                             <Button variant="ghost" size="icon" onClick={() => handleEdit(b)}>
                               <Pencil size={16} />
                             </Button>
@@ -148,12 +159,18 @@ const Budgets: React.FC = () => {
               )}
             </CardContent>
           </Card>
+          
+          <BudgetPreviewDialog 
+            budget={previewingBudget} 
+            isOpen={!!previewingBudget} 
+            onClose={() => setPreviewingBudget(null)} 
+          />
         </TabsContent>
 
         <TabsContent value="new">
           <Card>
             <CardHeader>
-              <CardTitle>{editingBudget ? `Editando Presupuesto: ${editingBudget.description}` : 'Calculadora Técnica de Presupuesto'}</CardTitle>
+              <CardTitle>{editingBudget ? `Editando Presupuesto: ${editingBudget.description}` : 'Crear Presupuesto'}</CardTitle>
             </CardHeader>
             <CardContent>
               <BudgetForm initialData={editingBudget} onCancel={() => {
