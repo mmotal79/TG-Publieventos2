@@ -27,6 +27,7 @@ export interface GlobalConfig {
   razonSocial: string;
   rif: string;
   telefonoCorporativo: string;
+  nombreAsesor: string; // Dynamic advisor name
   informacionPago: string;
   logoBase64: string;
   updatedAt?: string;

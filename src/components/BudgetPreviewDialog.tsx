@@ -5,7 +5,7 @@ import {
   DialogTitle 
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer, X, Mail, MessageSquare, Image as ImageIcon, Download } from 'lucide-react';
+import { Printer, X, Mail, MessageSquare, Image as ImageIcon, Download, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import { formatCurrency } from '@/services/budgetService';
 import { toPng } from 'html-to-image';
 
@@ -18,10 +18,17 @@ interface BudgetPreviewDialogProps {
 const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpen, onClose }) => {
   const [config, setConfig] = useState<any>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [zoom, setZoom] = useState(1);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen) {
+      // Default zoom based on window width
+      if (window.innerWidth < 640) setZoom(0.35);
+      else if (window.innerWidth < 768) setZoom(0.55);
+      else if (window.innerWidth < 1024) setZoom(0.7);
+      else setZoom(0.9);
+
       fetch('/api/config')
         .then(res => res.json())
         .then(data => {
@@ -122,21 +129,43 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
     }
   };
 
-  const handleShareWhatsApp = () => {
-    const texto = `*Presupuesto GEOS #${budget._id?.toString().slice(-6).toUpperCase() || 'P'}*%0A%0A` +
-      `Hola, adjunto el presupuesto solicitado.%0A%0A` +
-      `*Cliente:* ${budget.clientId?.razonSocial || 'Cliente'}%0A` +
-      `*Monto Total:* ${formatCurrency(budget.totalCost)}%0A` +
-      `*Descripción:* ${budget.description}%0A%0A` +
-      `_Por favor descargue la imagen adjunta para ver el detalle. Agradecería me confirme su recepción._%0A%0A` +
-      `*Más fácil es hacerlo bien.*`;
-    window.open(`https://wa.me/?text=${texto}`, '_blank');
+  const handleShareWhatsApp = async () => {
+    // First, trigger image download as requested
+    await handleDownloadImage();
+
+    const empresa = config?.nombreComercial || 'GEOS';
+    const contacto = budget.clientId?.contacto || budget.clientId?.personaContacto || 'Estimado Cliente';
+    const razonSocial = budget.clientId?.razonSocial || 'Cliente';
+    const numeral = budget._id?.toString().slice(-6).toUpperCase() || 'P';
+
+    const asesor = config?.nombreAsesor || 'Asesor de Ventas';
+
+    const texto = `*¡Hola! Es un gusto saludarle, ${contacto}* (${razonSocial}) 🌟%0A%0A` +
+      `Espero que se encuentre excelente. En respuesta a su amable solicitud, le envío adjunto la *Cotización #${numeral}* detallada por *${budget.description}*.%0A%0A` +
+      `*Monto Total:* ${formatCurrency(budget.totalCost)}%0A%0A` +
+      `En ${empresa}, nos apasiona materializar sus ideas con la más alta calidad y atención al detalle. Estamos convencidos de que este proyecto será un éxito total.%0A%0A` +
+      `_Agradecería mucho si pudiera confirmarme la recepción del documento que acabo de descargar para usted. Quedo atento a su respuesta para proceder con el pedido._%0A%0A` +
+      `*¡Más fácil es hacerlo bien!*%0A%0A` +
+      `Atentamente,%0A*${asesor}*%0A${empresa}`;
+    
+    // Open WhatsApp
+    setTimeout(() => {
+      window.open(`https://wa.me/?text=${texto}`, '_blank');
+    }, 1000); // Small delay to let the download start
   };
 
   const handleShareEmail = () => {
-    const subject = encodeURIComponent(`Presupuesto GEOS - ${budget.description}`);
-    const body = encodeURIComponent(`Estimado(a) ${budget.clientId?.razonSocial},\n\nAdjunto enviamos el resumen de su presupuesto:\n\nMonto Total: ${formatCurrency(budget.totalCost)}\nDescripción: ${budget.description}\n\nGracias por preferir GEOS.`);
+    const subject = encodeURIComponent(`Presupuesto ${config?.nombreComercial || 'GEOS'} - ${budget.description}`);
+    const body = encodeURIComponent(`Estimado(a) ${budget.clientId?.razonSocial},\n\nAdjunto enviamos el resumen de su presupuesto:\n\nMonto Total: ${formatCurrency(budget.totalCost)}\nDescripción: ${budget.description}\n\nGracias por preferir ${config?.nombreComercial || 'nuestra empresa'}.`);
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
+  };
+
+  const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 2));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev - 0.1, 0.2));
+  const handleResetZoom = () => {
+    if (window.innerWidth < 640) setZoom(0.35);
+    else if (window.innerWidth < 1024) setZoom(0.7);
+    else setZoom(0.9);
   };
 
   const fecha = new Date(budget.fecha || budget.createdAt || new Date()).toLocaleDateString('es-VE');
@@ -150,6 +179,22 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
             <span className="hidden sm:inline font-black uppercase italic tracking-tighter">Vista Previa</span>
             <span className="sm:hidden font-black italic">Cotización</span>
           </DialogTitle>
+          
+          <div className="flex items-center bg-slate-100 rounded-lg p-1 border">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleZoomOut} title="Alejar">
+              <ZoomOut size={16} />
+            </Button>
+            <div className="px-2 text-[10px] font-black w-12 text-center text-slate-500">
+              {Math.round(zoom * 100)}%
+            </div>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleZoomIn} title="Acercar">
+              <ZoomIn size={16} />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 border-l ml-1" onClick={handleResetZoom} title="Ajustar">
+              <Maximize size={16} />
+            </Button>
+          </div>
+
           <div className="flex flex-wrap justify-center gap-2">
             <Button variant="default" className="bg-rose-600 hover:bg-rose-700 text-xs h-9 font-bold tracking-tight" onClick={handlePrint}>
               <Printer className="mr-1.5 h-4 w-4" /> PDF
@@ -169,8 +214,14 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
           </div>
         </div>
 
-        <div className="p-0 sm:p-4 md:p-8 flex justify-center bg-slate-200/50 overflow-x-hidden min-h-screen">
-          <div className="relative transform origin-top scale-[0.32] sm:scale-[0.55] md:scale-[0.65] lg:scale-[0.85] xl:scale-100 mb-[-750px] sm:mb-[-480px] md:mb-[-380px] lg:mb-[-150px] xl:mb-0 transition-transform">
+        <div className="p-0 sm:p-4 md:p-8 flex justify-center bg-slate-200/50 overflow-auto min-h-screen">
+          <div 
+            className="relative transform origin-top transition-transform duration-200 ease-out"
+            style={{ 
+              transform: `scale(${zoom})`,
+              marginBottom: `-${(1 - zoom) * 1123}px` // Collapse empty space based on A4 height (297mm approx 1123px at 96dpi)
+            }}
+          >
             <div 
               ref={printRef}
               className="print-container w-[210mm] min-h-[297mm] bg-white shadow-2xl p-0 relative flex flex-col font-sans text-slate-800"
@@ -187,18 +238,24 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
                       )}
                     </div>
                     <div className="text-white text-left">
-                      <h1 className="text-4xl font-black italic tracking-tighter leading-none mb-1 drop-shadow-lg">GEOS</h1>
+                      <h1 className="text-4xl font-black italic tracking-tighter leading-none mb-1 drop-shadow-lg">
+                        {config?.nombreComercial || 'GEOS'}
+                      </h1>
                       <p className="text-sm font-medium tracking-[0.2em] opacity-90 uppercase italic">MÁS FÁCIL ES HACERLO BIEN</p>
                     </div>
                   </div>
                   <div className="text-white text-right">
                      <div className="bg-zinc-900/40 backdrop-blur-md p-3 rounded-lg border border-white/10 text-center min-w-[200px]">
-                       <p className="text-[10px] font-black opacity-70 uppercase tracking-widest mb-1 italic">Presupuesto N° {budget._id?.toString().slice(-6).toUpperCase() || 'TEMP'}</p>
+                       <p className="text-[10px] font-black opacity-70 uppercase tracking-widest mb-1 italic">Documento N° {budget._id?.toString().slice(-6).toUpperCase() || 'PROV'}</p>
                        <p className="text-2xl font-black">{fecha}</p>
                        <p className="text-[9px] font-bold uppercase tracking-tight opacity-80 mt-1">{config?.razonSocial || 'INVERSIONES GEOS CA.'}</p>
                      </div>
                   </div>
                 </div>
+              </div>
+
+              <div className="px-14 py-6 border-b border-slate-100 bg-slate-50/30">
+                 <h2 className="text-3xl font-black text-zinc-900 text-center uppercase tracking-[0.5em] italic">PRESUPUESTO</h2>
               </div>
 
               <div className="px-14 py-12 flex-grow text-left">
@@ -249,12 +306,18 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
                             <div className="font-black text-lg text-slate-800 uppercase tracking-tight italic">
                               {item.modeloId?.tipoPrenda || 'Producto'} <span className="text-rose-600 mx-1">|</span> <span className="font-bold text-slate-500 text-base">{budget.estructuraCostosId?.nombre || ''}</span>
                             </div>
-                            <div className="text-[10px] text-slate-600 mt-2 grid grid-cols-3 gap-y-2 uppercase font-bold italic">
-                              <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-rose-500 rounded-full"/> Nivel: {item.modeloId?.nivelComplejidad || 'Básico'}</span>
-                              <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-slate-300 rounded-full"/> Tela: {item.telaId?.nombre || '-'}</span>
-                              <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 bg-slate-300 rounded-full"/> Corte: {item.corteId?.nombre || '-'}</span>
-                              {item.personalizacion > 0 && <span className="flex items-center gap-1 text-rose-500"><div className="w-1.5 h-1.5 bg-rose-500 rounded-full"/> Personalizado: ${item.personalizacion}</span>}
-                              {item.acabados > 0 && <span className="flex items-center gap-1 text-rose-500"><div className="w-1.5 h-1.5 bg-rose-500 rounded-full"/> Acabados: ${item.acabados}</span>}
+                            <div className="text-[10px] text-slate-600 mt-2 grid grid-cols-2 gap-y-2 uppercase font-bold italic">
+                              <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-rose-500 rounded-full"/> Modelo: <span className="text-slate-800">{item.modeloId?.tipoPrenda || '-'}</span></span>
+                              <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-slate-300 rounded-full"/> Tela: <span className="text-slate-800">{item.telaId?.nombre || '-'}</span></span>
+                              <span className="flex items-center gap-2"><div className="w-1.5 h-1.5 bg-slate-300 rounded-full"/> Corte: <span className="text-slate-800">{item.corteId?.nombre || '-'}</span></span>
+                              {item.personalizacion > 0 && <span className="flex items-center gap-2 text-rose-500"><div className="w-1.5 h-1.5 bg-rose-500 rounded-full"/> Personalización: ${item.personalizacion}</span>}
+                              {item.acabados > 0 && <span className="flex items-center gap-2 text-rose-500"><div className="w-1.5 h-1.5 bg-rose-500 rounded-full"/> Acabado Especial: ${item.acabados}</span>}
+                              {budget.volumeDiscountPercent > 0 && (
+                                <span className="flex items-center gap-2 text-emerald-600 col-span-2">
+                                  <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"/> 
+                                  Descuento Vol. Aplicado: -{budget.volumeDiscountPercent}%
+                                </span>
+                              )}
                             </div>
                           </td>
                           <td className="py-6 px-4 text-center font-black text-2xl text-slate-700 border-x border-slate-100">
@@ -316,7 +379,7 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
                         )}
                         <div className="flex justify-between items-center text-[11px] pt-2">
                           <span className="text-slate-400 font-bold uppercase tracking-widest italic text-[9px]">Representante Ventas:</span>
-                          <p className="font-black text-zinc-900 uppercase tracking-tighter italic">Ramón Torrealba</p>
+                          <p className="font-black text-zinc-900 uppercase tracking-tighter italic">{config?.nombreAsesor || 'Ramón Torrealba'}</p>
                         </div>
                       </div>
                     </div>
@@ -329,7 +392,9 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
 
               <div className="bg-rose-600 h-14 w-full mt-auto relative overflow-hidden flex items-center justify-center shadow-[0_-10px_20px_rgba(225,29,72,0.2)]">
                  <div className="absolute top-0 left-0 w-full h-1 bg-white/20"></div>
-                 <p className="text-white font-black text-base tracking-[0.6em] uppercase drop-shadow-md z-10 italic">@PUBLIEVENTOSTG</p>
+                 <p className="text-white font-black text-base tracking-[0.6em] uppercase drop-shadow-md z-10 italic">
+                   {config?.nombreComercial ? `@${config.nombreComercial.replace(/\s+/g, '').toUpperCase()}` : '@GEOS'}
+                 </p>
                  <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
               </div>
             </div>

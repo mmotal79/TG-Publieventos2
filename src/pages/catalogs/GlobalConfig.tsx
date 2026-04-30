@@ -37,6 +37,7 @@ export default function GlobalConfigPage() {
       razonSocial: '',
       rif: '',
       telefonoCorporativo: '',
+      nombreAsesor: '',
       informacionPago: '',
       logoBase64: ''
     }
@@ -209,22 +210,28 @@ export default function GlobalConfigPage() {
             </CardTitle>
             <CardDescription>Información legal y comercial para documentos.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="nombreComercial">Nombre Comercial</Label>
-                <Input id="nombreComercial" {...register('nombreComercial')} placeholder="Ej: T&G Publieventos" />
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nombreComercial">Nombre Comercial</Label>
+                  <Input id="nombreComercial" {...register('nombreComercial')} placeholder="Ej: T&G Publieventos" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nombreAsesor">Nombre del Asesor / Firma</Label>
+                  <Input id="nombreAsesor" {...register('nombreAsesor')} placeholder="Ej: Ramón Torrealba" />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="rif">RIF / Identificación Fiscal</Label>
-                <Input id="rif" {...register('rif')} placeholder="J-12345678-0" />
-              </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="razonSocial">Razón Social Completa</Label>
-              <Input id="razonSocial" {...register('razonSocial')} placeholder="Ej: Inversiones T&G C.A." />
-            </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="rif">RIF / Identificación Fiscal</Label>
+                  <Input id="rif" {...register('rif')} placeholder="J-12345678-0" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="razonSocial">Razón Social Completa</Label>
+                  <Input id="razonSocial" {...register('razonSocial')} placeholder="Ej: Inversiones T&G C.A." />
+                </div>
+              </div>
 
             <div className="space-y-2">
               <Label htmlFor="telefonoCorporativo" className="flex items-center gap-2">

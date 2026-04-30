@@ -224,15 +224,22 @@ const Budgets: React.FC = () => {
                                 size="sm" 
                                 className="h-9 border-green-200 text-green-600 shadow-sm text-[10px] font-bold px-2"
                                 onClick={() => {
-                                  const texto = `*Presupuesto GEOS #${b._id?.toString().slice(-6).toUpperCase()}*%0A%0A` +
-                                    `Hola, qué tal? Un gusto saludarle.%0A%0A` +
-                                    `Adjunto el presupuesto solicitado para *${b.description}*.%0A%0A` +
-                                    `*Total:* ${formatCurrency(b.totalCost)}%0A%0A` +
-                                    `_Agradecería confirme la recepción del mismo. ¡Más fácil es hacerlo bien!_`;
+                                  const empresa = 'GEOS'; // Se podría obtener de config si estuviera disponible aquí
+                                  const contacto = b.clientId?.contacto || b.clientId?.personaContacto || 'Estimado Cliente';
+                                  const razonSocial = b.clientId?.razonSocial || '';
+                                  
+                                  const texto = `*¡Hola! Es un gusto saludarle, ${contacto}* (${razonSocial}) 🌟%0A%0A` +
+                                    `Espero que se encuentre excelente. En respuesta a su amable solicitud, le envío adjunto el *Presupuesto #${b._id?.toString().slice(-6).toUpperCase()}* detallado por *${b.description}*.%0A%0A` +
+                                    `*Monto Total:* ${formatCurrency(b.totalCost)}%0A%0A` +
+                                    `En nuestra empresa, nos apasiona materializar sus ideas con la más alta calidad y atención al detalle. Estamos convencidos de que este proyecto superará sus expectativas y será el inicio de una gran alianza.%0A%0A` +
+                                    `_Agradecería mucho si pudiera confirmarme la recepción del mismo. Quedo atento a cualquier duda o comentario para dar inicio a su producción._%0A%0A` +
+                                    `*¡Más fácil es hacerlo bien!*%0A%0A` +
+                                    `Atentamente,%0A*Asesor de Ventas*%0A${empresa}`;
+                                  
                                   window.open(`https://wa.me/${b.clientId?.celular?.replace(/\D/g, '') || ''}?text=${texto}`, '_blank');
                                 }}
                               >
-                                <MessageSquare size={14} className="mr-1" /> WSP
+                                <MessageSquare size={14} />
                               </Button>
                               <Button 
                                 variant="outline" 
