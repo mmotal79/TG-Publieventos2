@@ -628,49 +628,47 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                         />
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Tela / Material</Label>
-                          <Controller
-                            control={control}
-                            name={`items.${index}.telaId`}
-                            render={({ field }) => (
-                              <Select value={field.value || ""} onValueChange={field.onChange}>
-                                <SelectTrigger className="h-11 border-2 border-slate-50 rounded-xl font-bold uppercase italic text-sm">
-                                  <SelectValue placeholder="Tela...">
-                                    {telas.find(t => t._id === field.value)?.nombre}
-                                  </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {telas.map(t => (
-                                    <SelectItem key={t._id} value={t._id!}>{t.nombre}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Tipo de Corte</Label>
-                          <Controller
-                            control={control}
-                            name={`items.${index}.corteId`}
-                            render={({ field }) => (
-                              <Select value={field.value || ""} onValueChange={field.onChange}>
-                                <SelectTrigger className="h-11 border-2 border-slate-50 rounded-xl font-bold uppercase italic text-sm">
-                                  <SelectValue placeholder="Corte...">
-                                    {cortes.find(c => c._id === field.value)?.nombre}
-                                  </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {cortes.map(c => (
-                                    <SelectItem key={c._id} value={c._id!}>{c.nombre}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
-                        </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Tela / Material</Label>
+                        <Controller
+                          control={control}
+                          name={`items.${index}.telaId`}
+                          render={({ field }) => (
+                            <Select value={field.value || ""} onValueChange={field.onChange}>
+                              <SelectTrigger className="h-11 border-2 border-slate-50 rounded-xl font-bold uppercase italic text-sm">
+                                <SelectValue placeholder="Tela...">
+                                  {telas.find(t => t._id === field.value)?.nombre}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {telas.map(t => (
+                                  <SelectItem key={t._id} value={t._id!}>{t.nombre}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Tipo de Corte</Label>
+                        <Controller
+                          control={control}
+                          name={`items.${index}.corteId`}
+                          render={({ field }) => (
+                            <Select value={field.value || ""} onValueChange={field.onChange}>
+                              <SelectTrigger className="h-11 border-2 border-slate-50 rounded-xl font-bold uppercase italic text-sm">
+                                <SelectValue placeholder="Corte...">
+                                  {cortes.find(c => c._id === field.value)?.nombre}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {cortes.map(c => (
+                                  <SelectItem key={c._id} value={c._id!}>{c.nombre}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
                       </div>
                     </div>
 
