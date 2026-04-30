@@ -5,8 +5,9 @@ import {
   DialogTitle 
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer, X, Mail, MessageSquare } from 'lucide-react';
+import { Printer, X, Mail, MessageSquare, Image as ImageIcon, Download } from 'lucide-react';
 import { formatCurrency } from '@/services/budgetService';
+import { toPng } from 'html-to-image';
 
 interface BudgetPreviewDialogProps {
   budget: any;
@@ -16,6 +17,7 @@ interface BudgetPreviewDialogProps {
 
 const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpen, onClose }) => {
   const [config, setConfig] = useState<any>(null);
+  const [isExporting, setIsExporting] = useState(false);
   const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -93,12 +95,41 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
     printWindow.document.close();
   };
 
+  const handleDownloadImage = async () => {
+    if (!printRef.current) return;
+    setIsExporting(true);
+    try {
+      // Ensure specific styles are applied for export
+      const dataUrl = await toPng(printRef.current, {
+        cacheBust: true,
+        backgroundColor: '#ffffff',
+        width: 794, // 210mm at 96dpi
+        height: 1123, // 297mm at 96dpi
+        style: {
+          transform: 'none',
+          boxShadow: 'none',
+          margin: '0',
+        }
+      });
+      const link = document.createElement('a');
+      link.download = `Presupuesto_GEOS_${budget._id?.toString().slice(-6) || 'Doc'}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Error al generar imagen:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleShareWhatsApp = () => {
-    const texto = `*Presupuesto GEOS*%0A%0A` +
+    const texto = `*Presupuesto GEOS #${budget._id?.toString().slice(-6).toUpperCase() || 'P'}*%0A%0A` +
+      `Hola, adjunto el presupuesto solicitado.%0A%0A` +
       `*Cliente:* ${budget.clientId?.razonSocial || 'Cliente'}%0A` +
       `*Monto Total:* ${formatCurrency(budget.totalCost)}%0A` +
       `*Descripción:* ${budget.description}%0A%0A` +
-      `_Más fácil es hacerlo bien._`;
+      `_Por favor descargue la imagen adjunta para ver el detalle. Agradecería me confirme su recepción._%0A%0A` +
+      `*Más fácil es hacerlo bien.*`;
     window.open(`https://wa.me/?text=${texto}`, '_blank');
   };
 
@@ -112,16 +143,19 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-[1000px] max-h-[95vh] overflow-y-auto bg-slate-100 p-0 border-none">
+      <DialogContent className="max-w-[1100px] max-h-[98vh] overflow-y-auto bg-slate-100 p-0 border-none">
         <div className="sticky top-0 z-30 bg-white border-b p-3 flex flex-col sm:flex-row justify-between items-center gap-3 no-print shadow-md">
           <DialogTitle className="text-lg font-bold flex items-center gap-2">
             <Printer className="w-5 h-5 text-rose-600" />
-            <span className="hidden sm:inline font-black uppercase italic tracking-tighter">Vista Previa de Cotización</span>
+            <span className="hidden sm:inline font-black uppercase italic tracking-tighter">Vista Previa</span>
             <span className="sm:hidden font-black italic">Cotización</span>
           </DialogTitle>
           <div className="flex flex-wrap justify-center gap-2">
             <Button variant="default" className="bg-rose-600 hover:bg-rose-700 text-xs h-9 font-bold tracking-tight" onClick={handlePrint}>
-              <Printer className="mr-1.5 h-4 w-4" /> Imprimir / PDF
+              <Printer className="mr-1.5 h-4 w-4" /> PDF
+            </Button>
+            <Button variant="outline" className="text-xs h-9 border-rose-600 text-rose-600 hover:bg-rose-50 font-bold tracking-tight" onClick={handleDownloadImage} disabled={isExporting}>
+              <Download className="mr-1.5 h-4 w-4" /> {isExporting ? 'Procesando...' : 'Imagen'}
             </Button>
             <Button variant="outline" className="text-xs h-9 border-green-600 text-green-600 hover:bg-green-50 font-bold tracking-tight" onClick={handleShareWhatsApp}>
               <MessageSquare className="mr-1.5 h-4 w-4" /> WhatsApp
@@ -135,8 +169,8 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
           </div>
         </div>
 
-        <div className="p-0 sm:p-8 flex justify-center bg-slate-200/50 overflow-x-hidden">
-          <div className="relative transform origin-top scale-[0.35] sm:scale-[0.55] md:scale-[0.75] lg:scale-100 mb-[-680px] sm:mb-[-480px] md:mb-[-280px] lg:mb-0 transition-transform">
+        <div className="p-0 sm:p-4 md:p-8 flex justify-center bg-slate-200/50 overflow-x-hidden min-h-screen">
+          <div className="relative transform origin-top scale-[0.32] sm:scale-[0.55] md:scale-[0.65] lg:scale-[0.85] xl:scale-100 mb-[-750px] sm:mb-[-480px] md:mb-[-380px] lg:mb-[-150px] xl:mb-0 transition-transform">
             <div 
               ref={printRef}
               className="print-container w-[210mm] min-h-[297mm] bg-white shadow-2xl p-0 relative flex flex-col font-sans text-slate-800"

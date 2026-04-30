@@ -138,55 +138,56 @@ const Clients: React.FC = () => {
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
+        <CardContent className="p-0 md:p-6">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Razón Social / Empresa</TableHead>
-                  <TableHead>Identificación (Celular/RIF)</TableHead>
-                  <TableHead>Contacto</TableHead>
-                  <TableHead>Dirección</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
+                <TableRow className="bg-slate-50">
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest p-4">Razón Social / Empresa</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest p-4">Identificación (Celular/RIF)</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest p-4">Contacto</TableHead>
+                  <TableHead className="font-bold uppercase text-[10px] tracking-widest p-4">Dirección</TableHead>
+                  <TableHead className="text-right font-bold uppercase text-[10px] tracking-widest p-4">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-10">
+                    <TableCell colSpan={5} className="text-center py-20">
                       <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
                       <p className="text-muted-foreground mt-2">Cargando clientes...</p>
                     </TableCell>
                   </TableRow>
                 ) : filteredClients.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground">
                       No se encontraron clientes.
                     </TableCell>
                   </TableRow>
                 ) : filteredClients.map((client) => (
-                  <TableRow key={client._id}>
+                  <TableRow key={client._id} className="hover:bg-slate-50 border-slate-100 transition-colors">
                     <TableCell>
-                      <div className="font-medium">{client.razonSocial}</div>
-                      <div className="text-xs text-muted-foreground">{client.email}</div>
+                      <div className="font-black text-slate-800 uppercase tracking-tight">{client.razonSocial}</div>
+                      <div className="text-xs text-slate-400 font-medium italic">{client.email}</div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm">Cel: {client.celular}</div>
-                      <div className="text-xs text-muted-foreground">RIF: {client.rif}</div>
+                      <div className="text-sm font-bold text-slate-700">Cel: {client.celular}</div>
+                      <div className="text-[10px] text-slate-400 font-black uppercase">RIF: {client.rif}</div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm font-medium">{client.contacto}</div>
+                      <div className="text-sm font-bold text-rose-600 italic tracking-tight">{client.contacto}</div>
                     </TableCell>
-                    <TableCell className="text-sm max-w-[200px] truncate">
+                    <TableCell className="text-xs text-slate-500 max-w-[200px] truncate italic font-medium">
                       {client.direccion || 'N/A'}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenModal(client)}>
-                          <Pencil size={16} />
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => handleOpenModal(client)}>
+                          <Pencil size={15} />
                         </Button>
-                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => handleDelete(client._id!)}>
-                          <Trash2 size={16} />
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50" onClick={() => handleDelete(client._id!)}>
+                          <Trash2 size={15} />
                         </Button>
                       </div>
                     </TableCell>
@@ -194,6 +195,60 @@ const Clients: React.FC = () => {
                 ))}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden p-4 space-y-4 bg-slate-50/50">
+            {loading ? (
+              <div className="py-20 flex flex-col items-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm font-medium text-slate-400">Cargando clientes...</p>
+              </div>
+            ) : filteredClients.length === 0 ? (
+              <div className="py-20 text-center text-slate-400 border-2 border-dashed rounded-xl">
+                No se encontraron clientes.
+              </div>
+            ) : (
+              filteredClients.map((client) => (
+                <Card key={client._id} className="border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                  <div className="p-4 space-y-4">
+                    <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                      <div>
+                        <h4 className="font-black text-slate-900 uppercase tracking-tighter leading-tight text-base mb-1">
+                          {client.razonSocial}
+                        </h4>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">{client.rif}</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" size="icon" className="h-9 w-9 border-slate-200 text-primary shadow-sm" onClick={() => handleOpenModal(client)}>
+                          <Pencil size={16} />
+                        </Button>
+                        <Button variant="outline" size="icon" className="h-9 w-9 border-rose-200 text-rose-600 shadow-sm" onClick={() => handleDelete(client._id!)}>
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Persona de Contacto</p>
+                        <p className="text-xs font-bold text-rose-600 italic">{client.contacto}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Número Celular</p>
+                        <p className="text-xs font-bold text-slate-700">{client.celular}</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 pt-2">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Email y Ubicación</p>
+                      <p className="text-xs font-medium text-slate-500 italic truncate mb-1">{client.email}</p>
+                      <p className="text-xs font-medium text-slate-500 italic leading-relaxed">{client.direccion || 'Sin dirección registrada'}</p>
+                    </div>
+                  </div>
+                </Card>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>

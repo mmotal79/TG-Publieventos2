@@ -60,7 +60,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
     resolver: zodResolver(budgetSchema),
     defaultValues: initialData || {
       urgencia: "normal",
-      items: [{ id: crypto.randomUUID(), modeloId: '', telaId: '', corteId: '', personalizacion: 0, acabados: 0, cantidad: 12 }]
+      items: [{ id: crypto.randomUUID(), modeloId: '', telaId: '', corteId: '', personalizacion: 0, acabados: 0, cantidad: 1 }]
     }
   });
 
@@ -472,7 +472,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
             variant="outline" 
             size="sm" 
             className="gap-2 border-primary text-primary hover:bg-primary/10 transition-all font-bold"
-            onClick={() => append({ id: crypto.randomUUID(), modeloId: '', telaId: '', corteId: '', personalizacion: 0, acabados: 0, cantidad: 12 })}
+            onClick={() => append({ id: crypto.randomUUID(), modeloId: '', telaId: '', corteId: '', personalizacion: 0, acabados: 0, cantidad: 1 })}
           >
             <Plus size={16} /> Nuevo Item
           </Button>

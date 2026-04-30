@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2, Search, Loader2, Printer, Eye } from 'lucide-react';
+import { Pencil, Trash2, Search, Loader2, Printer, Eye, MessageSquare } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/services/budgetService';
 import BudgetPreviewDialog from '@/components/BudgetPreviewDialog';
@@ -50,10 +50,16 @@ const Budgets: React.FC = () => {
     }
   };
 
-  const filteredBudgets = budgets.filter(b => 
-    b.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    b.clientId?.razonSocial?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredBudgets = budgets
+    .filter(b => 
+      b.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      b.clientId?.razonSocial?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      const dateA = new Date(a.fecha || a.createdAt).getTime();
+      const dateB = new Date(b.fecha || b.createdAt).getTime();
+      return dateB - dateA;
+    });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -188,7 +194,15 @@ const Budgets: React.FC = () => {
                             <h3 className="font-black text-slate-900 leading-tight uppercase tracking-tight text-sm">
                               {b.clientId?.razonSocial || 'Desconocido'}
                             </h3>
-                            <p className="text-xs italic text-slate-500 mt-1">"{b.description}"</p>
+                            <div className="flex flex-col mt-1">
+                              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                                {b.clientId?.contacto || b.clientId?.personaContacto || 'Sin contacto'}
+                              </p>
+                              <p className="text-[10px] font-medium text-slate-400">
+                                {b.clientId?.celular || b.clientId?.telefono || '-'}
+                              </p>
+                            </div>
+                            <p className="text-xs italic text-slate-500 mt-2">"{b.description}"</p>
                           </div>
 
                           <div className="flex justify-between items-end pt-3 border-t border-slate-100">
@@ -196,30 +210,45 @@ const Budgets: React.FC = () => {
                               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Estimado</p>
                               <p className="text-lg font-black text-rose-600">{formatCurrency(b.totalCost)}</p>
                             </div>
-                            <div className="flex gap-2">
+                            <div className="grid grid-cols-2 gap-2">
                               <Button 
                                 variant="outline" 
-                                size="icon" 
-                                className="h-10 w-10 border-slate-200 text-slate-600 shadow-sm"
+                                size="sm" 
+                                className="h-9 border-slate-200 text-slate-600 shadow-sm text-[10px] font-bold px-2"
                                 onClick={() => setPreviewingBudget(b)}
                               >
-                                <Printer size={18} />
+                                <Printer size={14} className="mr-1" /> VER
                               </Button>
                               <Button 
                                 variant="outline" 
-                                size="icon" 
-                                className="h-10 w-10 border-blue-200 text-blue-600 shadow-sm"
+                                size="sm" 
+                                className="h-9 border-green-200 text-green-600 shadow-sm text-[10px] font-bold px-2"
+                                onClick={() => {
+                                  const texto = `*Presupuesto GEOS #${b._id?.toString().slice(-6).toUpperCase()}*%0A%0A` +
+                                    `Hola, qué tal? Un gusto saludarle.%0A%0A` +
+                                    `Adjunto el presupuesto solicitado para *${b.description}*.%0A%0A` +
+                                    `*Total:* ${formatCurrency(b.totalCost)}%0A%0A` +
+                                    `_Agradecería confirme la recepción del mismo. ¡Más fácil es hacerlo bien!_`;
+                                  window.open(`https://wa.me/${b.clientId?.celular?.replace(/\D/g, '') || ''}?text=${texto}`, '_blank');
+                                }}
+                              >
+                                <MessageSquare size={14} className="mr-1" /> WSP
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-9 border-blue-200 text-blue-600 shadow-sm text-[10px] font-bold px-2"
                                 onClick={() => handleEdit(b)}
                               >
-                                <Pencil size={18} />
+                                <Pencil size={14} className="mr-1" /> EDIT
                               </Button>
                               <Button 
                                 variant="outline" 
-                                size="icon" 
-                                className="h-10 w-10 border-rose-200 text-rose-600 shadow-sm"
+                                size="sm" 
+                                className="h-9 border-rose-200 text-rose-600 shadow-sm text-[10px] font-bold px-2"
                                 onClick={() => handleDelete(b._id)}
                               >
-                                <Trash2 size={18} />
+                                <Trash2 size={14} className="mr-1" /> ELIM
                               </Button>
                             </div>
                           </div>
