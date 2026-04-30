@@ -155,9 +155,29 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
   };
 
   const handleShareEmail = () => {
-    const subject = encodeURIComponent(`Presupuesto ${config?.nombreComercial || 'GEOS'} - ${budget.description}`);
-    const body = encodeURIComponent(`Estimado(a) ${budget.clientId?.razonSocial},\n\nAdjunto enviamos el resumen de su presupuesto:\n\nMonto Total: ${formatCurrency(budget.totalCost)}\nDescripción: ${budget.description}\n\nGracias por preferir ${config?.nombreComercial || 'nuestra empresa'}.`);
-    window.location.href = `mailto:?subject=${subject}&body=${body}`;
+    const empresa = config?.nombreComercial || 'Nuestra Empresa';
+    const contacto = budget.clientId?.contacto || budget.clientId?.personaContacto || 'Estimado Cliente';
+    const razonSocial = budget.clientId?.razonSocial || 'Cliente';
+    const numeral = budget._id?.toString().slice(-6).toUpperCase() || 'P';
+    const fecha = new Date(budget.fecha || budget.createdAt).toLocaleDateString('es-VE');
+    const whatsappLink = `https://wa.me/${config?.telefonoCorporativo?.replace(/\D/g, '') || ''}`;
+    const asesor = config?.nombreAsesor || 'Su Asesor de Confianza';
+
+    const subject = encodeURIComponent(`Presupuesto #${numeral} - ${fecha} - ${budget.description}`);
+    
+    const body = encodeURIComponent(
+      `Estimado(a) ${contacto} (${razonSocial}),\n\n` +
+      `Es un verdadero placer saludarle y agradecerle por el interés en nuestros servicios.\n\n` +
+      `Adjunto a este mensaje encontrará la cotización formalizada N° ${numeral} referente a su solicitud de "${budget.description}". En ${empresa}, nos enfocamos en ofrecer soluciones que combinan calidad superior y entrega impecable, garantizando que su proyecto se ejecute con la excelencia que usted merece.\n\n` +
+      `Si desea proceder o tiene alguna consulta inmediata, no dude en contactarme directamente haciendo clic aquí: ${whatsappLink}\n\n` +
+      `Quedo atento a su gentil respuesta y confirmación de recepción. Estamos listos para comenzar este proyecto con la mayor dedicación.\n\n` +
+      `Atentamente,\n\n` +
+      `${asesor}\n` +
+      `${empresa}\n` +
+      `Más fácil es hacerlo bien.`
+    );
+    
+    window.location.href = `mailto:${budget.clientId?.email || ''}?subject=${subject}&body=${body}`;
   };
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 0.1, 2));

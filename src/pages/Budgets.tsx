@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2, Search, Loader2, Printer, Eye, MessageSquare } from 'lucide-react';
+import { Pencil, Trash2, Search, Loader2, Printer, Eye, MessageSquare, Mail } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/services/budgetService';
 import BudgetPreviewDialog from '@/components/BudgetPreviewDialog';
@@ -20,10 +20,24 @@ const Budgets: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [previewingBudget, setPreviewingBudget] = useState<any | null>(null);
+  const [config, setConfig] = useState<any>(null);
 
   useEffect(() => {
     fetchBudgets();
+    fetchConfig();
   }, []);
+
+  const fetchConfig = async () => {
+    try {
+      const res = await fetch('/api/config');
+      if (res.ok) {
+        const data = await res.json();
+        setConfig(Array.isArray(data) ? data[0] : data);
+      }
+    } catch (e) {
+      console.error("Error fetching config:", e);
+    }
+  };
 
   const fetchBudgets = async () => {
     try {
@@ -164,6 +178,32 @@ const Budgets: React.FC = () => {
                                 >
                                   <Printer size={15} />
                                 </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-blue-500 hover:bg-blue-50"
+                                  onClick={() => {
+                                    const empresa = config?.nombreComercial || 'GEOS';
+                                    const contacto = b.clientId?.contacto || b.clientId?.personaContacto || 'Estimado Cliente';
+                                    const razonSocial = b.clientId?.razonSocial || 'Cliente';
+                                    const numeral = b._id?.toString().slice(-6).toUpperCase();
+                                    const fecha = new Date(b.fecha || b.createdAt).toLocaleDateString('es-VE');
+                                    const whatsappLink = `https://wa.me/${config?.telefonoCorporativo?.replace(/\D/g, '') || ''}`;
+                                    const asesor = config?.nombreAsesor || 'Asesor de Ventas';
+                                    
+                                    const subject = encodeURIComponent(`Presupuesto #${numeral} - ${fecha} - ${b.description}`);
+                                    const body = encodeURIComponent(
+                                      `Estimado(a) ${contacto} (${razonSocial}),\n\n` +
+                                      `Es un gusto saludarle. Adjunto enviamos el presupuesto solicitado para *${b.description}*.\n\n` +
+                                      `En ${empresa} estamos listos para comenzar su proyecto con la mejor calidad. Puede contactarnos por WhatsApp aquí: ${whatsappLink}\n\n` +
+                                      `Atentamente,\n*${asesor}*\n${empresa}`
+                                    );
+                                    window.location.href = `mailto:${b.clientId?.email || ''}?subject=${subject}&body=${body}`;
+                                  }}
+                                  title="Enviar Email"
+                                >
+                                  <Mail size={15} />
+                                </Button>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={() => handleEdit(b)}>
                                   <Pencil size={15} />
                                 </Button>
@@ -224,22 +264,49 @@ const Budgets: React.FC = () => {
                                 size="sm" 
                                 className="h-9 border-green-200 text-green-600 shadow-sm text-[10px] font-bold px-2"
                                 onClick={() => {
-                                  const empresa = 'GEOS'; // Se podría obtener de config si estuviera disponible aquí
+                                  const empresa = config?.nombreComercial || 'GEOS';
                                   const contacto = b.clientId?.contacto || b.clientId?.personaContacto || 'Estimado Cliente';
                                   const razonSocial = b.clientId?.razonSocial || '';
+                                  const asesor = config?.nombreAsesor || 'Asesor de Ventas';
                                   
                                   const texto = `*¡Hola! Es un gusto saludarle, ${contacto}* (${razonSocial}) 🌟%0A%0A` +
-                                    `Espero que se encuentre excelente. En respuesta a su amable solicitud, le envío adjunto el *Presupuesto #${b._id?.toString().slice(-6).toUpperCase()}* detallado por *${b.description}*.%0A%0A` +
+                                    `Espero que se encuentre excelente. En respuesta a su amable solicitud, le envío el *Presupuesto #${b._id?.toString().slice(-6).toUpperCase()}* detallado por *${b.description}*.%0A%0A` +
                                     `*Monto Total:* ${formatCurrency(b.totalCost)}%0A%0A` +
-                                    `En nuestra empresa, nos apasiona materializar sus ideas con la más alta calidad y atención al detalle. Estamos convencidos de que este proyecto superará sus expectativas y será el inicio de una gran alianza.%0A%0A` +
-                                    `_Agradecería mucho si pudiera confirmarme la recepción del mismo. Quedo atento a cualquier duda o comentario para dar inicio a su producción._%0A%0A` +
+                                    `En ${empresa}, nos apasiona materializar sus ideas con la más alta calidad. Estamos convencidos de que este proyecto superará sus expectativas.%0A%0A` +
+                                    `_Agradecería mucho si pudiera confirmarme la recepción del mismo. Quedo atento a cualquier duda._%0A%0A` +
                                     `*¡Más fácil es hacerlo bien!*%0A%0A` +
-                                    `Atentamente,%0A*Asesor de Ventas*%0A${empresa}`;
+                                    `Atentamente,%0A*${asesor}*%0A${empresa}`;
                                   
                                   window.open(`https://wa.me/${b.clientId?.celular?.replace(/\D/g, '') || ''}?text=${texto}`, '_blank');
                                 }}
                               >
                                 <MessageSquare size={14} />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="h-9 border-blue-200 text-blue-600 shadow-sm text-[10px] font-bold px-2"
+                                onClick={() => {
+                                  const empresa = config?.nombreComercial || 'GEOS';
+                                  const contacto = b.clientId?.contacto || b.clientId?.personaContacto || 'Estimado Cliente';
+                                  const razonSocial = b.clientId?.razonSocial || '';
+                                  const numeral = b._id?.toString().slice(-6).toUpperCase();
+                                  const fecha = new Date(b.fecha || b.createdAt).toLocaleDateString('es-VE');
+                                  const whatsappLink = `https://wa.me/${config?.telefonoCorporativo?.replace(/\D/g, '') || ''}`;
+                                  const asesor = config?.nombreAsesor || 'Asesor de Ventas';
+                                  
+                                  const subject = encodeURIComponent(`Presupuesto #${numeral} - ${fecha} - ${b.description}`);
+                                  const body = encodeURIComponent(
+                                    `Estimado(a) ${contacto} (${razonSocial}),\n\n` +
+                                    `Es un gusto saludarle. Adjunto enviamos el presupuesto solicitado para *${b.description}*.\n\n` +
+                                    `Monto Total: ${formatCurrency(b.totalCost)}\n\n` +
+                                    `Quedamos atentos a sus comentarios. Puede escribirnos directamente aquí: ${whatsappLink}\n\n` +
+                                    `Atentamente,\n*${asesor}*\n${empresa}`
+                                  );
+                                  window.location.href = `mailto:${b.clientId?.email || ''}?subject=${subject}&body=${body}`;
+                                }}
+                              >
+                                <Mail size={14} className="mr-1" /> EMAIL
                               </Button>
                               <Button 
                                 variant="outline" 
