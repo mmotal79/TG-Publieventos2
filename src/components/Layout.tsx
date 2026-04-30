@@ -49,6 +49,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
+    { name: 'Clientes', path: '/clients', icon: Users },
     { name: 'Presupuestos', path: '/budgets', icon: FileText },
     { name: 'Transacciones', path: '/transactions', icon: CreditCard },
     { name: 'Producción', path: '/production', icon: Factory },
@@ -56,7 +57,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   ];
 
   const catalogItems = [
-    { name: 'Clientes', path: '/clients', icon: Users, show: true },
     { name: 'Telas', path: '/catalogs/telas', icon: Layers, show: true },
     { name: 'Modelos', path: '/catalogs/modelos', icon: Shirt, show: true },
     { name: 'Cortes', path: '/catalogs/cortes', icon: Scissors, show: true },
@@ -103,14 +103,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   to={item.path}
                   onClick={() => setIsSidebarOpen(false)}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+                    "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium",
                     isActive 
                       ? "bg-primary text-primary-foreground" 
                       : "text-muted-foreground hover:bg-slate-100 hover:text-foreground"
                   )}
                 >
                   <Icon size={20} />
-                  <span className="font-medium">{item.name}</span>
+                  <span>{item.name}</span>
                 </Link>
               );
             })}
@@ -118,10 +118,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           <Accordion type="single" collapsible className="w-full mt-2">
             <AccordionItem value="catalogos" className="border-b-0">
-              <AccordionTrigger className="px-3 py-2 text-muted-foreground hover:text-foreground hover:no-underline rounded-lg hover:bg-slate-100 transition-colors">
+              <AccordionTrigger className="px-3 py-2 text-muted-foreground hover:text-foreground hover:no-underline rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium">
                 <div className="flex items-center gap-3">
                   <BookOpen size={20} />
-                  <span className="font-medium">Catálogos</span>
+                  <span>Catálogos</span>
                 </div>
               </AccordionTrigger>
               <AccordionContent className="pt-1 pb-0">
@@ -135,9 +135,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         to={item.path}
                         onClick={() => setIsSidebarOpen(false)}
                         className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm",
+                          "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium",
                           isActive 
-                            ? "bg-primary/10 text-primary font-medium" 
+                            ? "bg-primary/10 text-primary" 
                             : "text-muted-foreground hover:bg-slate-100 hover:text-foreground"
                         )}
                       >

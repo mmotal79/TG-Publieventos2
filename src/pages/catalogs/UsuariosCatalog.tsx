@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Search, ShieldAlert } from 'lucide-react';
+import { Loader2, Plus, Search, ShieldAlert, Pencil, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const userSchema = z.object({
@@ -144,6 +144,24 @@ const UsuariosCatalog: React.FC = () => {
     }
   };
 
+  const handleDelete = async (user: UserData) => {
+    if (user.email === profile?.email) {
+      alert("No puedes eliminarte a ti mismo.");
+      return;
+    }
+    if (!confirm(`¿Está seguro de eliminar al usuario "${user.nombre}"?`)) return;
+    try {
+      const res = await fetch(`/api/users/${user._id}`, { method: 'DELETE' });
+      if (res.ok) fetchUsers();
+      else {
+        const errData = await res.json();
+        alert(errData.message || "Error al eliminar usuario.");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
   if (!hasAccess) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] space-y-4">
@@ -242,14 +260,25 @@ const UsuariosCatalog: React.FC = () => {
                         {u.rol === 4 ? '-' : `$${u.salarioBaseUSD || 0} (${u.frecuenciaPago})`}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => openModal(u)}
-                          disabled={currentRole === 1 && u.rol === 0} // Gerente no puede editar Admin
-                        >
-                          Editar
-                        </Button>
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => openModal(u)}
+                            disabled={currentRole === 1 && u.rol === 0} // Gerente no puede editar Admin
+                          >
+                            <Pencil size={16} />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDelete(u)}
+                            disabled={(currentRole === 1 && u.rol === 0) || u.email === profile?.email}
+                          >
+                            <Trash2 size={16} />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

@@ -79,10 +79,20 @@ const AcabadosCatalog: React.FC = () => {
     }
   };
 
+  const handleDelete = async (item: any) => {
+    if (!confirm(`¿Está seguro de eliminar el acabado "${item.nombre}"?`)) return;
+    try {
+      const res = await fetch(`/api/catalogs/acabados/${item._id}`, { method: 'DELETE' });
+      if (res.ok) fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const columns = [
     { header: 'Nombre', accessor: 'nombre' as any },
     { header: 'Descripción', accessor: 'descripcion' as any },
-    { header: 'Costo Unitario ($)', accessor: (item: any) => `$${item.costoUnitario.toFixed(2)}` },
+    { header: 'Costo Unitario ($)', accessor: (item: any) => `$${(item.costoUnitario || 0).toFixed(2)}` },
     { header: 'Estado', accessor: (item: any) => (
       <Badge variant={item.activo ? "default" : "secondary"}>{item.activo ? 'Activo' : 'Inactivo'}</Badge>
     )},
@@ -97,6 +107,7 @@ const AcabadosCatalog: React.FC = () => {
         columns={columns}
         onAdd={() => openModal()}
         onEdit={(item) => openModal(item)}
+        onDelete={handleDelete}
       />
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

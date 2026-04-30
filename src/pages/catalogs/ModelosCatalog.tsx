@@ -82,6 +82,16 @@ const ModelosCatalog: React.FC = () => {
     }
   };
 
+  const handleDelete = async (item: any) => {
+    if (!confirm(`¿Está seguro de eliminar el modelo "${item.tipoPrenda}"?`)) return;
+    try {
+      const res = await fetch(`/api/catalogs/modelos/${item._id}`, { method: 'DELETE' });
+      if (res.ok) fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const columns = [
     { header: 'Tipo de Prenda', accessor: 'tipoPrenda' as any },
     { header: 'Complejidad', accessor: 'nivelComplejidad' as any },
@@ -102,6 +112,7 @@ const ModelosCatalog: React.FC = () => {
         columns={columns}
         onAdd={() => openModal()}
         onEdit={(item) => openModal(item)}
+        onDelete={handleDelete}
       />
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

@@ -218,6 +218,16 @@ const CostStructureCatalog: React.FC = () => {
     </div>;
   }
 
+  const handleDelete = async (item: any) => {
+    if (!confirm(`¿Está seguro de eliminar la estructura "${item.nombre}"?`)) return;
+    try {
+      const res = await fetch(`/api/catalogs/estructura-costos/${item._id}`, { method: 'DELETE' });
+      if (res.ok) fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const columns = [
     { header: 'Nombre', accessor: 'nombre' as keyof EstructuraCostos },
     { header: 'Margen (%)', accessor: (item: EstructuraCostos) => `${item.margenGanancia}%` },
@@ -252,10 +262,11 @@ const CostStructureCatalog: React.FC = () => {
             <GenericTable<EstructuraCostos>
               title="Modelos de Costos"
               description="Diferentes estructuras según el tipo de cliente o proyecto."
-              data={data}
+              data={data.map(d => ({ ...d, id: d._id }))}
               columns={columns}
               onAdd={() => openModal()}
               onEdit={openModal}
+              onDelete={handleDelete}
             />
           )}
         </div>

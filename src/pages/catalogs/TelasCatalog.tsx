@@ -34,14 +34,34 @@ const initialData: Tela[] = [
 ];
 
 const TelasCatalog: React.FC = () => {
-  const [data, setData] = useState<Tela[]>(initialData);
+  const [data, setData] = useState<Tela[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Tela | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [isLoading, setIsLoading] = useState(true);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<TelaFormValues>({
     resolver: zodResolver(telaSchema),
   });
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/catalogs/telas');
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchData();
+  }, []);
 
   const openModal = (item?: Tela) => {
     if (item) {
@@ -64,26 +84,35 @@ const TelasCatalog: React.FC = () => {
 
   const onSubmit = async (formData: TelaFormValues) => {
     setStatus('loading');
+    const url = editingItem ? `/api/catalogs/telas/${editingItem._id}` : '/api/catalogs/telas';
+    const method = editingItem ? 'PUT' : 'POST';
     
-    // Simulate API call
-    setTimeout(() => {
-      try {
-        if (editingItem) {
-          setData(data.map(item => item.id === editingItem.id ? { ...item, ...formData } : item));
-        } else {
-          const newItem: Tela = {
-            id: Math.random().toString(36).substr(2, 9),
-            ...formData,
-            activo: true
-          };
-          setData([...data, newItem]);
-        }
+    try {
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...formData, activo: true })
+      });
+      if (res.ok) {
+        await fetchData();
         setStatus('success');
         setTimeout(() => setIsModalOpen(false), 1000);
-      } catch (error) {
-        setStatus('error');
+      } else {
+        throw new Error();
       }
-    }, 1000);
+    } catch (error) {
+      setStatus('error');
+    }
+  };
+
+  const handleDelete = async (item: any) => {
+    if (!confirm(`¿Está seguro de eliminar la tela "${item.nombre}"?`)) return;
+    try {
+      const res = await fetch(`/api/catalogs/telas/${item._id}`, { method: 'DELETE' });
+      if (res.ok) fetchData();
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const columns = [
@@ -91,7 +120,7 @@ const TelasCatalog: React.FC = () => {
     { header: 'Composición', accessor: 'composicion' as keyof Tela },
     { header: 'Color', accessor: 'color' as keyof Tela },
     { header: 'Gramaje (g/m²)', accessor: 'gramaje' as keyof Tela },
-    { header: 'Costo/m ($)', accessor: (item: Tela) => `$${item.costoPorMetro.toFixed(2)}` },
+    { header: 'Costo/m ($)', accessor: (item: Tela) => `$${(item.costoPorMetro || 0).toFixed(2)}` },
     { header: 'Stock (m)', accessor: 'stockMetros' as keyof Tela },
     { header: 'Estado', accessor: (item: Tela) => (
       <Badge variant={item.activo ? "default" : "secondary"}>
@@ -102,14 +131,19 @@ const TelasCatalog: React.FC = () => {
 
   return (
     <>
-      <GenericTable<Tela>
-        title="Catálogo de Telas"
-        description="Gestione el inventario técnico y costos de telas."
-        data={data}
-        columns={columns}
-        onAdd={() => openModal()}
-        onEdit={(item) => openModal(item)}
-      />
+      {isLoading ? (
+        <div className="flex justify-center p-12"><Loader2 className="animate-spin" /></div>
+      ) : (
+        <GenericTable<Tela>
+          title="Catálogo de Telas"
+          description="Gestione el inventario técnico y costos de telas."
+          data={data.map(d => ({ ...d, id: d._id }))}
+          columns={columns}
+          onAdd={() => openModal()}
+          onEdit={(item) => openModal(item)}
+          onDelete={handleDelete}
+        />
+      )}
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="sm:max-w-[500px]">

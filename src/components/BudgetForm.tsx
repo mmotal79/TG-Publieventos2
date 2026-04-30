@@ -38,7 +38,12 @@ const budgetSchema = z.object({
 
 type BudgetFormValues = z.infer<typeof budgetSchema>;
 
-const BudgetForm: React.FC = () => {
+interface BudgetFormProps {
+  initialData?: any;
+  onCancel?: () => void;
+}
+
+const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
   const [clients, setClients] = useState<Client[]>([]);
   const [telas, setTelas] = useState<Tela[]>([]);
   const [modelos, setModelos] = useState<Modelo[]>([]);
@@ -47,13 +52,19 @@ const BudgetForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
 
-  const { register, control, handleSubmit, watch, setValue, formState: { errors } } = useForm<BudgetFormValues>({
+  const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<BudgetFormValues>({
     resolver: zodResolver(budgetSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       urgencia: "normal",
       items: [{ id: crypto.randomUUID(), modeloId: '', telaId: '', corteId: '', personalizacion: 0, acabados: 0, cantidad: 12 }]
     }
   });
+
+  useEffect(() => {
+    if (initialData) {
+      reset(initialData);
+    }
+  }, [initialData, reset]);
 
   const { fields, append, remove } = useFieldArray({
     control,
@@ -151,6 +162,7 @@ const BudgetForm: React.FC = () => {
   );
 
   const onSubmit = async (data: BudgetFormValues) => {
+    setIsLoading(true);
     // Inject calculated values
     const finalBudget = {
       ...data,
@@ -160,12 +172,34 @@ const BudgetForm: React.FC = () => {
         totalItem: itemCalculations[idx].total
       })),
       totalCost: grandTotal,
-      status: 'pending'
+      status: 'pending',
+      fecha: new Date().toISOString()
     };
     
-    console.log("Saving budget:", finalBudget);
-    // TODO: implement API save
-    alert("Presupuesto calculado y listo para ser guardado (Simulado)");
+    try {
+      const url = initialData?._id ? `/api/budgets/${initialData._id}` : '/api/budgets';
+      const method = initialData?._id ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(finalBudget)
+      });
+      
+      if (res.ok) {
+        alert(initialData?._id ? "Presupuesto actualizado exitosamente" : "Presupuesto guardado exitosamente");
+        if (onCancel) onCancel();
+        else window.location.reload();
+      } else {
+        const err = await res.json();
+        alert(err.message || "Error al guardar presupuesto");
+      }
+    } catch (error) {
+      console.error("Error saving budget:", error);
+      alert("Error de conexión al servidor");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isLoading) return (

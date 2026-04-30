@@ -76,6 +76,16 @@ const CortesCatalog: React.FC = () => {
     }
   };
 
+  const handleDelete = async (item: any) => {
+    if (!confirm(`¿Está seguro de eliminar el corte "${item.nombre}"?`)) return;
+    try {
+      const res = await fetch(`/api/catalogs/cortes/${item._id}`, { method: 'DELETE' });
+      if (res.ok) fetchData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const columns = [
     { header: 'Nombre del Corte', accessor: 'nombre' as any },
     { header: 'Factor Consumo Tela', accessor: 'factorConsumoTela' as any },
@@ -91,6 +101,7 @@ const CortesCatalog: React.FC = () => {
         columns={columns}
         onAdd={() => openModal()}
         onEdit={(item) => openModal(item)}
+        onDelete={handleDelete}
       />
 
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>

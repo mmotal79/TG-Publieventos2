@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Pencil, Trash2 } from 'lucide-react';
 
 interface Column<T> {
   header: string;
@@ -82,22 +82,29 @@ export function GenericTable<T extends { id?: string; _id?: string }>({
                     {columns.map((col, index) => (
                       <TableCell key={index}>
                         {typeof col.accessor === 'function' 
-                          ? col.accessor(item) 
-                          : String((item as any)[col.accessor])}
+                          ? (col.accessor as any)(item) 
+                          : String((item as any)[col.accessor as any])}
                       </TableCell>
                     ))}
                     {(onEdit || onDelete) && (
-                      <TableCell className="text-right space-x-2">
-                        {onEdit && (
-                          <Button variant="ghost" size="sm" onClick={() => onEdit(item)}>
-                            Editar
-                          </Button>
-                        )}
-                        {onDelete && (
-                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => onDelete(item)}>
-                            Eliminar
-                          </Button>
-                        )}
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {onEdit && (
+                            <Button variant="ghost" size="icon" onClick={() => onEdit(item)}>
+                              <Pencil size={16} />
+                            </Button>
+                          )}
+                          {onDelete && (
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10" 
+                              onClick={() => onDelete(item)}
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          )}
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>

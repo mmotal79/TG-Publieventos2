@@ -16,6 +16,7 @@ import userRoutes from "./src/routes/userRoutes.js";
 import catalogRoutes from "./src/routes/catalogRoutes.js";
 import clientRoutes from "./src/routes/clientRoutes.js";
 import configRoutes from "./src/routes/configRoutes.js";
+import budgetRoutes from "./src/routes/budgetRoutes.js";
 import { initializeAdmin } from "./src/lib/dbInit.js";
 
 dotenv.config();
@@ -86,6 +87,7 @@ async function startServer() {
   app.use("/api/catalogs", catalogRoutes);
   app.use("/api/clients", clientRoutes);
   app.use("/api/config", configRoutes);
+  app.use("/api/budgets", budgetRoutes);
 
   // --- API GUARD (Filtro de Seguridad) ---
   // Cualquier petición que empiece por /api/ y llegue aquí es un 404 real.

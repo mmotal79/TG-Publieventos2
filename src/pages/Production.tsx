@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Play, CheckCircle, AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const Production: React.FC = () => {
   const tasks = [
@@ -123,5 +124,4 @@ const Production: React.FC = () => {
   );
 };
 
-import { cn } from '@/lib/utils';
 export default Production;
