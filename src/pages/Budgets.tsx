@@ -101,61 +101,133 @@ const Budgets: React.FC = () => {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {isLoading ? (
-                <div className="flex justify-center p-8">
-                  <Loader2 className="animate-spin h-8 w-8 text-primary" />
+                <div className="p-12 flex justify-center items-center flex-col gap-3 text-slate-400">
+                  <Loader2 className="animate-spin" size={32} />
+                  <p className="text-sm font-medium animate-pulse">Cargando historial...</p>
+                </div>
+              ) : filteredBudgets.length === 0 ? (
+                <div className="p-20 text-center text-slate-400 border-2 border-dashed m-6 rounded-2xl">
+                  <Search size={48} className="mx-auto mb-4 opacity-20" />
+                  <p className="font-medium text-lg italic">No se encontraron presupuestos</p>
+                  <p className="text-sm mt-1">Intenta con otros términos de búsqueda.</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Fecha</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Descripción</TableHead>
-                      <TableHead>Total</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead className="text-right">Acciones</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block overflow-x-auto text-sm">
+                    <Table>
+                      <TableHeader className="bg-slate-50">
+                        <TableRow>
+                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Fecha</TableHead>
+                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Cliente</TableHead>
+                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Descripción</TableHead>
+                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Monto ($)</TableHead>
+                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Estado</TableHead>
+                          <TableHead className="text-right font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Acciones</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredBudgets.map((b) => (
+                          <TableRow key={b._id} className="hover:bg-slate-50/80 transition-colors border-slate-100 group">
+                            <TableCell className="font-medium text-slate-600">
+                              {new Date(b.fecha || b.createdAt).toLocaleDateString('es-VE')}
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-bold text-slate-900 group-hover:text-primary transition-colors">
+                                {b.clientId?.razonSocial || 'Desconocido'}
+                              </div>
+                              <div className="text-[10px] text-slate-400 font-medium uppercase">RIF: {b.clientId?.rif || '-'}</div>
+                            </TableCell>
+                            <TableCell className="max-w-[200px] truncate">
+                              <span className="text-zinc-600 font-medium">"{b.description}"</span>
+                            </TableCell>
+                            <TableCell className="font-black text-slate-900">
+                              {formatCurrency(b.totalCost)}
+                            </TableCell>
+                            <TableCell>{getStatusBadge(b.status)}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-primary hover:bg-primary/10"
+                                  onClick={() => setPreviewingBudget(b)}
+                                  title="Ver/Imprimir"
+                                >
+                                  <Printer size={15} />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={() => handleEdit(b)}>
+                                  <Pencil size={15} />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50" onClick={() => handleDelete(b._id)}>
+                                  <Trash2 size={15} />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="md:hidden p-4 space-y-4 bg-slate-50/50">
                     {filteredBudgets.map((b) => (
-                      <TableRow key={b._id}>
-                        <TableCell className="text-muted-foreground text-sm">
-                          {new Date(b.fecha || b.createdAt).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell className="font-medium">{b.clientId?.razonSocial || 'Desconocido'}</TableCell>
-                        <TableCell>{b.description}</TableCell>
-                        <TableCell className="font-bold">{formatCurrency(b.totalCost)}</TableCell>
-                        <TableCell>{getStatusBadge(b.status)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="text-primary hover:text-primary"
-                              onClick={() => setPreviewingBudget(b)}
-                              title="Visualizar"
-                            >
-                              <Printer size={16} />
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(b)}>
-                              <Pencil size={16} />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(b._id)}
-                            >
-                              <Trash2 size={16} />
-                            </Button>
+                      <Card key={b._id} className="border-slate-200 overflow-hidden hover:shadow-md transition-shadow active:scale-[0.98]">
+                        <div className="p-4 space-y-3">
+                          <div className="flex justify-between items-start">
+                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">
+                              {new Date(b.fecha || b.createdAt).toLocaleDateString('es-VE')}
+                            </span>
+                            {getStatusBadge(b.status)}
                           </div>
-                        </TableCell>
-                      </TableRow>
+                          
+                          <div>
+                            <h3 className="font-black text-slate-900 leading-tight uppercase tracking-tight text-sm">
+                              {b.clientId?.razonSocial || 'Desconocido'}
+                            </h3>
+                            <p className="text-xs italic text-slate-500 mt-1">"{b.description}"</p>
+                          </div>
+
+                          <div className="flex justify-between items-end pt-3 border-t border-slate-100">
+                            <div>
+                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Estimado</p>
+                              <p className="text-lg font-black text-rose-600">{formatCurrency(b.totalCost)}</p>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-10 w-10 border-slate-200 text-slate-600 shadow-sm"
+                                onClick={() => setPreviewingBudget(b)}
+                              >
+                                <Printer size={18} />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-10 w-10 border-blue-200 text-blue-600 shadow-sm"
+                                onClick={() => handleEdit(b)}
+                              >
+                                <Pencil size={18} />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-10 w-10 border-rose-200 text-rose-600 shadow-sm"
+                                onClick={() => handleDelete(b._id)}
+                              >
+                                <Trash2 size={18} />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

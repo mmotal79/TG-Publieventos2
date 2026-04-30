@@ -25,8 +25,8 @@ const budgetItemSchema = z.object({
   modeloId: z.string().min(1, "Requerido"),
   telaId: z.string().min(1, "Requerido"),
   corteId: z.string().min(1, "Requerido"),
-  personalizacion: z.number().min(0).optional().default(0),
-  acabados: z.number().min(0).optional().default(0),
+  personalizacion: z.number().default(0),
+  acabados: z.number().default(0),
   cantidad: z.number().min(1),
 });
 
@@ -35,7 +35,7 @@ const budgetSchema = z.object({
   estructuraCostosId: z.string().min(1, "Seleccione una estructura"),
   urgencia: z.enum(['normal', 'urgente', 'planificada']),
   description: z.string().min(1, "Ingrese una descripción"),
-  observations: z.string().optional(),
+  observations: z.string().nullish().default(""),
   items: z.array(budgetItemSchema).min(1, "Agregue al menos un item"),
 });
 
@@ -56,7 +56,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<BudgetFormValues>({
+  const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<any>({
     resolver: zodResolver(budgetSchema),
     defaultValues: initialData || {
       urgencia: "normal",
@@ -66,10 +66,21 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
 
   useEffect(() => {
     if (initialData) {
-      reset({
+      // Normalize IDs if they are objects
+      const normalizedData = {
         ...initialData,
-        observations: initialData.observations || initialData.notes || ""
-      });
+        clientId: typeof initialData.clientId === 'object' ? initialData.clientId._id : initialData.clientId,
+        estructuraCostosId: typeof initialData.estructuraCostosId === 'object' ? initialData.estructuraCostosId._id : initialData.estructuraCostosId,
+        observations: initialData.observations || initialData.notes || "",
+        items: initialData.items?.map((item: any) => ({
+          ...item,
+          id: item.id || crypto.randomUUID(),
+          modeloId: typeof item.modeloId === 'object' ? item.modeloId._id : item.modeloId,
+          telaId: typeof item.telaId === 'object' ? item.telaId._id : item.telaId,
+          corteId: typeof item.corteId === 'object' ? item.corteId._id : item.corteId,
+        }))
+      };
+      reset(normalizedData);
     }
   }, [initialData, reset]);
 
@@ -208,7 +219,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
     [itemCalculations]
   );
 
-  const onSubmit = async (data: BudgetFormValues) => {
+  const onSubmit = async (data: any) => {
     setIsLoading(true);
     // Inject calculated values
     const finalBudget = {
