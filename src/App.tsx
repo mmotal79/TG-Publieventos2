@@ -9,6 +9,7 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Budgets from './pages/Budgets';
 import Payroll from './pages/Payroll';
+import SecurityDashboard from './pages/SecurityDashboard';
 import Clients from './pages/Clients';
 import Production from './pages/Production';
 import Login from './pages/Login';
@@ -51,6 +52,7 @@ const AppContent = () => {
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/production" element={<Production />} />
           <Route path="/payroll" element={<Payroll />} />
+          <Route path="/security" element={<SecurityDashboard />} />
           
           {/* Catalogs */}
           <Route path="/catalogs/telas" element={<TelasCatalog />} />

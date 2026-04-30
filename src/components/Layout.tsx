@@ -21,7 +21,8 @@ import {
   Shirt,
   Palette,
   Layers,
-  Calculator
+  Calculator,
+  ShieldAlert
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -54,6 +55,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Transacciones', path: '/transactions', icon: CreditCard },
     { name: 'Producción', path: '/production', icon: Factory },
     { name: 'Nómina', path: '/payroll', icon: Wallet },
+    { name: 'Seguridad', path: '/security', icon: ShieldAlert },
   ];
 
   const catalogItems = [

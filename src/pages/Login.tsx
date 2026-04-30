@@ -4,8 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { LogIn, Loader2 } from 'lucide-react';
+import { LogIn, Loader2, ShieldAlert } from 'lucide-react';
 import { loginWithGoogle } from '@/firebase';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -13,6 +21,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [steps, setSteps] = useState<string[]>([]);
+  const [showSecurityAlert, setShowSecurityAlert] = useState(false);
 
   const addStep = (msg: string) => {
     setSteps(prev => [...prev, `${new Date().toLocaleTimeString()} - ${msg}`]);
@@ -87,7 +96,37 @@ const Login: React.FC = () => {
         if (errorText.toLowerCase().includes('<!doctype html')) {
           setError('❌ ERROR DE ENRUTAMIENTO: El servidor no detectó la API y devolvió la página web principal. Verifique la configuración del backend.');
         } else {
+          const detectDevice = () => {
+            const ua = navigator.userAgent;
+            if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) return "tablet";
+            if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) return "mobile";
+            return "desktop";
+          };
+
+          const logSecurityAlert = async () => {
+            try {
+              const forensicData = {
+                email: email,
+                userAgent: navigator.userAgent,
+                deviceType: detectDevice(),
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                resolution: `${window.screen.width}x${window.screen.height}`,
+                language: navigator.language,
+                attemptDate: new Date().toISOString()
+              };
+              await fetch('/api/security', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(forensicData)
+              });
+            } catch (e) {
+              console.error("Failed to log security event:", e);
+            }
+          };
+
+          logSecurityAlert();
           setError('El correo institucional no está registrado en el sistema de Publieventos.');
+          setShowSecurityAlert(true);
         }
       }
     } catch (err: any) {
@@ -170,6 +209,32 @@ const Login: React.FC = () => {
           </form>
         </CardContent>
       </Card>
+
+      <Dialog open={showSecurityAlert} onOpenChange={setShowSecurityAlert}>
+        <DialogContent className="sm:max-w-md border-red-200">
+          <DialogHeader>
+            <DialogTitle className="text-red-600 flex items-center gap-2">
+              <ShieldAlert className="w-6 h-6" />
+              Alerta de Seguridad
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-slate-700 font-medium mb-2">
+              Se ha detectado un intento de acceso no autorizado.
+            </p>
+            <p className="text-slate-600 text-sm leading-relaxed">
+              El correo ingresado <code className="bg-slate-100 px-1 py-0.5 rounded text-red-600 font-mono">{email}</code> no está registrado en nuestro componente de usuarios. 
+              <br /><br />
+              Esta acción ha sido registrada como un <strong>intento de violación de la seguridad</strong>. Si usted es personal autorizado y ha recibido este mensaje por error, por favor informe a su supervisor o al departamento de TI inmediatamente.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="destructive" className="w-full" onClick={() => setShowSecurityAlert(false)}>
+              Reconocido y Entendido
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
