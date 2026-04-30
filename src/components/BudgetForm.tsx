@@ -460,9 +460,9 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
         </Card>
       </div>
 
-      {/* Item Table Selection */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+      {/* Item Table/Cards Selection */}
+      <Card className="border-none sm:border shadow-none sm:shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between px-4 sm:px-6">
           <div>
             <CardTitle className="text-lg">Detalle del Pedido</CardTitle>
             <p className="text-xs text-muted-foreground">Especifique modelos, materiales y cantidades.</p>
@@ -474,19 +474,18 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
             className="gap-2 border-primary text-primary hover:bg-primary/10 transition-all font-bold"
             onClick={() => append({ id: crypto.randomUUID(), modeloId: '', telaId: '', corteId: '', personalizacion: 0, acabados: 0, cantidad: 1 })}
           >
-            <Plus size={16} /> Nuevo Item
+            <Plus size={16} /> <span className="hidden sm:inline">Nuevo artículo</span><span className="sm:hidden">Añadir</span>
           </Button>
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto border rounded-lg">
+        <CardContent className="p-0 sm:p-6">
+          {/* Desktop Version: Table */}
+          <div className="hidden md:block overflow-x-auto border rounded-lg mx-6 mb-6">
             <table className="w-full text-sm text-left">
               <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b">
                 <tr>
                   <th className="px-4 py-3 min-w-[200px]">Modelo / Prenda</th>
                   <th className="px-4 py-3 min-w-[200px]">Tela / Material</th>
                   <th className="px-4 py-3 min-w-[150px]">Corte / Consumo</th>
-                  <th className="px-4 py-3 min-w-[120px]">Pers. ($)</th>
-                  <th className="px-4 py-3 min-w-[120px]">Acab. ($)</th>
                   <th className="px-4 py-3 min-w-[100px]">Cant.</th>
                   <th className="px-4 py-3 text-right">Unitario</th>
                   <th className="px-4 py-3 text-right">Total</th>
@@ -501,10 +500,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                         control={control}
                         name={`items.${index}.modeloId`}
                         render={({ field }) => (
-                          <Select 
-                            value={field.value || ""} 
-                            onValueChange={field.onChange}
-                          >
+                          <Select value={field.value || ""} onValueChange={field.onChange}>
                             <SelectTrigger className="h-8 text-xs border-transparent hover:border-slate-200 transition-all">
                               <SelectValue placeholder="Modelo...">
                                 {modelos.find(m => m._id === field.value)?.tipoPrenda}
@@ -524,10 +520,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                         control={control}
                         name={`items.${index}.telaId`}
                         render={({ field }) => (
-                          <Select 
-                            value={field.value || ""} 
-                            onValueChange={field.onChange}
-                          >
+                          <Select value={field.value || ""} onValueChange={field.onChange}>
                             <SelectTrigger className="h-8 text-xs border-transparent hover:border-slate-200 transition-all">
                               <SelectValue placeholder="Tela...">
                                 {telas.find(t => t._id === field.value)?.nombre}
@@ -535,7 +528,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                             </SelectTrigger>
                             <SelectContent>
                               {telas.map(t => (
-                                <SelectItem key={t._id} value={t._id}>{t.nombre} (${t.costoPorMetro})</SelectItem>
+                                <SelectItem key={t._id} value={t._id}>{t.nombre}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -547,10 +540,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                         control={control}
                         name={`items.${index}.corteId`}
                         render={({ field }) => (
-                          <Select 
-                            value={field.value || ""} 
-                            onValueChange={field.onChange}
-                          >
+                          <Select value={field.value || ""} onValueChange={field.onChange}>
                             <SelectTrigger className="h-8 text-xs border-transparent hover:border-slate-200 transition-all">
                               <SelectValue placeholder="Corte...">
                                 {cortes.find(c => c._id === field.value)?.nombre}
@@ -558,27 +548,11 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                             </SelectTrigger>
                             <SelectContent>
                               {cortes.map(c => (
-                                <SelectItem key={c._id} value={c._id}>{c.nombre} ({c.factorConsumoTela}m)</SelectItem>
+                                <SelectItem key={c._id} value={c._id}>{c.nombre}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         )}
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Input 
-                        type="number" 
-                        step="0.01" 
-                        className="h-8 text-xs w-full" 
-                        {...register(`items.${index}.personalizacion`, { valueAsNumber: true })} 
-                      />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Input 
-                        type="number" 
-                        step="0.01" 
-                        className="h-8 text-xs w-full" 
-                        {...register(`items.${index}.acabados`, { valueAsNumber: true })} 
                       />
                     </td>
                     <td className="px-4 py-3">
@@ -596,9 +570,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                     </td>
                     <td className="px-4 py-3 text-center">
                       <Button 
-                        type="button" 
-                        variant="ghost" 
-                        size="icon" 
+                        type="button" variant="ghost" size="icon" 
                         className="h-6 w-6 text-destructive opacity-50 hover:opacity-100"
                         onClick={() => remove(index)}
                         disabled={fields.length === 1}
@@ -609,16 +581,149 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="bg-slate-50 uppercase text-[10px] font-black border-t">
-                <tr>
-                  <td colSpan={7} className="px-4 py-4 text-right text-slate-500">Total Detalle:</td>
-                  <td className="px-4 py-4 text-right text-lg text-primary">{formatCurrency(grandTotal)}</td>
-                  <td></td>
-                </tr>
-              </tfoot>
             </table>
           </div>
-          {errors.items && <p className="text-xs text-destructive mt-2">{errors.items.message}</p>}
+
+          {/* Mobile Version: Cards (Fichas) */}
+          <div className="md:hidden space-y-4 px-4 pb-4">
+            {fields.map((field, index) => {
+              const calc = itemCalculations[index] || { unit: 0, total: 0 };
+              return (
+                <Card key={field.id} className="border-2 border-slate-100 shadow-sm overflow-hidden bg-white">
+                  <div className="bg-slate-50 px-4 py-2 border-b border-slate-100 flex justify-between items-center">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Artículo #{index + 1}</span>
+                    {fields.length > 1 && (
+                      <Button 
+                        type="button" 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 px-2 text-rose-500 hover:bg-rose-50 font-bold text-[10px]"
+                        onClick={() => remove(index)}
+                      >
+                        <Trash2 size={14} className="mr-1" /> ELIMINAR
+                      </Button>
+                    )}
+                  </div>
+                  <div className="p-4 space-y-4">
+                    <div className="space-y-3">
+                      <div className="space-y-1">
+                        <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Modelo / Prenda</Label>
+                        <Controller
+                          control={control}
+                          name={`items.${index}.modeloId`}
+                          render={({ field }) => (
+                            <Select value={field.value || ""} onValueChange={field.onChange}>
+                              <SelectTrigger className="h-11 border-2 border-slate-50 rounded-xl font-bold uppercase italic text-sm">
+                                <SelectValue placeholder="Modelo..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {modelos.map(m => (
+                                  <SelectItem key={m._id} value={m._id!}>{m.tipoPrenda}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Tela / Material</Label>
+                          <Controller
+                            control={control}
+                            name={`items.${index}.telaId`}
+                            render={({ field }) => (
+                              <Select value={field.value || ""} onValueChange={field.onChange}>
+                                <SelectTrigger className="h-11 border-2 border-slate-50 rounded-xl font-bold uppercase italic text-sm">
+                                  <SelectValue placeholder="Tela..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {telas.map(t => (
+                                    <SelectItem key={t._id} value={t._id!}>{t.nombre}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Tipo de Corte</Label>
+                          <Controller
+                            control={control}
+                            name={`items.${index}.corteId`}
+                            render={({ field }) => (
+                              <Select value={field.value || ""} onValueChange={field.onChange}>
+                                <SelectTrigger className="h-11 border-2 border-slate-50 rounded-xl font-bold uppercase italic text-sm">
+                                  <SelectValue placeholder="Corte..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {cortes.map(c => (
+                                    <SelectItem key={c._id} value={c._id!}>{c.nombre}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3 pt-2">
+                       <div className="space-y-1">
+                        <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center block">Cant.</Label>
+                        <Input 
+                          type="number" 
+                          className="h-11 font-black text-center border-2 border-slate-50 rounded-xl text-lg" 
+                          {...register(`items.${index}.cantidad`, { valueAsNumber: true })} 
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center block">Pers. ($)</Label>
+                        <Input 
+                          type="number" 
+                          step="0.01"
+                          className="h-11 font-black text-center border-2 border-slate-50 rounded-xl" 
+                          {...register(`items.${index}.personalizacion`, { valueAsNumber: true })} 
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center block">Acab. ($)</Label>
+                        <Input 
+                          type="number" 
+                          step="0.01"
+                          className="h-11 font-black text-center border-2 border-slate-50 rounded-xl" 
+                          {...register(`items.${index}.acabados`, { valueAsNumber: true })} 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-4 bg-slate-900 rounded-2xl p-4 flex justify-between items-center shadow-lg">
+                      <div className="text-left">
+                        <p className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1 italic">Precio Unitario</p>
+                        <p className="text-sm font-black text-white/80 italic tracking-tighter">
+                          {formatCurrency(calc.unit || 0)}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1 italic">Total Item</p>
+                        <p className="text-xl font-black text-rose-500 italic tracking-tighter drop-shadow-sm">
+                          {formatCurrency(calc.total || 0)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+
+          <div className="mt-4 flex justify-end items-center gap-4 bg-slate-50 p-6 rounded-b-xl border-t">
+            <span className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] italic">Monto Total Detalle:</span>
+            <div className="text-3xl font-black text-slate-900 italic tracking-tighter">
+              {formatCurrency(grandTotal)}
+            </div>
+          </div>
+          {errors.items && <p className="text-xs text-destructive mt-2 px-6">{errors.items.message}</p>}
         </CardContent>
       </Card>
 
