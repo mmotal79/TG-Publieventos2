@@ -27,7 +27,7 @@ const budgetItemSchema = z.object({
   corteId: z.string().min(1, "Requerido"),
   personalizacion: z.number().default(0),
   acabados: z.number().default(0),
-  cantidad: z.number().min(1),
+  cantidad: z.number().int("La cantidad debe ser un número entero").min(1, "Mínimo 1"),
 });
 
 const budgetSchema = z.object({
@@ -558,8 +558,15 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                     <td className="px-4 py-3">
                       <Input 
                         type="number" 
+                        min="1"
+                        step="1"
                         className="h-8 text-xs w-full font-bold" 
                         {...register(`items.${index}.cantidad`, { valueAsNumber: true })} 
+                        onKeyDown={(e) => {
+                          if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.key === '-') {
+                            e.preventDefault();
+                          }
+                        }}
                       />
                     </td>
                     <td className="px-4 py-3 text-right font-mono text-xs text-muted-foreground">
@@ -673,12 +680,19 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                     </div>
 
                     <div className="grid grid-cols-3 gap-3 pt-2">
-                       <div className="space-y-1">
+                      <div className="space-y-1">
                         <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center block">Cant.</Label>
                         <Input 
                           type="number" 
+                          min="1"
+                          step="1"
                           className="h-11 font-black text-center border-2 border-slate-50 rounded-xl text-lg" 
                           {...register(`items.${index}.cantidad`, { valueAsNumber: true })} 
+                          onKeyDown={(e) => {
+                            if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.key === '-') {
+                              e.preventDefault();
+                            }
+                          }}
                         />
                       </div>
                       <div className="space-y-1">

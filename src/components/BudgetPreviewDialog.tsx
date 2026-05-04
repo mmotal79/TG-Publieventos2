@@ -86,8 +86,8 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
           </style>
         </head>
         <body class="bg-slate-100 italic">
-          <div class="print-container">
-            ${printContent.innerHTML}
+          <div style="width: 210mm; margin: 0 auto; background: white;">
+            ${printContent.outerHTML}
           </div>
           <script>
             window.onload = () => {
