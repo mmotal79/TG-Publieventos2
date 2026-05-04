@@ -1,5 +1,6 @@
 {
   "name": "TG-Publieventos ERP/CRM",
   "description": "Sistema integral de gestión para fábrica textil: presupuestos, cobranza y nómina.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": []
 }

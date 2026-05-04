@@ -7,7 +7,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Plus, Trash2, Calculator, UserPlus, Info, Loader2, Eye } from 'lucide-react';
+import { Plus, Minus, Trash2, Calculator, UserPlus, Info, Loader2, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -47,6 +47,15 @@ interface BudgetFormProps {
 }
 
 const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const [clients, setClients] = useState<Client[]>([]);
   const [telas, setTelas] = useState<Tela[]>([]);
   const [modelos, setModelos] = useState<Modelo[]>([]);
@@ -478,8 +487,8 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
           </Button>
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
-          {/* Desktop Version: Table */}
-          <div className="hidden md:block overflow-x-auto border rounded-lg mx-6 mb-6">
+          {!isMobile ? (
+          <div className="overflow-x-auto border rounded-lg mx-6 mb-6">
             <table className="w-full text-sm text-left">
               <thead className="bg-slate-50 text-slate-500 uppercase text-[10px] font-bold border-b">
                 <tr>
@@ -556,18 +565,61 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                       />
                     </td>
                     <td className="px-4 py-3">
-                      <Input 
-                        type="number" 
-                        min="1"
-                        step="1"
-                        className="h-8 text-xs w-full font-bold" 
-                        {...register(`items.${index}.cantidad`, { valueAsNumber: true })} 
-                        onKeyDown={(e) => {
-                          if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.key === '-') {
-                            e.preventDefault();
-                          }
-                        }}
-                      />
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="icon" 
+                          className="h-8 w-8 text-slate-500"
+                          onClick={() => {
+                            const currentVal = watch(`items.${index}.cantidad`) || 1;
+                            if (currentVal > 1) {
+                              setValue(`items.${index}.cantidad`, currentVal - 1);
+                            }
+                          }}
+                        >
+                          <Minus size={12} />
+                        </Button>
+                        <Input 
+                          type="number" 
+                          min="1"
+                          step="1"
+                          className="h-8 text-xs w-16 text-center font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                          {...register(`items.${index}.cantidad`, { 
+                            valueAsNumber: true,
+                            min: 1,
+                            onChange: (e) => {
+                              const val = parseInt(e.target.value);
+                              if (isNaN(val) || val < 1) {
+                                setValue(`items.${index}.cantidad`, 1);
+                              }
+                            }
+                          })} 
+                          onKeyDown={(e) => {
+                            if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.key === '-') {
+                              e.preventDefault();
+                            }
+                          }}
+                          onBlur={(e) => {
+                            const val = parseInt(e.target.value);
+                            if (isNaN(val) || val < 1) {
+                              setValue(`items.${index}.cantidad`, 1);
+                            }
+                          }}
+                        />
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="icon" 
+                          className="h-8 w-8 text-slate-500"
+                          onClick={() => {
+                            const currentVal = watch(`items.${index}.cantidad`) || 1;
+                            setValue(`items.${index}.cantidad`, currentVal + 1);
+                          }}
+                        >
+                          <Plus size={12} />
+                        </Button>
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-right font-mono text-xs text-muted-foreground">
                       {formatCurrency(itemCalculations[index]?.unit || 0)}
@@ -590,9 +642,8 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
               </tbody>
             </table>
           </div>
-
-          {/* Mobile Version: Cards (Fichas) */}
-          <div className="md:hidden space-y-4 px-4 pb-4">
+          ) : (
+          <div className="space-y-4 px-4 pb-4">
             {fields.map((field, index) => {
               const calc = itemCalculations[index] || { unit: 0, total: 0 };
               return (
@@ -682,18 +733,61 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                     <div className="grid grid-cols-3 gap-3 pt-2">
                       <div className="space-y-1">
                         <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center block">Cant.</Label>
-                        <Input 
-                          type="number" 
-                          min="1"
-                          step="1"
-                          className="h-11 font-black text-center border-2 border-slate-50 rounded-xl text-lg" 
-                          {...register(`items.${index}.cantidad`, { valueAsNumber: true })} 
-                          onKeyDown={(e) => {
-                            if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.key === '-') {
-                              e.preventDefault();
-                            }
-                          }}
-                        />
+                        <div className="flex items-center gap-1 justify-center">
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="icon" 
+                            className="h-11 w-11 border-2 border-slate-50 rounded-xl"
+                            onClick={() => {
+                              const currentVal = watch(`items.${index}.cantidad`) || 1;
+                              if (currentVal > 1) {
+                                setValue(`items.${index}.cantidad`, currentVal - 1);
+                              }
+                            }}
+                          >
+                            <Minus size={16} />
+                          </Button>
+                          <Input 
+                            type="number" 
+                            min="1"
+                            step="1"
+                            className="h-11 w-16 font-black text-center border-2 border-slate-50 rounded-xl text-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                            {...register(`items.${index}.cantidad`, { 
+                              valueAsNumber: true,
+                              min: 1,
+                              onChange: (e) => {
+                                const val = parseInt(e.target.value);
+                                if (isNaN(val) || val < 1) {
+                                  setValue(`items.${index}.cantidad`, 1);
+                                }
+                              }
+                            })} 
+                            onKeyDown={(e) => {
+                              if (e.key === '.' || e.key === ',' || e.key === 'e' || e.key === 'E' || e.key === '-') {
+                                e.preventDefault();
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const val = parseInt(e.target.value);
+                              if (isNaN(val) || val < 1) {
+                                setValue(`items.${index}.cantidad`, 1);
+                              }
+                            }}
+                          />
+                          <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="icon" 
+                            className="h-11 w-11 border-2 border-slate-50 rounded-xl"
+                            onClick={() => {
+                              const currentVal = watch(`items.${index}.cantidad`) || 1;
+                              setValue(`items.${index}.cantidad`, currentVal + 1);
+                            }}
+                          >
+                            <Plus size={16} />
+                          </Button>
+                        </div>
                       </div>
                       <div className="space-y-1">
                         <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center block">Pers. ($)</Label>
@@ -734,6 +828,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
               );
             })}
           </div>
+          )}
 
           <div className="mt-4 flex justify-end items-center gap-4 bg-slate-50 p-6 rounded-b-xl border-t">
             <span className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] italic">Monto Total Detalle:</span>
