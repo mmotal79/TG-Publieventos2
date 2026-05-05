@@ -565,12 +565,12 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                       />
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 w-fit">
                         <Button 
                           type="button" 
                           variant="outline" 
                           size="icon" 
-                          className="h-8 w-8 text-slate-500"
+                          className="h-8 w-8 text-slate-500 shrink-0"
                           onClick={() => {
                             const currentVal = watch(`items.${index}.cantidad`) || 1;
                             if (currentVal > 1) {
@@ -584,7 +584,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                           type="number" 
                           min="1"
                           step="1"
-                          className="h-8 text-xs w-16 text-center font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                          className="h-8 text-xs w-14 text-center font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
                           {...register(`items.${index}.cantidad`, { 
                             valueAsNumber: true,
                             min: 1,
@@ -611,7 +611,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                           type="button" 
                           variant="outline" 
                           size="icon" 
-                          className="h-8 w-8 text-slate-500"
+                          className="h-8 w-8 text-slate-500 shrink-0"
                           onClick={() => {
                             const currentVal = watch(`items.${index}.cantidad`) || 1;
                             setValue(`items.${index}.cantidad`, currentVal + 1);
@@ -730,15 +730,15 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-3 pt-2">
+                    <div className="grid grid-cols-3 gap-2 pt-2">
                       <div className="space-y-1">
                         <Label className="text-[9px] font-black text-slate-400 uppercase tracking-widest text-center block">Cant.</Label>
-                        <div className="flex items-center gap-1 justify-center">
+                        <div className="flex items-center gap-0.5 justify-center">
                           <Button 
                             type="button" 
                             variant="outline" 
                             size="icon" 
-                            className="h-11 w-11 border-2 border-slate-50 rounded-xl"
+                            className="h-10 w-9 border-2 border-slate-50 rounded-l-xl rounded-r-none shrink-0"
                             onClick={() => {
                               const currentVal = watch(`items.${index}.cantidad`) || 1;
                               if (currentVal > 1) {
@@ -746,13 +746,13 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                               }
                             }}
                           >
-                            <Minus size={16} />
+                            <Minus size={14} />
                           </Button>
                           <Input 
                             type="number" 
                             min="1"
                             step="1"
-                            className="h-11 w-16 font-black text-center border-2 border-slate-50 rounded-xl text-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
+                            className="h-10 flex-1 min-w-[40px] font-black text-center border-y-2 border-x-0 border-slate-50 rounded-none text-base p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
                             {...register(`items.${index}.cantidad`, { 
                               valueAsNumber: true,
                               min: 1,
@@ -779,13 +779,13 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                             type="button" 
                             variant="outline" 
                             size="icon" 
-                            className="h-11 w-11 border-2 border-slate-50 rounded-xl"
+                            className="h-10 w-9 border-2 border-slate-50 rounded-r-xl rounded-l-none shrink-0"
                             onClick={() => {
                               const currentVal = watch(`items.${index}.cantidad`) || 1;
                               setValue(`items.${index}.cantidad`, currentVal + 1);
                             }}
                           >
-                            <Plus size={16} />
+                            <Plus size={14} />
                           </Button>
                         </div>
                       </div>
