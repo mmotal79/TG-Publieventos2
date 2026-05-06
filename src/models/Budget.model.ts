@@ -26,7 +26,8 @@ const BudgetSchema = new Schema({
   totalCost: { type: Number, required: true },
   volumeDiscountAmount: { type: Number, default: 0 },
   volumeDiscountPercent: { type: Number, default: 0 },
-  status: { type: String, enum: ['pending', 'approved', 'rejected', 'in_production'], default: 'pending' },
+  status: { type: String, enum: ['pending', 'approved', 'in_production', 'completed', 'delivered', 'cancelled', 'rejected'], default: 'pending' },
+  montoAbonado: { type: Number, default: 0 },
   fecha: { type: Date, default: Date.now }
 }, { timestamps: true });
 

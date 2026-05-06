@@ -14,12 +14,14 @@ import { Pencil, Trash2, Search, Loader2, Printer, Eye, MessageSquare, Mail } fr
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/services/budgetService';
 import BudgetPreviewDialog from '@/components/BudgetPreviewDialog';
+import BudgetStatusModal from '@/components/BudgetStatusModal';
 
 const Budgets: React.FC = () => {
   const [budgets, setBudgets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [previewingBudget, setPreviewingBudget] = useState<any | null>(null);
+  const [statusEditingBudget, setStatusEditingBudget] = useState<any | null>(null);
   const [config, setConfig] = useState<any>(null);
 
   useEffect(() => {
@@ -77,10 +79,13 @@ const Budgets: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'approved': return <Badge className="bg-green-500">Aprobado</Badge>;
+      case 'approved': return <Badge className="bg-blue-500">Aceptado con Abono</Badge>;
       case 'rejected': return <Badge variant="destructive">Rechazado</Badge>;
-      case 'in_production': return <Badge className="bg-blue-500">Producción</Badge>;
-      default: return <Badge variant="outline">Pendiente</Badge>;
+      case 'in_production': return <Badge className="bg-indigo-500">En Proceso</Badge>;
+      case 'completed': return <Badge className="bg-purple-500">Culminado</Badge>;
+      case 'delivered': return <Badge className="bg-green-500">Entregado y Pagado</Badge>;
+      case 'cancelled': return <Badge variant="destructive">Anulado</Badge>;
+      default: return <Badge variant="outline" className="bg-zinc-100 text-zinc-700 hover:bg-zinc-200">Pendiente</Badge>;
     }
   };
 
@@ -181,6 +186,15 @@ const Budgets: React.FC = () => {
                                 <Button 
                                   variant="ghost" 
                                   size="icon" 
+                                  className="h-8 w-8 text-indigo-500 hover:bg-indigo-50"
+                                  onClick={() => setStatusEditingBudget(b)}
+                                  title="Modificar Estatus"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-right-left"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
                                   className="h-8 w-8 text-blue-500 hover:bg-blue-50"
                                   onClick={() => {
                                     const empresa = config?.nombreComercial || 'GEOS';
@@ -250,19 +264,29 @@ const Budgets: React.FC = () => {
                               <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Estimado</p>
                               <p className="text-lg font-black text-rose-600">{formatCurrency(b.totalCost)}</p>
                             </div>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="flex flex-wrap gap-1.5 justify-end">
                               <Button 
                                 variant="outline" 
-                                size="sm" 
-                                className="h-9 border-slate-200 text-slate-600 shadow-sm text-[10px] font-bold px-2"
+                                size="icon" 
+                                className="h-8 w-8 border-slate-200 text-slate-600 shadow-sm"
                                 onClick={() => setPreviewingBudget(b)}
+                                title="Ver/Imprimir Presupuesto"
                               >
-                                <Printer size={14} className="mr-1" /> VER
+                                <Printer size={14} />
                               </Button>
                               <Button 
                                 variant="outline" 
-                                size="sm" 
-                                className="h-9 border-green-200 text-green-600 shadow-sm text-[10px] font-bold px-2"
+                                size="icon" 
+                                className="h-8 w-8 border-indigo-200 text-indigo-600 shadow-sm"
+                                onClick={() => setStatusEditingBudget(b)}
+                                title="Modificar Estatus"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-right-left"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-8 w-8 border-green-200 text-green-600 shadow-sm"
                                 onClick={() => {
                                   const empresa = config?.nombreComercial || 'GEOS';
                                   const contacto = b.clientId?.contacto || b.clientId?.personaContacto || 'Estimado Cliente';
@@ -279,13 +303,14 @@ const Budgets: React.FC = () => {
                                   
                                   window.open(`https://wa.me/${b.clientId?.celular?.replace(/\D/g, '') || ''}?text=${texto}`, '_blank');
                                 }}
+                                title="Enviar por WhatsApp"
                               >
                                 <MessageSquare size={14} />
                               </Button>
                               <Button 
                                 variant="outline" 
-                                size="sm" 
-                                className="h-9 border-blue-200 text-blue-600 shadow-sm text-[10px] font-bold px-2"
+                                size="icon" 
+                                className="h-8 w-8 border-blue-200 text-blue-600 shadow-sm"
                                 onClick={() => {
                                   const empresa = config?.nombreComercial || 'GEOS';
                                   const contacto = b.clientId?.contacto || b.clientId?.personaContacto || 'Estimado Cliente';
@@ -305,24 +330,27 @@ const Budgets: React.FC = () => {
                                   );
                                   window.location.href = `mailto:${b.clientId?.email || ''}?subject=${subject}&body=${body}`;
                                 }}
+                                title="Enviar por Correo"
                               >
-                                <Mail size={14} className="mr-1" /> EMAIL
+                                <Mail size={14} />
                               </Button>
                               <Button 
                                 variant="outline" 
-                                size="sm" 
-                                className="h-9 border-blue-200 text-blue-600 shadow-sm text-[10px] font-bold px-2"
+                                size="icon" 
+                                className="h-8 w-8 border-blue-200 text-blue-600 shadow-sm"
                                 onClick={() => handleEdit(b)}
+                                title="Editar Presupuesto"
                               >
-                                <Pencil size={14} className="mr-1" /> EDIT
+                                <Pencil size={14} />
                               </Button>
                               <Button 
                                 variant="outline" 
-                                size="sm" 
-                                className="h-9 border-rose-200 text-rose-600 shadow-sm text-[10px] font-bold px-2"
+                                size="icon" 
+                                className="h-8 w-8 border-rose-200 text-rose-600 shadow-sm"
                                 onClick={() => handleDelete(b._id)}
+                                title="Eliminar Presupuesto"
                               >
-                                <Trash2 size={14} className="mr-1" /> ELIM
+                                <Trash2 size={14} />
                               </Button>
                             </div>
                           </div>
@@ -339,6 +367,16 @@ const Budgets: React.FC = () => {
             budget={previewingBudget} 
             isOpen={!!previewingBudget} 
             onClose={() => setPreviewingBudget(null)} 
+          />
+
+          <BudgetStatusModal
+            budget={statusEditingBudget}
+            isOpen={!!statusEditingBudget}
+            onClose={() => setStatusEditingBudget(null)}
+            onUpdate={() => {
+              setStatusEditingBudget(null);
+              fetchBudgets();
+            }}
           />
         </TabsContent>
 
