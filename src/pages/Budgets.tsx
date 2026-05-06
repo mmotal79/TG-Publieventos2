@@ -15,6 +15,8 @@ import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/services/budgetService';
 import BudgetPreviewDialog from '@/components/BudgetPreviewDialog';
 import BudgetStatusModal from '@/components/BudgetStatusModal';
+import BudgetPaymentModal from '@/components/BudgetPaymentModal';
+import { CircleDollarSign } from 'lucide-react';
 
 const Budgets: React.FC = () => {
   const [budgets, setBudgets] = useState<any[]>([]);
@@ -22,6 +24,7 @@ const Budgets: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [previewingBudget, setPreviewingBudget] = useState<any | null>(null);
   const [statusEditingBudget, setStatusEditingBudget] = useState<any | null>(null);
+  const [payEditingBudget, setPayEditingBudget] = useState<any | null>(null);
   const [config, setConfig] = useState<any>(null);
 
   useEffect(() => {
@@ -148,8 +151,10 @@ const Budgets: React.FC = () => {
                           <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Fecha</TableHead>
                           <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Cliente</TableHead>
                           <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Descripción</TableHead>
-                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Monto ($)</TableHead>
-                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Estado</TableHead>
+                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4 text-right">Total ($)</TableHead>
+                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4 text-right">Pagado ($)</TableHead>
+                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4 text-right">Deuda ($)</TableHead>
+                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4 pl-4">Estado</TableHead>
                           <TableHead className="text-right font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Acciones</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -168,10 +173,16 @@ const Budgets: React.FC = () => {
                             <TableCell className="max-w-[200px] truncate">
                               <span className="text-zinc-600 font-medium">"{b.description}"</span>
                             </TableCell>
-                            <TableCell className="font-black text-slate-900">
+                            <TableCell className="font-black text-rose-600 text-right">
                               {formatCurrency(b.totalCost)}
                             </TableCell>
-                            <TableCell>{getStatusBadge(b.status)}</TableCell>
+                            <TableCell className="font-bold text-blue-600 text-right">
+                              {formatCurrency(b.montoAbonado || 0)}
+                            </TableCell>
+                            <TableCell className="font-black text-slate-800 text-right">
+                              {formatCurrency(Math.max(0, b.totalCost - (b.montoAbonado || 0)))}
+                            </TableCell>
+                            <TableCell className="pl-4">{getStatusBadge(b.status)}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
                                 <Button 
@@ -182,6 +193,15 @@ const Budgets: React.FC = () => {
                                   title="Ver/Imprimir"
                                 >
                                   <Printer size={15} />
+                                </Button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-8 w-8 text-emerald-600 hover:bg-emerald-50"
+                                  onClick={() => setPayEditingBudget(b)}
+                                  title="Registrar Pago"
+                                >
+                                  <CircleDollarSign size={15} />
                                 </Button>
                                 <Button 
                                   variant="ghost" 
@@ -259,12 +279,21 @@ const Budgets: React.FC = () => {
                             <p className="text-xs italic text-slate-500 mt-2">"{b.description}"</p>
                           </div>
 
-                          <div className="flex justify-between items-end pt-3 border-t border-slate-100">
-                            <div>
-                              <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Total Estimado</p>
-                              <p className="text-lg font-black text-rose-600">{formatCurrency(b.totalCost)}</p>
+                          <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="font-bold text-slate-400 uppercase tracking-widest text-[9px]">Total</span>
+                              <span className="font-black text-rose-600 text-sm">{formatCurrency(b.totalCost)}</span>
                             </div>
-                            <div className="flex flex-wrap gap-1.5 justify-end">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="font-bold text-slate-400 uppercase tracking-widest text-[9px]">Pagado</span>
+                              <span className="font-black text-blue-600">{formatCurrency(b.montoAbonado || 0)}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-xs pb-1 mb-1 border-b border-dashed border-slate-200">
+                              <span className="font-bold text-slate-500 uppercase tracking-widest text-[9px]">Deuda</span>
+                              <span className="font-black text-slate-800">{formatCurrency(Math.max(0, b.totalCost - (b.montoAbonado || 0)))}</span>
+                            </div>
+                            
+                            <div className="flex flex-wrap gap-1.5 justify-end mt-1">
                               <Button 
                                 variant="outline" 
                                 size="icon" 
@@ -273,6 +302,15 @@ const Budgets: React.FC = () => {
                                 title="Ver/Imprimir Presupuesto"
                               >
                                 <Printer size={14} />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="icon" 
+                                className="h-8 w-8 border-emerald-200 text-emerald-600 shadow-sm"
+                                onClick={() => setPayEditingBudget(b)}
+                                title="Registrar Pago"
+                              >
+                                <CircleDollarSign size={14} />
                               </Button>
                               <Button 
                                 variant="outline" 
@@ -376,6 +414,17 @@ const Budgets: React.FC = () => {
             onUpdate={() => {
               setStatusEditingBudget(null);
               fetchBudgets();
+            }}
+          />
+
+          <BudgetPaymentModal
+            budget={payEditingBudget}
+            isOpen={!!payEditingBudget}
+            onClose={() => setPayEditingBudget(null)}
+            onUpdate={() => {
+              fetchBudgets();
+              // Don't close immediately so they can see the payment in the history list if they want,
+              // or they can add another.
             }}
           />
         </TabsContent>

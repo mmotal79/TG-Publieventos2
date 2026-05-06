@@ -61,6 +61,23 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// Add payment to budget
+router.post("/:id/payments", async (req, res) => {
+  try {
+    const budget = await BudgetModel.findById(req.params.id);
+    if (!budget) return res.status(404).json({ error: "Presupuesto no encontrado" });
+    
+    const payment = req.body;
+    budget.payments.push(payment);
+    budget.montoAbonado += payment.amountUSD;
+    
+    await budget.save();
+    res.status(201).json(budget);
+  } catch (error: any) {
+    res.status(400).json({ error: "Error al registrar pago", message: error.message });
+  }
+});
+
 // Delete budget
 router.delete("/:id", async (req, res) => {
   try {

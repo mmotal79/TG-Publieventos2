@@ -5,6 +5,16 @@
 
 import mongoose, { Schema } from 'mongoose';
 
+const PaymentSchema = new Schema({
+  amount: { type: Number, required: true },
+  currency: { type: String, required: true },
+  method: { type: String, required: true },
+  reference: { type: String },
+  exchangeRate: { type: Number },
+  date: { type: Date, default: Date.now },
+  amountUSD: { type: Number, required: true },
+});
+
 const BudgetItemSchema = new Schema({
   modeloId: { type: Schema.Types.ObjectId, ref: 'Modelo', required: true },
   telaId: { type: Schema.Types.ObjectId, ref: 'Tela', required: true },
@@ -23,6 +33,7 @@ const BudgetSchema = new Schema({
   description: { type: String, required: true },
   observations: { type: String },
   items: [BudgetItemSchema],
+  payments: [PaymentSchema],
   totalCost: { type: Number, required: true },
   volumeDiscountAmount: { type: Number, default: 0 },
   volumeDiscountPercent: { type: Number, default: 0 },
