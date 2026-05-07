@@ -7,16 +7,20 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ShieldAlert, Monitor, Smartphone, Tablet, Globe, Clock, Search, BarChart3, Fingerprint } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ShieldAlert, Monitor, Smartphone, Tablet, Globe, Clock, Search, BarChart3, Fingerprint, Trash2, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const SecurityDashboard: React.FC = () => {
+  const { toast } = useToast();
   const [logs, setLogs] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isDeleting, setIsDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -34,6 +38,37 @@ const SecurityDashboard: React.FC = () => {
       console.error("Error fetching security data:", e);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDeleteLog = async (id: string) => {
+    if (!confirm("¿Está seguro de que desea eliminar este registro de seguridad permanentemente?")) return;
+    
+    setIsDeleting(id);
+    try {
+      const res = await fetch(`/api/security/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        toast({
+          title: "Registro eliminado",
+          description: "El log de seguridad ha sido borrado correctamente."
+        });
+        fetchData(); // Recargar datos
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo eliminar el registro",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error de conexión",
+        description: "Inténtelo de nuevo más tarde",
+        variant: "destructive"
+      });
+      console.error(error);
+    } finally {
+      setIsDeleting(null);
     }
   };
 
@@ -144,16 +179,17 @@ const SecurityDashboard: React.FC = () => {
                     <TableHead>Dispositivo</TableHead>
                     <TableHead>Zona Horaria</TableHead>
                     <TableHead>Forensia</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isLoading ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">Cargando registros...</TableCell>
+                      <TableCell colSpan={7} className="text-center py-8">Cargando registros...</TableCell>
                     </TableRow>
                   ) : filteredLogs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8">No hay registros de seguridad.</TableCell>
+                      <TableCell colSpan={7} className="text-center py-8">No hay registros de seguridad.</TableCell>
                     </TableRow>
                   ) : filteredLogs.map((log) => (
                     <TableRow key={log._id}>
@@ -176,6 +212,21 @@ const SecurityDashboard: React.FC = () => {
                         <div className="text-[10px] text-muted-foreground leading-tight max-w-[200px] truncate" title={log.userAgent}>
                           {log.browser} | {log.os} | {log.resolution}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          disabled={isDeleting === log._id}
+                          className="h-8 w-8 text-slate-300 hover:text-red-600 transition-colors"
+                          onClick={() => handleDeleteLog(log._id)}
+                        >
+                          {isDeleting === log._id ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 size={16} />
+                          )}
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
