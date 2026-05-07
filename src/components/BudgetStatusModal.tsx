@@ -80,12 +80,13 @@ export default function BudgetStatusModal({ budget, isOpen, onClose, onUpdate }:
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl">Modificar Estatus de Pedido</DialogTitle>
+      <DialogContent showCloseButton={true} className="w-[95vw] sm:max-w-3xl max-h-[95vh] overflow-y-auto p-0 border-none rounded-none sm:rounded-2xl">
+        <DialogHeader className="p-4 sm:p-6 border-b border-slate-100 bg-white sticky top-0 z-10">
+          <DialogTitle className="text-xl font-black text-slate-900 tracking-tight uppercase">Gestión de Estatus de Pedido</DialogTitle>
         </DialogHeader>
 
-        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
+        <div className="p-4 sm:p-6">
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-6 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
           <div>
             <h3 className="font-bold text-lg">{budget.clientId?.razonSocial || 'Desconocido'}</h3>
             <p className="text-sm text-slate-500">{budget.clientId?.contacto || budget.clientId?.personaContacto}</p>
@@ -171,6 +172,13 @@ export default function BudgetStatusModal({ budget, isOpen, onClose, onUpdate }:
               );
             })}
           </div>
+        </div>
+      </div>
+
+      <div className="fixed sm:static bottom-0 left-0 w-full bg-white p-4 border-t border-slate-100 flex justify-end z-20">
+          <Button variant="outline" className="w-full sm:w-auto h-11 sm:h-10 text-xs font-black uppercase tracking-widest" onClick={onClose} disabled={isSaving}>
+            Salir sin Guardar
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

@@ -175,29 +175,27 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent showCloseButton={true} className="w-[95vw] sm:w-[98vw] max-w-[650px] max-h-[95vh] h-full sm:h-auto overflow-y-auto p-0 border-none rounded-none sm:rounded-2xl">
-        <div className="bg-white sticky top-0 z-10 p-4 sm:p-6 border-b border-slate-100 shadow-sm">
-          <div className="flex flex-col gap-4">
-            <div className="space-y-1">
-              <DialogTitle className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Proceso Productivo</DialogTitle>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[50px]">Cliente:</span>
-                  <span className="text-xs font-bold text-slate-700 truncate">{budget?.clientId?.razonSocial || 'Cliente no definido'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[50px]">Proyecto:</span>
-                  <span className="text-xs text-slate-600 font-medium truncate">{budget?.description || 'Sin descripción'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[50px]">Entrada:</span>
-                  <span className="text-xs text-slate-500 font-bold">{budget?.createdAt ? new Date(budget.createdAt).toLocaleDateString() : '-'}</span>
+      <DialogContent showCloseButton={true} className="w-[95vw] sm:w-[98vw] max-w-[600px] max-h-[95vh] h-full sm:h-auto overflow-y-auto p-0 border-none rounded-none sm:rounded-2xl">
+        <div className="bg-white sticky top-0 z-10 p-4 sm:p-5 border-b border-slate-100 shadow-sm">
+          <div className="flex flex-col gap-3">
+            <div className="space-y-0.5">
+              <DialogTitle className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">Proceso Productivo</DialogTitle>
+              <div className="flex flex-col pt-1">
+                <span className="text-xs font-black text-slate-800 uppercase tracking-tight truncate leading-tight">
+                  {budget?.clientId?.razonSocial || 'Cliente no definido'}
+                </span>
+                <span className="text-[11px] text-slate-500 font-medium truncate leading-tight italic">
+                  {budget?.description || 'Sin descripción'}
+                </span>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Entrada:</span>
+                  <span className="text-[10px] text-slate-500 font-bold">{budget?.createdAt ? new Date(budget.createdAt).toLocaleDateString() : '-'}</span>
                 </div>
               </div>
             </div>
 
-            {/* General Progress Bar - Enhanced for Mobile */}
-            <div className="w-full bg-blue-50/50 p-3 sm:p-4 rounded-xl border border-blue-100/50">
+            {/* General Progress Bar - More Compact */}
+            <div className="w-full bg-blue-50/50 p-2.5 sm:p-3 rounded-xl border border-blue-100/50">
               {(() => {
                 const items = localItems || [];
                 const totalUnits = items.reduce((sum, it) => sum + (Number(it.cantidad) || 0), 0);
@@ -217,12 +215,12 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
                 const generalProgress = Math.min(100, Math.round((weightedSum / totalUnits) * 100));
 
                 return (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-1.5">
                     <div className="flex justify-between items-end px-1">
-                      <span className="text-[10px] font-black text-blue-700 uppercase tracking-tight">Progreso General de Orden</span>
-                      <span className="text-xl sm:text-2xl font-black text-blue-800 leading-none">{generalProgress}%</span>
+                      <span className="text-[9px] font-black text-blue-700 uppercase tracking-tight">Avance de Orden</span>
+                      <span className="text-xl font-black text-blue-800 leading-none">{generalProgress}%</span>
                     </div>
-                    <div className="h-3 w-full bg-white rounded-full overflow-hidden border border-blue-200/50 shadow-inner">
+                    <div className="h-2.5 w-full bg-white rounded-full overflow-hidden border border-blue-200/50 shadow-inner">
                       <div 
                         className={cn(
                           "h-full transition-all duration-1000 ease-out",
@@ -238,8 +236,8 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
           </div>
         </div>
 
-        <div className="p-4 sm:p-6 pt-2 space-y-4 pb-24">
-          <div className="space-y-4">
+        <div className="p-4 sm:p-5 pt-2 space-y-3 pb-24">
+          <div className="space-y-3">
             {localItems.map((item, idx) => {
               const id = item._id || String(idx);
               const isExpanded = expandedItems[id];
@@ -263,33 +261,19 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
                               {item.modeloId?.tipoPrenda || item.modeloId?.name || 'Ítem de Producción'}
                             </span>
                             <div className="flex items-center gap-2 mt-1">
-                               <span className="text-[10px] font-bold text-slate-400 uppercase">Cantidad:</span>
-                               <span className="text-xs font-black text-slate-700">{item.cantidad} ups</span>
+                               <span className="text-[10px] font-bold text-slate-400 uppercase">Cód:</span>
+                               <span className="text-[10px] font-black text-slate-500">#{id.slice(-4).toUpperCase()}</span>
                             </div>
                           </div>
                        </div>
-                       <div className="flex items-center gap-1">
-                         <Button 
-                           variant="ghost" 
-                           size="icon" 
-                           className="h-8 w-8 text-slate-400"
-                           onClick={(e) => { e.stopPropagation(); duplicateItem(idx); }}
-                         >
-                           <Copy size={14} />
-                         </Button>
-                         <Button 
-                           variant="ghost" 
-                           size="icon" 
-                           className="h-8 w-8 text-rose-300"
-                           onClick={(e) => { e.stopPropagation(); if (confirm("¿Eliminar ítem?")) removeItem(idx); }}
-                         >
-                           <Trash2 size={14} />
-                         </Button>
+                       <div className="flex flex-col items-end gap-0.5 pr-1">
+                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Unidades</span>
+                         <span className="text-sm font-black text-blue-600">{item.cantidad} ups</span>
                        </div>
                     </div>
 
                     {/* Progress Bar Item Context */}
-                    <div className="w-full space-y-1.5 bg-slate-50/50 p-2 sm:p-3 rounded-lg border border-slate-100">
+                    <div className="w-full space-y-1 bg-slate-50/50 p-2 sm:p-2.5 rounded-lg border border-slate-100">
                        {(() => {
                          const totalUnits = Number(item.cantidad) || 0;
                          let wSum = 0;
@@ -301,12 +285,12 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
                          const iProg = totalUnits === 0 ? 0 : Math.round((wSum / totalUnits) * 100);
                          
                          return (
-                           <div className="flex flex-col gap-1.5">
+                           <div className="flex flex-col gap-1">
                              <div className="flex justify-between items-center px-0.5">
                                <span className="text-[9px] font-black text-slate-500 uppercase tracking-tight">Progreso del Artículo</span>
                                <span className="text-xs font-black text-blue-600">{iProg}%</span>
                              </div>
-                             <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                             <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
                                <div 
                                  className={cn("h-full transition-all duration-500", iProg === 100 ? "bg-green-500" : "bg-blue-500")}
                                  style={{ width: `${iProg}%` }}
@@ -316,35 +300,14 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
                          );
                        })()}
                     </div>
-
-                    <div className="flex items-center justify-between pt-1">
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          className="h-8 w-8 p-0" 
-                          onClick={(e) => { e.stopPropagation(); updateItemTotalQty(idx, -1); }}
-                        >-</Button>
-                        <span className="text-xs font-black w-6 text-center">{item.cantidad}</span>
-                        <Button 
-                          variant="outline" 
-                          className="h-8 w-8 p-0" 
-                          onClick={(e) => { e.stopPropagation(); updateItemTotalQty(idx, 1); }}
-                        >+</Button>
-                      </div>
-                      {remaining === 0 ? (
-                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 text-[10px]">Listo</Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200">{remaining} pdt.</Badge>
-                      )}
-                    </div>
                   </div>
 
                   {isExpanded && (
-                    <div className="p-4 bg-white space-y-4 border-t border-slate-100">
-                      <div className="grid grid-cols-1 gap-3">
+                    <div className="p-3 bg-white space-y-2 border-t border-slate-100">
+                      <div className="grid grid-cols-1 gap-1">
                         {dynamicPhases.map(phase => (
-                          <div key={phase.key} className="flex items-center justify-between bg-slate-50/30 p-2 rounded-lg border border-slate-50">
-                            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">{phase.name || phase.label}</span>
+                          <div key={phase.key} className="flex items-center justify-between bg-slate-50/20 p-1 rounded-md border border-slate-50/50">
+                            <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 uppercase tracking-tight px-1">{phase.name || phase.label}</span>
                             <div className="flex items-center gap-2">
                               <Input 
                                 type="number"
@@ -361,13 +324,13 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
                                     handlePhaseChange(idx, phase.key, e.target.value);
                                   }
                                 }}
-                                className="w-20 h-9 text-right text-sm font-black border-slate-200 bg-white"
+                                className="w-16 h-7 text-right text-xs font-black border-slate-200 bg-white"
                               />
                             </div>
                           </div>
                         ))}
                       </div>
-                      <div className="pt-2 flex justify-between items-center text-xs font-black uppercase tracking-wider text-slate-400">
+                      <div className="pt-1 flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-slate-400">
                         <span>Total Asignado</span>
                         <span className={cn(currentTotal > item.cantidad ? "text-rose-600" : "text-slate-800")}>
                           {currentTotal} / {item.cantidad}
@@ -376,6 +339,7 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
                     </div>
                   )}
                 </div>
+
               );
             })}
           </div>

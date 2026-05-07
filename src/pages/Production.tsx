@@ -8,9 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Play, CheckCircle, AlertCircle, Loader2, Edit3, Settings } from 'lucide-react';
+import { Play, CheckCircle, AlertCircle, Loader2, Edit3, Settings, ListTodo, CheckSquare, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/components/ui/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BudgetStatusModal from '@/components/BudgetStatusModal';
 import ProductionUnitsModal from '@/components/ProductionUnitsModal';
 
@@ -47,7 +48,7 @@ const Production: React.FC = () => {
         const data = await res.json();
         
         let jobs = data.filter((b: any) => {
-          return b.status !== 'pending' && (b.montoAbonado > 0 || (b.payments && b.payments.length > 0));
+          return b.status !== 'pending' && (b.montoAbonado > 0 || (b.payments && b.payments.length > 0) || b.status === 'cancelled' || b.status === 'rejected');
         });
 
         jobs.sort((a: any, b: any) => {
@@ -83,7 +84,6 @@ const Production: React.FC = () => {
   const getFractionalProgress = (budget: any) => {
     if (!budget.items || budget.items.length === 0) return 0;
     
-    // Use dynamic phases if available, otherwise fallback to legacy weights
     const phasesToUse = productionPhases.length > 0 ? productionPhases : [
       { key: 'corte', weight: 0.15 },
       { key: 'costura', weight: 0.35 },
@@ -118,7 +118,6 @@ const Production: React.FC = () => {
     if (totalUnits === 0) return 0;
     const progressPercent = (totalWeightedProgress / totalUnits) * 100;
     
-    // Safety check: if status is 'completed' or 'delivered', always 100 unless override needed
     if (budget.status === 'completed' || budget.status === 'delivered') return 100;
     
     return Math.min(100, Math.round(progressPercent * 10) / 10);
@@ -146,105 +145,76 @@ const Production: React.FC = () => {
     }
   };
 
-  const activeOrders = budgets.filter(b => ['approved', 'in_production'].includes(b.status)).length;
-  const readyOrders = budgets.filter(b => b.status === 'completed').length;
-  // Let's use 'approved' as waiting for material for now as proxy
-  const waitingOrders = budgets.filter(b => b.status === 'approved').length;
+  const workQueue = budgets.filter(b => ['approved', 'in_production'].includes(b.status));
+  const completedQueue = budgets.filter(b => ['completed', 'delivered'].includes(b.status));
+  const cancelledQueue = budgets.filter(b => ['cancelled', 'rejected'].includes(b.status));
 
-  return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Gestión de Producción</h2>
-        <p className="text-muted-foreground">Seguimiento operativo de órdenes y procesos textiles.</p>
-      </div>
+  const activeOrdersCount = workQueue.length;
+  const readyOrdersCount = budgets.filter(b => b.status === 'completed').length;
+  const waitingOrdersCount = budgets.filter(b => b.status === 'approved').length;
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="bg-blue-50 border-blue-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-blue-800">Órdenes Activas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{activeOrders}</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-amber-50 border-amber-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-amber-800">Por Iniciar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-amber-900">{waitingOrders}</div>
-          </CardContent>
-        </Card>
-        <Card className="bg-green-50 border-green-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-green-800">Listas para Entrega</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-900">{readyOrders}</div>
-          </CardContent>
-        </Card>
-      </div>
+  const renderBudgetList = (list: any[], emptyMessage: string) => {
+    if (list.length === 0) {
+      return (
+        <div className="text-center p-12 text-slate-500 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+          {emptyMessage}
+        </div>
+      );
+    }
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Cola de Trabajo</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center p-8">
-              <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
-            </div>
-          ) : budgets.length === 0 ? (
-            <div className="text-center p-8 text-slate-500">
-              No hay órdenes de producción en la cola de trabajo.
-            </div>
-          ) : (
-          <>
-          <div className="md:hidden flex flex-col gap-4">
-            {budgets.map((job, index) => {
-              const progress = getFractionalProgress(job);
-              const totalItems = job.items ? job.items.reduce((sum: number, it: any) => sum + (it.cantidad || 0), 0) : 0;
-              const isFinished = job.status === 'completed' || job.status === 'delivered';
-              
-              return (
-                <div key={job._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 relative overflow-hidden">
-                   <div className="absolute top-0 left-0 w-1.5 h-full bg-blue-500" />
-                   
-                   <div className="flex justify-between items-start pl-2">
-                     <div className="flex flex-col gap-1">
-                       <div className="flex items-center gap-2">
-                         <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md uppercase tracking-widest">#{index + 1}</span>
-                         <span className="font-mono text-sm font-bold text-slate-800">OP-{job._id?.toString().slice(-6).toUpperCase()}</span>
-                       </div>
-                       <h3 className="font-bold text-lg text-slate-900 leading-tight">
-                         {job.clientId?.razonSocial || 'Cliente Desconocido'} / {job.description}
-                       </h3>
+    return (
+      <>
+        {/* Mobile View */}
+        <div className="md:hidden flex flex-col gap-4">
+          {list.map((job, index) => {
+            const progress = getFractionalProgress(job);
+            const totalItems = job.items ? job.items.reduce((sum: number, it: any) => sum + (it.cantidad || 0), 0) : 0;
+            const isFinished = ['completed', 'delivered'].includes(job.status);
+            const isCancelled = ['cancelled', 'rejected'].includes(job.status);
+            
+            return (
+              <div key={job._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 relative overflow-hidden">
+                 <div className={cn(
+                   "absolute top-0 left-0 w-1.5 h-full",
+                   isCancelled ? "bg-slate-300" : isFinished ? "bg-green-500" : "bg-blue-500"
+                 )} />
+                 
+                 <div className="flex justify-between items-start pl-2">
+                   <div className="flex flex-col gap-1">
+                     <div className="flex items-center gap-2">
+                       <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-2 py-0.5 rounded-md uppercase tracking-widest">#{index + 1}</span>
+                       <span className="font-mono text-sm font-bold text-slate-800">OP-{job._id?.toString().slice(-6).toUpperCase()}</span>
                      </div>
-                     <Badge variant={isFinished ? 'default' : job.status === 'in_production' ? 'secondary' : 'outline'}>
-                       {getStatusText(job.status)}
-                     </Badge>
+                     <h3 className="font-bold text-lg text-slate-900 leading-tight">
+                       {job.clientId?.razonSocial || 'Cliente Desconocido'} / {job.description}
+                     </h3>
                    </div>
+                   <Badge variant={isCancelled ? 'outline' : isFinished ? 'default' : job.status === 'in_production' ? 'secondary' : 'outline'}>
+                     {getStatusText(job.status)}
+                   </Badge>
+                 </div>
 
-                   <div className="grid grid-cols-2 gap-4 pl-2">
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Cantidad Total</span>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          onClick={() => setUnitsEditingBudget(job)}
-                          className="h-9 font-bold bg-slate-50 border-slate-200 justify-start"
-                        >
-                          {totalItems} Unidades
-                        </Button>
+                 <div className="grid grid-cols-2 gap-4 pl-2">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Cantidad Total</span>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={() => setUnitsEditingBudget(job)}
+                        className="h-9 font-bold bg-slate-50 border-slate-200 justify-start"
+                      >
+                        {totalItems} Unidades
+                      </Button>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">Etapa</span>
+                      <div className="h-9 flex items-center px-3 text-xs font-semibold bg-slate-50 rounded-md border border-slate-200 text-slate-700">
+                        {getStepText(job.status)}
                       </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Etapa</span>
-                        <div className="h-9 flex items-center px-3 text-xs font-semibold bg-slate-50 rounded-md border border-slate-200 text-slate-700">
-                          {getStepText(job.status)}
-                        </div>
-                      </div>
-                   </div>
+                    </div>
+                 </div>
 
+                 {!isCancelled && (
                    <div className="space-y-2 pl-2">
                      <div className="flex justify-between items-end">
                         <span className="text-[10px] font-bold text-slate-400 uppercase">Progreso Productivo</span>
@@ -260,19 +230,21 @@ const Production: React.FC = () => {
                         />
                      </div>
                    </div>
+                 )}
 
-                   <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                      <Button variant="ghost" size="sm" className="text-xs gap-2" onClick={() => setStatusEditingBudget(job)}>
-                        <Settings size={14} /> Gestionar Estado
-                      </Button>
-                   </div>
-                </div>
-              );
-            })}
-          </div>
-          
-          <div className="hidden md:block">
-            <Table>
+                 <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                    <Button variant="ghost" size="sm" className="text-xs gap-2" onClick={() => setStatusEditingBudget(job)}>
+                      <Settings size={14} /> Gestionar Estado
+                    </Button>
+                 </div>
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Desktop View */}
+        <div className="hidden md:block">
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12 text-center">#</TableHead>
@@ -286,9 +258,10 @@ const Production: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {budgets.map((job, index) => {
+              {list.map((job, index) => {
                 const progress = getFractionalProgress(job);
-                const isFinished = job.status === 'completed' || job.status === 'delivered';
+                const isFinished = ['completed', 'delivered'].includes(job.status);
+                const isCancelled = ['cancelled', 'rejected'].includes(job.status);
                 const totalItems = job.items ? job.items.reduce((sum: number, it: any) => sum + (it.cantidad || 0), 0) : 0;
                 
                 return (
@@ -318,21 +291,26 @@ const Production: React.FC = () => {
                   </TableCell>
                   <TableCell>{getStepText(job.status)}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-24 bg-slate-100 rounded-full overflow-hidden">
-                        <div 
-                          className={cn(
-                            "h-full transition-all duration-500",
-                            progress === 100 ? "bg-green-500" : "bg-blue-500"
-                          )} 
-                          style={{ width: `${progress}%` }} 
-                        />
+                    {!isCancelled ? (
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-24 bg-slate-100 rounded-full overflow-hidden">
+                          <div 
+                            className={cn(
+                              "h-full transition-all duration-500",
+                              progress === 100 ? "bg-green-500" : "bg-blue-500"
+                            )} 
+                            style={{ width: `${progress}%` }} 
+                          />
+                        </div>
+                        <span className="text-xs font-medium">{progress}%</span>
                       </div>
-                      <span className="text-xs font-medium">{progress}%</span>
-                    </div>
+                    ) : (
+                      <span className="text-xs text-slate-400 font-medium">N/A</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge variant={
+                      isCancelled ? 'outline' :
                       isFinished ? 'default' : 
                       job.status === 'in_production' ? 'secondary' : 'outline'
                     }>
@@ -348,10 +326,117 @@ const Production: React.FC = () => {
               )})}
             </TableBody>
           </Table>
+        </div>
+      </>
+    );
+  };
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h2 className="text-3xl font-black tracking-tighter text-slate-900 uppercase">Gestión de Producción</h2>
+        <p className="text-muted-foreground font-medium">Seguimiento operativo de órdenes y procesos textiles en tiempo real.</p>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="bg-blue-50 border-blue-100 shadow-sm overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-3 text-blue-200">
+             <Play size={40} />
           </div>
-          </>
-          )}
-        </CardContent>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-black text-blue-800 uppercase tracking-widest">Cola Activa</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black text-blue-900">{activeOrdersCount} Ordenes</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-amber-50 border-amber-100 shadow-sm overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-3 text-amber-200">
+             <AlertCircle size={40} />
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-black text-amber-800 uppercase tracking-widest">Por Iniciar</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black text-amber-900">{waitingOrdersCount} Pendientes</div>
+          </CardContent>
+        </Card>
+        <Card className="bg-green-50 border-green-100 shadow-sm overflow-hidden relative">
+           <div className="absolute top-0 right-0 p-3 text-green-200">
+             <CheckCircle size={40} />
+          </div>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-xs font-black text-green-800 uppercase tracking-widest">Para Entrega</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-black text-green-900">{readyOrdersCount} Listas</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="border-slate-200 overflow-hidden">
+        <Tabs defaultValue="work" className="w-full">
+          <CardHeader className="p-0 border-b bg-slate-50/30">
+            <TabsList className="h-14 w-full justify-start rounded-none bg-transparent p-1 gap-1">
+              <TabsTrigger 
+                value="work" 
+                className="h-10 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 gap-2 font-black text-[10px] uppercase tracking-widest"
+              >
+                <ListTodo size={14} /> Cola de Trabajo
+                <Badge variant="secondary" className="ml-1 px-1.5 h-4 text-[9px] font-bold">{workQueue.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="completed" 
+                className="h-10 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-600 gap-2 font-black text-[10px] uppercase tracking-widest"
+              >
+                <CheckSquare size={14} /> Culminados
+                <Badge variant="outline" className="ml-1 px-1.5 h-4 text-[9px] font-bold text-green-600 border-green-100">{completedQueue.length}</Badge>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="cancelled" 
+                className="h-10 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-rose-600 gap-2 font-black text-[10px] uppercase tracking-widest"
+              >
+                <XCircle size={14} /> Anulados
+                <Badge variant="outline" className="ml-1 px-1.5 h-4 text-[9px] font-bold text-rose-500 border-rose-100">{cancelledQueue.length}</Badge>
+              </TabsTrigger>
+            </TabsList>
+          </CardHeader>
+          
+          <CardContent className="p-4 sm:p-6">
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center p-12 gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
+                <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Cargando Operaciones...</span>
+              </div>
+            ) : (
+              <>
+                <TabsContent value="work" className="mt-0 outline-none">
+                  <div className="mb-6 flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">En Proceso Productivo</h3>
+                  </div>
+                  {renderBudgetList(workQueue, "No hay órdenes activas en producción.")}
+                </TabsContent>
+                
+                <TabsContent value="completed" className="mt-0 outline-none">
+                  <div className="mb-6 flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-green-500" />
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Historial de Culminados</h3>
+                  </div>
+                  {renderBudgetList(completedQueue, "No hay órdenes registradas como culminadas recientemente.")}
+                </TabsContent>
+                
+                <TabsContent value="cancelled" className="mt-0 outline-none">
+                  <div className="mb-6 flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-rose-500" />
+                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Órdenes Anuladas o Rechazadas</h3>
+                  </div>
+                  {renderBudgetList(cancelledQueue, "No hay órdenes anuladas en este periodo.")}
+                </TabsContent>
+              </>
+            )}
+          </CardContent>
+        </Tabs>
       </Card>
       
       <BudgetStatusModal
