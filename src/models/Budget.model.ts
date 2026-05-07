@@ -23,7 +23,15 @@ const BudgetItemSchema = new Schema({
   acabados: { type: Number, default: 0 },
   cantidad: { type: Number, required: true },
   precioUnitario: { type: Number, required: true },
-  totalItem: { type: Number, required: true }
+  totalItem: { type: Number, required: true },
+  productionStatus: {
+    corte: { type: Number, default: 0 },
+    costura: { type: Number, default: 0 },
+    estampado: { type: Number, default: 0 },
+    acabados: { type: Number, default: 0 },
+    empaquetado: { type: Number, default: 0 },
+    entrega: { type: Number, default: 0 }
+  }
 });
 
 const BudgetSchema = new Schema({

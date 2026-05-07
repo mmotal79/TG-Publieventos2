@@ -19,6 +19,7 @@ import UsuariosCatalog from './pages/catalogs/UsuariosCatalog';
 import ModelosCatalog from './pages/catalogs/ModelosCatalog';
 import CortesCatalog from './pages/catalogs/CortesCatalog';
 import AcabadosCatalog from './pages/catalogs/AcabadosCatalog';
+import ProductionPhasesCatalog from './pages/catalogs/ProductionPhasesCatalog';
 import CostStructureCatalog from './pages/catalogs/CostStructureCatalog';
 import GlobalConfigPage from './pages/catalogs/GlobalConfig';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -60,6 +61,7 @@ const AppContent = () => {
           <Route path="/catalogs/cortes" element={<CortesCatalog />} />
           <Route path="/catalogs/personalizacion" element={<div>Catálogo de Personalización (Próximamente)</div>} />
           <Route path="/catalogs/acabados" element={<AcabadosCatalog />} />
+          <Route path="/catalogs/fases-produccion" element={<ProductionPhasesCatalog />} />
           <Route path="/catalogs/estructura-costos" element={<CostStructureCatalog />} />
           <Route path="/catalogs/usuarios" element={<UsuariosCatalog />} />
           <Route path="/catalogs/configuracion" element={<GlobalConfigPage />} />

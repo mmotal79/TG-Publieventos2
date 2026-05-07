@@ -64,6 +64,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Cortes', path: '/catalogs/cortes', icon: Scissors, show: true },
     { name: 'Personalización', path: '/catalogs/personalizacion', icon: Palette, show: true },
     { name: 'Acabados', path: '/catalogs/acabados', icon: BookOpen, show: true },
+    { name: 'Fases Producción', path: '/catalogs/fases-produccion', icon: Settings, show: true },
     { name: 'Estructura de Costos', path: '/catalogs/estructura-costos', icon: Calculator, show: isAdminOrManager },
     { name: 'Usuarios', path: '/catalogs/usuarios', icon: Users, show: isAdminOrManager },
     { name: 'Configuración', path: '/catalogs/configuracion', icon: Settings, show: isAdminOrManager },
