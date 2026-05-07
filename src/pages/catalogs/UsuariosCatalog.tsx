@@ -173,6 +173,9 @@ const UsuariosCatalog: React.FC = () => {
   }
 
   const filteredUsers = users.filter(u => {
+    // RBAC: Managers (Role 1) cannot see Admins (Role 0)
+    if (currentRole === 1 && u.rol === 0) return false;
+
     const matchesSearch = u.nombre.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = roleFilter === 'all' || u.rol.toString() === roleFilter;
     return matchesSearch && matchesRole;
@@ -211,7 +214,7 @@ const UsuariosCatalog: React.FC = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos los Roles</SelectItem>
-                  <SelectItem value="0">Admin</SelectItem>
+                  {currentRole === 0 && <SelectItem value="0">Admin</SelectItem>}
                   <SelectItem value="1">Gerente</SelectItem>
                   <SelectItem value="2">Vendedor</SelectItem>
                   <SelectItem value="3">Empleado</SelectItem>

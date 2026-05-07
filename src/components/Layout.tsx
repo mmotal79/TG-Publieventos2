@@ -119,40 +119,42 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             })}
           </nav>
 
-          <Accordion type="single" collapsible className="w-full mt-2">
-            <AccordionItem value="catalogos" className="border-b-0">
-              <AccordionTrigger className="px-3 py-2 text-muted-foreground hover:text-foreground hover:no-underline rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium">
-                <div className="flex items-center gap-3">
-                  <BookOpen size={20} />
-                  <span>Catálogos</span>
-                </div>
-              </AccordionTrigger>
-              <AccordionContent className="pt-1 pb-0">
-                <div className="flex flex-col space-y-1 pl-9 pr-2">
-                  {catalogItems.filter(item => item.show).map((item) => {
-                    const Icon = item.icon;
-                    const isActive = location.pathname === item.path;
-                    return (
-                      <Link
-                        key={item.path}
-                        to={item.path}
-                        onClick={() => setIsSidebarOpen(false)}
-                        className={cn(
-                          "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium",
-                          isActive 
-                            ? "bg-primary/10 text-primary" 
-                            : "text-muted-foreground hover:bg-slate-100 hover:text-foreground"
-                        )}
-                      >
-                        <Icon size={16} />
-                        <span>{item.name}</span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          </Accordion>
+          {isAdminOrManager && (
+            <Accordion type="single" collapsible className="w-full mt-2">
+              <AccordionItem value="catalogos" className="border-b-0">
+                <AccordionTrigger className="px-3 py-2 text-muted-foreground hover:text-foreground hover:no-underline rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium">
+                  <div className="flex items-center gap-3">
+                    <BookOpen size={20} />
+                    <span>Catálogos</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-1 pb-0">
+                  <div className="flex flex-col space-y-1 pl-9 pr-2">
+                    {catalogItems.filter(item => item.show).map((item) => {
+                      const Icon = item.icon;
+                      const isActive = location.pathname === item.path;
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setIsSidebarOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium",
+                            isActive 
+                              ? "bg-primary/10 text-primary" 
+                              : "text-muted-foreground hover:bg-slate-100 hover:text-foreground"
+                          )}
+                        >
+                          <Icon size={16} />
+                          <span>{item.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
         </div>
 
         <div className="p-4 border-t mt-auto">

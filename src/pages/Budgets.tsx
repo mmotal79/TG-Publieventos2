@@ -17,8 +17,10 @@ import BudgetPreviewDialog from '@/components/BudgetPreviewDialog';
 import BudgetStatusModal from '@/components/BudgetStatusModal';
 import BudgetPaymentModal from '@/components/BudgetPaymentModal';
 import { CircleDollarSign } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Budgets: React.FC = () => {
+  const { profile } = useAuth();
   const [budgets, setBudgets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -75,6 +77,22 @@ const Budgets: React.FC = () => {
   };
 
   const filteredBudgets = budgets
+    .filter(b => {
+      const currentRole = profile?.role ?? 2;
+      const userEmail = profile?.email;
+      
+      // RBAC Filtering rules:
+      // 1. Sellers (Role 2) see only their own budgets
+      if (currentRole === 2) {
+        return b.creatorEmail === userEmail;
+      }
+      // 2. Managers (Role 1) see all except Admin (Role 0) budgets
+      if (currentRole === 1) {
+        return b.creatorRole !== 0;
+      }
+      // 3. Admins (Role 0) see everything
+      return true;
+    })
     .filter(b => 
       b.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.clientId?.razonSocial?.toLowerCase().includes(searchTerm.toLowerCase())

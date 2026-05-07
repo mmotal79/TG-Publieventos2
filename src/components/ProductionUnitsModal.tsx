@@ -176,26 +176,26 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent showCloseButton={true} className="w-[95vw] sm:w-[98vw] max-w-[600px] max-h-[95vh] h-full sm:h-auto overflow-y-auto p-0 border-none rounded-none sm:rounded-2xl">
-        <div className="bg-white sticky top-0 z-10 p-4 sm:p-5 border-b border-slate-100 shadow-sm">
-          <div className="flex flex-col gap-3">
-            <div className="space-y-0.5">
-              <DialogTitle className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">Proceso Productivo</DialogTitle>
-              <div className="flex flex-col pt-1">
-                <span className="text-xs font-black text-slate-800 uppercase tracking-tight truncate leading-tight">
+        <div className="bg-white sticky top-0 z-10 p-3 sm:p-4 border-b border-slate-100 shadow-sm">
+          <div className="flex flex-col gap-2">
+            <div className="space-y-0">
+              <DialogTitle className="text-lg sm:text-xl font-black text-slate-900 tracking-tight leading-none text-center sm:text-left">Proceso Productivo</DialogTitle>
+              <div className="flex flex-col pt-1 text-center sm:text-left">
+                <span className="text-[11px] font-black text-slate-800 uppercase tracking-tight truncate leading-tight">
                   {budget?.clientId?.razonSocial || 'Cliente no definido'}
                 </span>
-                <span className="text-[11px] text-slate-500 font-medium truncate leading-tight italic">
+                <span className="text-[10px] text-slate-500 font-medium truncate leading-tight italic">
                   {budget?.description || 'Sin descripción'}
                 </span>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Entrada:</span>
-                  <span className="text-[10px] text-slate-500 font-bold">{budget?.createdAt ? new Date(budget.createdAt).toLocaleDateString() : '-'}</span>
+                <div className="flex items-center justify-center sm:justify-start gap-1 mt-0">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Entrada:</span>
+                  <span className="text-[9px] text-slate-500 font-bold">{budget?.createdAt ? new Date(budget.createdAt).toLocaleDateString() : '-'}</span>
                 </div>
               </div>
             </div>
 
             {/* General Progress Bar - More Compact */}
-            <div className="w-full bg-blue-50/50 p-2.5 sm:p-3 rounded-xl border border-blue-100/50">
+            <div className="w-full bg-blue-50/30 p-2 sm:p-2.5 rounded-lg border border-blue-100/50">
               {(() => {
                 const items = localItems || [];
                 const totalUnits = items.reduce((sum, it) => sum + (Number(it.cantidad) || 0), 0);
@@ -236,8 +236,8 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
           </div>
         </div>
 
-        <div className="p-4 sm:p-5 pt-2 space-y-3 pb-24">
-          <div className="space-y-3">
+        <div className="p-3 sm:p-4 pt-1 space-y-2 pb-24">
+          <div className="space-y-2">
             {localItems.map((item, idx) => {
               const id = item._id || String(idx);
               const isExpanded = expandedItems[id];
@@ -246,34 +246,34 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
               const remaining = item.cantidad - currentTotal;
 
               return (
-                <div key={id} className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
+                <div key={id} className="border border-slate-100 rounded-lg overflow-hidden bg-white shadow-sm">
                   <div 
-                    className="px-4 py-4 flex flex-col gap-3 cursor-pointer hover:bg-slate-50 transition-colors"
+                    className="px-3 py-3 flex flex-col gap-2 cursor-pointer hover:bg-slate-50 transition-colors"
                     onClick={() => toggleExpand(id)}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                       <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                            {isExpanded ? <ChevronDown size={18} className="text-slate-600" /> : <ChevronRight size={18} className="text-slate-600" />}
+                    <div className="flex items-start justify-between gap-1">
+                       <div className="flex items-center gap-2">
+                          <div className="h-7 w-7 rounded bg-slate-100 flex items-center justify-center shrink-0">
+                            {isExpanded ? <ChevronDown size={16} className="text-slate-600" /> : <ChevronRight size={16} className="text-slate-600" />}
                           </div>
                           <div className="flex flex-col">
-                            <span className="font-black text-sm text-slate-900 uppercase leading-tight tracking-tight">
+                            <span className="font-black text-xs text-slate-900 uppercase leading-tight tracking-tight">
                               {item.modeloId?.tipoPrenda || item.modeloId?.name || 'Ítem de Producción'}
                             </span>
-                            <div className="flex items-center gap-2 mt-1">
-                               <span className="text-[10px] font-bold text-slate-400 uppercase">Cód:</span>
-                               <span className="text-[10px] font-black text-slate-500">#{id.slice(-4).toUpperCase()}</span>
+                            <div className="flex items-center gap-1 mt-0">
+                               <span className="text-[9px] font-bold text-slate-400 uppercase">Cód:</span>
+                               <span className="text-[9px] font-black text-slate-500">#{id.slice(-4).toUpperCase()}</span>
                             </div>
                           </div>
                        </div>
-                       <div className="flex flex-col items-end gap-0.5 pr-1">
-                         <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Unidades</span>
-                         <span className="text-sm font-black text-blue-600">{item.cantidad} ups</span>
+                       <div className="flex flex-col items-end gap-0 pr-1">
+                         <span className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Unidades</span>
+                         <span className="text-xs font-black text-blue-600">{item.cantidad} ups</span>
                        </div>
                     </div>
 
                     {/* Progress Bar Item Context */}
-                    <div className="w-full space-y-1 bg-slate-50/50 p-2 sm:p-2.5 rounded-lg border border-slate-100">
+                    <div className="w-full space-y-0.5 bg-slate-50/30 p-1.5 sm:p-2 rounded border border-slate-100/50">
                        {(() => {
                          const totalUnits = Number(item.cantidad) || 0;
                          let wSum = 0;
@@ -285,12 +285,12 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
                          const iProg = totalUnits === 0 ? 0 : Math.round((wSum / totalUnits) * 100);
                          
                          return (
-                           <div className="flex flex-col gap-1">
+                           <div className="flex flex-col gap-0.5">
                              <div className="flex justify-between items-center px-0.5">
-                               <span className="text-[9px] font-black text-slate-500 uppercase tracking-tight">Progreso del Artículo</span>
-                               <span className="text-xs font-black text-blue-600">{iProg}%</span>
+                               <span className="text-[8px] font-black text-slate-400 uppercase tracking-tight">Progreso Artículo</span>
+                               <span className="text-[10px] font-black text-blue-600">{iProg}%</span>
                              </div>
-                             <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
+                             <div className="h-1 w-full bg-slate-200 rounded-full overflow-hidden">
                                <div 
                                  className={cn("h-full transition-all duration-500", iProg === 100 ? "bg-green-500" : "bg-blue-500")}
                                  style={{ width: `${iProg}%` }}
@@ -303,11 +303,11 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
                   </div>
 
                   {isExpanded && (
-                    <div className="p-3 bg-white space-y-2 border-t border-slate-100">
-                      <div className="grid grid-cols-1 gap-1">
+                    <div className="p-2 bg-white space-y-1 border-t border-slate-100">
+                      <div className="grid grid-cols-1 gap-0.5">
                         {dynamicPhases.map(phase => (
-                          <div key={phase.key} className="flex items-center justify-between bg-slate-50/20 p-1 rounded-md border border-slate-50/50">
-                            <span className="text-[10px] sm:text-[11px] font-bold text-slate-600 uppercase tracking-tight px-1">{phase.name || phase.label}</span>
+                          <div key={phase.key} className="flex items-center justify-between bg-slate-50/10 p-0.5 px-2 rounded border border-slate-50/30">
+                            <span className="text-[9px] sm:text-[10px] font-bold text-slate-600 uppercase tracking-tight">{phase.name || phase.label}</span>
                             <div className="flex items-center gap-2">
                               <Input 
                                 type="number"
@@ -324,22 +324,21 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
                                     handlePhaseChange(idx, phase.key, e.target.value);
                                   }
                                 }}
-                                className="w-16 h-7 text-right text-xs font-black border-slate-200 bg-white"
+                                className="w-14 h-6 text-right text-[10px] font-black border-slate-200 bg-white p-1"
                               />
                             </div>
                           </div>
                         ))}
                       </div>
-                      <div className="pt-1 flex justify-between items-center text-[10px] font-black uppercase tracking-wider text-slate-400">
+                      <div className="pt-0.5 flex justify-between items-center text-[9px] font-black uppercase tracking-wider text-slate-400">
                         <span>Total Asignado</span>
-                        <span className={cn(currentTotal > item.cantidad ? "text-rose-600" : "text-slate-800")}>
+                        <span className={cn("text-[10px]", currentTotal > item.cantidad ? "text-rose-600" : "text-slate-800")}>
                           {currentTotal} / {item.cantidad}
                         </span>
                       </div>
                     </div>
                   )}
                 </div>
-
               );
             })}
           </div>

@@ -19,6 +19,7 @@ import { formatCurrency } from '@/services/budgetService';
 import { cn } from '@/lib/utils';
 import { Client, Tela, Modelo, Corte, EstructuraCostos, Budget } from '@/types';
 import BudgetPreviewDialog from './BudgetPreviewDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const budgetItemSchema = z.object({
   id: z.string(),
@@ -47,6 +48,7 @@ interface BudgetFormProps {
 }
 
 const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
+  const { profile } = useAuth();
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -233,7 +235,9 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
     // Inject calculated values
     const finalBudget = {
       ...data,
-      items: data.items.map((item, idx) => ({
+      creatorEmail: profile?.email || 'unknown',
+      creatorRole: profile?.role ?? 2,
+      items: data.items.map((item: any, idx: number) => ({
         ...item,
         precioUnitario: itemCalculations[idx].unit,
         totalItem: itemCalculations[idx].total
