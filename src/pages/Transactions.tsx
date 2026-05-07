@@ -55,7 +55,12 @@ const Transactions: React.FC = () => {
           }
         });
         
-        flatTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        flatTransactions.sort((a, b) => {
+          const timeB = new Date(b.date).getTime();
+          const timeA = new Date(a.date).getTime();
+          if (timeB !== timeA) return timeB - timeA;
+          return String(b.id || '').localeCompare(String(a.id || ''));
+        });
         setTransactions(flatTransactions);
       }
     } catch (e) {
