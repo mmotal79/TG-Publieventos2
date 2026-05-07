@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,31 +15,66 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Search, DollarSign } from 'lucide-react';
-import { TransaccionAbono } from '@/interfaces';
+import { Loader2, Plus, Search, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatCurrency } from '@/services/budgetService';
+import { useToast } from '@/components/ui/use-toast';
 
 const abonoSchema = z.object({
   budgetId: z.string().min(1, "Seleccione un presupuesto"),
   monto: z.number().min(0.01, "El monto debe ser mayor a 0"),
-  moneda: z.enum(['USD', 'BS', 'CRYPTO']),
+  moneda: z.enum(['USD', 'VES', 'USDT', 'EUR']),
   tasaAplicada: z.number().min(1, "La tasa debe ser mayor a 0"),
-  metodoPago: z.enum(['Efectivo', 'Transferencia', 'Zelle', 'Binance', 'Punto de Venta']),
+  metodoPago: z.string(),
   referencia: z.string().optional(),
 });
 
 type AbonoFormValues = z.infer<typeof abonoSchema>;
 
-// Mock Data
-const mockTransactions: TransaccionAbono[] = [
-  { id: 't1', budgetId: 'PR-2026-001', clientId: 'c1', monto: 500, moneda: 'USD', tasaAplicada: 1, montoEquivalenteUSD: 500, metodoPago: 'Zelle', referencia: '123456', fecha: '2026-04-09', registradoPor: 'u1' },
-  { id: 't2', budgetId: 'PR-2026-002', clientId: 'c2', monto: 18000, moneda: 'BS', tasaAplicada: 36, montoEquivalenteUSD: 500, metodoPago: 'Transferencia', referencia: '00012345', fecha: '2026-04-10', registradoPor: 'u1' },
-];
-
 const Transactions: React.FC = () => {
-  const [transactions, setTransactions] = useState<TransaccionAbono[]>(mockTransactions);
+  const { toast } = useToast();
+  const [budgets, setBudgets] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  // Navigation for months
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  useEffect(() => {
+    fetchBudgets();
+  }, []);
+
+  const fetchBudgets = async () => {
+    try {
+      const res = await fetch('/api/budgets');
+      if (res.ok) {
+        const data = await res.json();
+        setBudgets(data);
+        
+        const flatTransactions: any[] = [];
+        data.forEach((budget: any) => {
+          if (budget.payments && budget.payments.length > 0) {
+            budget.payments.forEach((payment: any) => {
+              flatTransactions.push({
+                ...payment,
+                budgetId: budget._id,
+                budgetCode: budget._id.toString().slice(-6).toUpperCase(),
+                budgetDesc: budget.description,
+                clientName: budget.clientId?.razonSocial || 'Desconocido',
+                id: payment._id || Math.random().toString(),
+              });
+            });
+          }
+        });
+        
+        flatTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        setTransactions(flatTransactions);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<AbonoFormValues>({
     resolver: zodResolver(abonoSchema),
@@ -56,28 +91,100 @@ const Transactions: React.FC = () => {
 
   const equivalenteUSD = moneda === 'USD' ? monto : (monto / (tasa || 1));
 
-  const onSubmit = (data: AbonoFormValues) => {
+  const onSubmit = async (data: AbonoFormValues) => {
     setStatus('loading');
-    setTimeout(() => {
-      const newTx: TransaccionAbono = {
-        id: Math.random().toString(36).substr(2, 9),
-        ...data,
-        clientId: 'c1', // Mock client
-        montoEquivalenteUSD: data.moneda === 'USD' ? data.monto : data.monto / data.tasaAplicada,
-        fecha: new Date().toISOString().split('T')[0],
-        registradoPor: 'u1'
+    try {
+      const paymentData = {
+        amount: data.monto,
+        currency: data.moneda,
+        method: data.metodoPago,
+        reference: data.referencia || '',
+        exchangeRate: data.moneda !== 'USD' ? data.tasaAplicada : 1,
+        date: new Date(),
+        amountUSD: equivalenteUSD
       };
-      setTransactions([newTx, ...transactions]);
-      setStatus('success');
-      setTimeout(() => setIsModalOpen(false), 1000);
-    }, 1000);
+
+      const res = await fetch(`/api/budgets/${data.budgetId}/payments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(paymentData),
+      });
+
+      if (res.ok) {
+        setStatus('success');
+        toast({ title: 'Éxito', description: 'Abono registrado exitosamente' });
+        fetchBudgets();
+        setTimeout(() => setIsModalOpen(false), 1000);
+      } else {
+        throw new Error("Failed");
+      }
+    } catch (error) {
+      setStatus('error');
+      toast({ title: 'Error', description: 'Error al registrar abono', variant: 'destructive' });
+    }
   };
 
-  const openModal = () => {
+  const openModal = async () => {
     reset();
     setStatus('idle');
+    try {
+      const res = await fetch('/api/exchange-rates/current');
+      if (res.ok) {
+        const bd = await res.json();
+        if (bd.rate) {
+          setValue('tasaAplicada', bd.rate);
+        }
+      }
+    } catch (e) { }
     setIsModalOpen(true);
   };
+
+  // Month filtering logic
+  const currentMonthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+  const currentMonthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0, 23, 59, 59, 999);
+  
+  const transactionsInMonth = useMemo(() => {
+    return transactions.filter(tx => {
+      const d = new Date(tx.date);
+      return d >= currentMonthStart && d <= currentMonthEnd;
+    });
+  }, [transactions, currentMonthStart, currentMonthEnd]);
+
+  const totalRecaudadoMes = useMemo(() => {
+    return transactionsInMonth.reduce((sum, tx) => sum + (tx.amountUSD || 0), 0);
+  }, [transactionsInMonth]);
+
+  const sortedDates = transactions.map(t => new Date(t.date).getTime()).sort((a, b) => a - b);
+  const earliestDate = sortedDates.length > 0 ? new Date(sortedDates[0]) : new Date();
+  
+  const earliestMonthStart = new Date(earliestDate.getFullYear(), earliestDate.getMonth(), 1);
+  const todaysMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+
+  const canGoPrevious = currentMonthStart > earliestMonthStart;
+  const canGoNext = currentMonthStart < todaysMonthStart;
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCurrentDate(prev => {
+      const newD = new Date(prev);
+      if (direction === 'prev') {
+        newD.setMonth(newD.getMonth() - 1);
+      } else {
+        newD.setMonth(newD.getMonth() + 1);
+      }
+      return newD;
+    });
+  };
+
+  const monthName = currentDate.toLocaleString('es-VE', { month: 'long', year: 'numeric' });
+  const formattedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+
+  const filteredTransactions = transactions.filter(tx => 
+    !searchTerm || 
+    tx.budgetDesc?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    tx.budgetCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    tx.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    tx.referencia?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-8">
@@ -94,23 +201,30 @@ const Transactions: React.FC = () => {
 
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Recaudado (Mes)</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b">
+            <CardTitle className="text-sm font-medium">Total Recaudado ({formattedMonth})</CardTitle>
+            <div className="flex items-center gap-1">
+               <Button variant="outline" size="icon" className="h-6 w-6" disabled={!canGoPrevious} onClick={() => navigateMonth('prev')}>
+                 <ChevronLeft size={14} />
+               </Button>
+               <Button variant="outline" size="icon" className="h-6 w-6" disabled={!canGoNext} onClick={() => navigateMonth('next')}>
+                 <ChevronRight size={14} />
+               </Button>
+            </div>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(1000)}</div>
+          <CardContent className="pt-4">
+            <div className="text-2xl font-bold text-green-600">{formatCurrency(totalRecaudadoMes)}</div>
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <CardTitle>Historial de Transacciones</CardTitle>
-            <div className="relative w-64">
+            <div className="relative w-full sm:w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar referencia o ID..." className="pl-8" />
+              <Input placeholder="Buscar por ref, cliente o #..." className="pl-8" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>
           </div>
         </CardHeader>
@@ -120,6 +234,7 @@ const Transactions: React.FC = () => {
               <TableRow>
                 <TableHead>Fecha</TableHead>
                 <TableHead>Presupuesto</TableHead>
+                <TableHead>Cliente</TableHead>
                 <TableHead>Método</TableHead>
                 <TableHead>Referencia</TableHead>
                 <TableHead>Monto Original</TableHead>
@@ -127,23 +242,34 @@ const Transactions: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.map((tx) => (
+              {filteredTransactions.map((tx) => (
                 <TableRow key={tx.id}>
-                  <TableCell>{tx.fecha}</TableCell>
-                  <TableCell className="font-mono text-xs font-bold">{tx.budgetId}</TableCell>
+                  <TableCell>{new Date(tx.date).toLocaleDateString('es-VE')}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{tx.metodoPago}</Badge>
+                    <div className="font-mono text-xs font-bold text-slate-800">#{tx.budgetCode}</div>
+                    <div className="text-[10px] text-slate-400 max-w-[150px] truncate" title={tx.budgetDesc}>{tx.budgetDesc}</div>
                   </TableCell>
-                  <TableCell>{tx.referencia || '-'}</TableCell>
+                  <TableCell className="font-bold text-sm text-slate-700">{tx.clientName}</TableCell>
                   <TableCell>
-                    {tx.moneda === 'USD' ? '$' : tx.moneda === 'BS' ? 'Bs. ' : ''}
-                    {tx.monto.toLocaleString()} {tx.moneda}
+                    <Badge variant="outline">{tx.method}</Badge>
+                  </TableCell>
+                  <TableCell>{tx.reference || '-'}</TableCell>
+                  <TableCell>
+                    {tx.currency === 'USD' || tx.currency === 'USDT' ? '$' : tx.currency === 'VES' ? 'Bs. ' : '€'}
+                    {tx.amount?.toLocaleString()} {tx.currency}
                   </TableCell>
                   <TableCell className="text-right font-bold text-green-600">
-                    {formatCurrency(tx.montoEquivalenteUSD)}
+                    {formatCurrency(tx.amountUSD)}
                   </TableCell>
                 </TableRow>
               ))}
+              {filteredTransactions.length === 0 && (
+                 <TableRow>
+                   <TableCell colSpan={7} className="text-center p-8 text-slate-500">
+                     No se encontraron transacciones.
+                   </TableCell>
+                 </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -166,8 +292,11 @@ const Transactions: React.FC = () => {
                   <SelectValue placeholder="Seleccione un presupuesto" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="PR-2026-001">PR-2026-001 - Cliente VIP (Saldo: $750)</SelectItem>
-                  <SelectItem value="PR-2026-002">PR-2026-002 - Distribuidora (Saldo: $200)</SelectItem>
+                  {budgets.filter(b => b.status === 'approved' || b.status === 'in_production' || b.status === 'completed' || b.status === 'pending').map(b => (
+                    <SelectItem key={b._id} value={b._id}>
+                      #{b._id.toString().slice(-6).toUpperCase()} - {b.clientId?.razonSocial} (Saldo: {formatCurrency(Math.max(0, b.totalCost - (b.montoAbonado || 0)))})
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               {errors.budgetId && <p className="text-xs text-destructive">{errors.budgetId.message}</p>}
@@ -187,14 +316,15 @@ const Transactions: React.FC = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="USD">USD ($)</SelectItem>
-                    <SelectItem value="BS">Bolívares (Bs)</SelectItem>
-                    <SelectItem value="CRYPTO">USDT/Crypto</SelectItem>
+                    <SelectItem value="VES">Bolívares (VES)</SelectItem>
+                    <SelectItem value="USDT">USDT/Crypto</SelectItem>
+                    <SelectItem value="EUR">Euros (€)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            {moneda !== 'USD' && (
+            {moneda !== 'USD' && moneda !== 'USDT' && (
               <div className="space-y-2">
                 <Label htmlFor="tasaAplicada">Tasa de Cambio (a USD)</Label>
                 <Input id="tasaAplicada" type="number" step="0.01" {...register('tasaAplicada', { valueAsNumber: true })} />
@@ -212,6 +342,7 @@ const Transactions: React.FC = () => {
                   <SelectContent>
                     <SelectItem value="Efectivo">Efectivo</SelectItem>
                     <SelectItem value="Transferencia">Transferencia</SelectItem>
+                    <SelectItem value="Pago Móvil">Pago Móvil</SelectItem>
                     <SelectItem value="Zelle">Zelle</SelectItem>
                     <SelectItem value="Binance">Binance</SelectItem>
                     <SelectItem value="Punto de Venta">Punto de Venta</SelectItem>
@@ -259,3 +390,4 @@ const Transactions: React.FC = () => {
 };
 
 export default Transactions;
+

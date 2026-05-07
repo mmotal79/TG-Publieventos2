@@ -48,7 +48,12 @@ const Budgets: React.FC = () => {
     try {
       const res = await fetch('/api/budgets');
       if (res.ok) {
-        setBudgets(await res.json());
+        const data = await res.json();
+        setBudgets(data);
+        
+        setPayEditingBudget((prev: any) => prev ? data.find((b: any) => b._id === prev._id) || prev : prev);
+        setStatusEditingBudget((prev: any) => prev ? data.find((b: any) => b._id === prev._id) || prev : prev);
+        setPreviewingBudget((prev: any) => prev ? data.find((b: any) => b._id === prev._id) || prev : prev);
       }
     } catch (e) {
       console.error("Error fetching budgets:", e);
@@ -431,10 +436,24 @@ const Budgets: React.FC = () => {
 
         <TabsContent value="new">
           <Card>
-            <CardHeader>
-              <CardTitle>{editingBudget ? `Editando Presupuesto: ${editingBudget.description}` : 'Crear Presupuesto'}</CardTitle>
+            <CardHeader className="border-b bg-slate-50/50">
+              <div className="flex items-center gap-4">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setEditingBudget(null);
+                    setActiveTab('list');
+                  }}
+                  className="text-slate-600 border-slate-300 hover:bg-slate-100"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+                  {editingBudget ? 'Salir de edición' : 'Salir y volver a lista'}
+                </Button>
+                <CardTitle className="text-xl">{editingBudget ? `Editando Presupuesto: ${editingBudget.description}` : 'Crear Presupuesto'}</CardTitle>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-6">
               <BudgetForm initialData={editingBudget} onCancel={() => {
                 setEditingBudget(null);
                 setActiveTab('list');

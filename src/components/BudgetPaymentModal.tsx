@@ -36,6 +36,12 @@ export default function BudgetPaymentModal({ budget, isOpen, onClose, onUpdate }
   };
   const [date, setDate] = useState<string>(getVeDate());
 
+  const [localBudget, setLocalBudget] = useState<any>(null);
+
+  useEffect(() => {
+    setLocalBudget(budget);
+  }, [budget]);
+
   useEffect(() => {
     if (isOpen) {
       setAmount('');
@@ -59,10 +65,10 @@ export default function BudgetPaymentModal({ budget, isOpen, onClose, onUpdate }
     }
   };
 
-  if (!budget) return null;
+  if (!localBudget) return null;
 
-  const totalCost = budget.totalCost || 0;
-  const montoAbonado = budget.montoAbonado || 0;
+  const totalCost = localBudget.totalCost || 0;
+  const montoAbonado = localBudget.montoAbonado || 0;
   const pendiente = totalCost - montoAbonado;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -93,13 +99,15 @@ export default function BudgetPaymentModal({ budget, isOpen, onClose, onUpdate }
         amountUSD
       };
 
-      const res = await fetch(`/api/budgets/${budget._id}/payments`, {
+      const res = await fetch(`/api/budgets/${localBudget._id}/payments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(paymentData),
       });
 
       if (res.ok) {
+        const updated = await res.json();
+        setLocalBudget(updated);
         toast({ title: 'Éxito', description: 'Pago registrado correctamente' });
         onUpdate();
         // Clear form
@@ -142,12 +150,12 @@ export default function BudgetPaymentModal({ budget, isOpen, onClose, onUpdate }
         <div className="bg-slate-50 p-4 sm:p-6 rounded-xl border border-slate-200 my-6 flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row justify-between items-start gap-4 pb-4 border-b border-slate-200">
             <div className="space-y-1">
-              <h3 className="font-black text-xl text-slate-800">{budget.clientId?.razonSocial || 'Desconocido'}</h3>
-              <p className="text-sm font-medium text-slate-600">{budget.clientId?.contacto || budget.clientId?.personaContacto}</p>
-              <p className="text-sm text-slate-500">{budget.clientId?.telefono || budget.clientId?.celular || 'Sin teléfono'}</p>
+              <h3 className="font-black text-xl text-slate-800">{localBudget.clientId?.razonSocial || 'Desconocido'}</h3>
+              <p className="text-sm font-medium text-slate-600">{localBudget.clientId?.contacto || localBudget.clientId?.personaContacto}</p>
+              <p className="text-sm text-slate-500">{localBudget.clientId?.telefono || localBudget.clientId?.celular || 'Sin teléfono'}</p>
             </div>
             <div className="text-left sm:text-right">
-              <p className="text-sm font-bold uppercase text-rose-600 tracking-tight">Presupuesto #{budget._id?.toString().slice(-6).toUpperCase()}</p>
+              <p className="text-sm font-bold uppercase text-rose-600 tracking-tight">Presupuesto #{localBudget._id?.toString().slice(-6).toUpperCase()}</p>
               <p className="text-xs font-bold text-slate-500 mt-1">Tasa BCV: <span className="text-slate-800">{exchangeRate ? `${exchangeRate.toFixed(2)} Bs/USD` : 'Cargando...'}</span></p>
             </div>
           </div>
@@ -279,13 +287,13 @@ export default function BudgetPaymentModal({ budget, isOpen, onClose, onUpdate }
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 flex-1 overflow-y-auto max-h-[350px]">
-              {(!budget.payments || budget.payments.length === 0) ? (
+              {(!localBudget.payments || localBudget.payments.length === 0) ? (
                 <div className="p-8 text-center text-slate-400 italic font-medium text-sm">
                   No hay pagos registrados
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100">
-                  {[...budget.payments].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((p: any, idx) => (
+                  {[...localBudget.payments].sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((p: any, idx) => (
                     <div key={idx} className="p-3 hover:bg-slate-50 transition-colors flex items-center justify-between">
                       <div className="flex items-start gap-3">
                         <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
