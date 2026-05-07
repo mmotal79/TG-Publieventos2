@@ -65,4 +65,29 @@ router.get('/history', async (req, res) => {
   }
 });
 
+// Get by specific date (closest before or equal to date)
+router.get('/date/:date', async (req, res) => {
+  try {
+    const targetDate = new Date(req.params.date);
+    if (isNaN(targetDate.getTime())) {
+      return res.status(400).json({ error: "Invalid date format" });
+    }
+    
+    // Set to end of day to include any rates added on that day
+    targetDate.setHours(23, 59, 59, 999);
+
+    const match = await ExchangeRateModel.findOne({ date: { $lte: targetDate } }).sort({ date: -1 });
+    if (match) {
+      return res.json({ rate: match.rate, date: match.date });
+    }
+
+    // fallback to current if none found
+    const latest = await ExchangeRateModel.findOne().sort({ date: -1 });
+    if (latest) return res.json({ rate: latest.rate, date: latest.date });
+    return res.json({ rate: 40, date: new Date() }); 
+  } catch (error: any) {
+    res.status(500).json({ error: "Server error", message: error.message });
+  }
+});
+
 export default router;

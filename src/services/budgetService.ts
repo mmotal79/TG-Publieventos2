@@ -10,10 +10,11 @@
 
 // budgetService.ts contains shared utility functions for budget management
 
-export const formatCurrency = (amount: number, _currency: string = 'USD') => {
+export const formatCurrency = (amount: number, currency: string = 'USD') => {
   const formatter = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-  return `$ ${formatter.format(amount)}`;
+  const symbol = currency === 'VES' ? 'Bs' : currency === 'EUR' ? '€' : '$';
+  return `${symbol} ${formatter.format(amount)}`;
 };

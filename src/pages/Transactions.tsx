@@ -4,39 +4,24 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Search, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, ChevronLeft, ChevronRight, Edit2, Trash2, Calendar, CreditCard, DollarSign } from 'lucide-react';
 import { formatCurrency } from '@/services/budgetService';
 import { useToast } from '@/components/ui/use-toast';
-
-const abonoSchema = z.object({
-  budgetId: z.string().min(1, "Seleccione un presupuesto"),
-  monto: z.number().min(0.01, "El monto debe ser mayor a 0"),
-  moneda: z.enum(['USD', 'VES', 'USDT', 'EUR']),
-  tasaAplicada: z.number().min(1, "La tasa debe ser mayor a 0"),
-  metodoPago: z.string(),
-  referencia: z.string().optional(),
-});
-
-type AbonoFormValues = z.infer<typeof abonoSchema>;
+import BudgetPaymentModal from '@/components/BudgetPaymentModal';
 
 const Transactions: React.FC = () => {
   const { toast } = useToast();
   const [budgets, setBudgets] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [searchTerm, setSearchTerm] = useState('');
+  const [editPaymentId, setEditPaymentId] = useState<string | null>(null);
+  const [budgetToEdit, setBudgetToEdit] = useState<any>(null);
   
   // Navigation for months
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -55,14 +40,16 @@ const Transactions: React.FC = () => {
         const flatTransactions: any[] = [];
         data.forEach((budget: any) => {
           if (budget.payments && budget.payments.length > 0) {
-            budget.payments.forEach((payment: any) => {
+            budget.payments.forEach((payment: any, index: number) => {
               flatTransactions.push({
                 ...payment,
                 budgetId: budget._id,
                 budgetCode: budget._id.toString().slice(-6).toUpperCase(),
                 budgetDesc: budget.description,
                 clientName: budget.clientId?.razonSocial || 'Desconocido',
-                id: payment._id || Math.random().toString(),
+                id: payment._id || payment.id || `idx_${index}`,
+                originalIndex: index,
+                budget: budget
               });
             });
           }
@@ -76,67 +63,33 @@ const Transactions: React.FC = () => {
     }
   };
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<AbonoFormValues>({
-    resolver: zodResolver(abonoSchema),
-    defaultValues: {
-      moneda: 'USD',
-      tasaAplicada: 1,
-      metodoPago: 'Efectivo'
-    }
-  });
-
-  const moneda = watch('moneda');
-  const monto = watch('monto');
-  const tasa = watch('tasaAplicada');
-
-  const equivalenteUSD = moneda === 'USD' ? monto : (monto / (tasa || 1));
-
-  const onSubmit = async (data: AbonoFormValues) => {
-    setStatus('loading');
-    try {
-      const paymentData = {
-        amount: data.monto,
-        currency: data.moneda,
-        method: data.metodoPago,
-        reference: data.referencia || '',
-        exchangeRate: data.moneda !== 'USD' ? data.tasaAplicada : 1,
-        date: new Date(),
-        amountUSD: equivalenteUSD
-      };
-
-      const res = await fetch(`/api/budgets/${data.budgetId}/payments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(paymentData),
-      });
-
-      if (res.ok) {
-        setStatus('success');
-        toast({ title: 'Éxito', description: 'Abono registrado exitosamente' });
-        fetchBudgets();
-        setTimeout(() => setIsModalOpen(false), 1000);
-      } else {
-        throw new Error("Failed");
-      }
-    } catch (error) {
-      setStatus('error');
-      toast({ title: 'Error', description: 'Error al registrar abono', variant: 'destructive' });
-    }
+  const openModal = () => {
+    setEditPaymentId(null);
+    setBudgetToEdit(null);
+    setIsModalOpen(true);
   };
 
-  const openModal = async () => {
-    reset();
-    setStatus('idle');
-    try {
-      const res = await fetch('/api/exchange-rates/current');
-      if (res.ok) {
-        const bd = await res.json();
-        if (bd.rate) {
-          setValue('tasaAplicada', bd.rate);
-        }
-      }
-    } catch (e) { }
+  const handleEdit = (tx: any) => {
+    setEditPaymentId(tx.id);
+    setBudgetToEdit(tx.budget);
     setIsModalOpen(true);
+  };
+
+  const handleDelete = async (tx: any) => {
+    if (!confirm("¿Está seguro de eliminar este pago?")) return;
+    try {
+      const res = await fetch(`/api/budgets/${tx.budgetId}/payments/${tx.id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        toast({ title: 'Éxito', description: 'Pago eliminado correctamente' });
+        fetchBudgets();
+      } else {
+        throw new Error("Error");
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Error al eliminar el pago', variant: 'destructive' });
+    }
   };
 
   // Month filtering logic
@@ -150,9 +103,19 @@ const Transactions: React.FC = () => {
     });
   }, [transactions, currentMonthStart, currentMonthEnd]);
 
+  const filteredTransactions = useMemo(() => {
+    return transactionsInMonth.filter(tx => 
+      !searchTerm || 
+      tx.budgetDesc?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      tx.budgetCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tx.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      tx.reference?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [transactionsInMonth, searchTerm]);
+
   const totalRecaudadoMes = useMemo(() => {
-    return transactionsInMonth.reduce((sum, tx) => sum + (tx.amountUSD || 0), 0);
-  }, [transactionsInMonth]);
+    return filteredTransactions.reduce((sum, tx) => sum + (tx.amountUSD || 0), 0);
+  }, [filteredTransactions]);
 
   const sortedDates = transactions.map(t => new Date(t.date).getTime()).sort((a, b) => a - b);
   const earliestDate = sortedDates.length > 0 ? new Date(sortedDates[0]) : new Date();
@@ -177,14 +140,6 @@ const Transactions: React.FC = () => {
 
   const monthName = currentDate.toLocaleString('es-VE', { month: 'long', year: 'numeric' });
   const formattedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-
-  const filteredTransactions = transactions.filter(tx => 
-    !searchTerm || 
-    tx.budgetDesc?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    tx.budgetCode?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tx.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    tx.referencia?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   return (
     <div className="space-y-8">
@@ -224,167 +179,126 @@ const Transactions: React.FC = () => {
             <CardTitle>Historial de Transacciones</CardTitle>
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar por ref, cliente o #..." className="pl-8" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+              <Input placeholder="Buscar por ref, cliente, # o proyecto..." className="pl-8" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Presupuesto</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Método</TableHead>
-                <TableHead>Referencia</TableHead>
-                <TableHead>Monto Original</TableHead>
-                <TableHead className="text-right">Equivalente USD</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredTransactions.map((tx) => (
-                <TableRow key={tx.id}>
-                  <TableCell>{new Date(tx.date).toLocaleDateString('es-VE')}</TableCell>
-                  <TableCell>
-                    <div className="font-mono text-xs font-bold text-slate-800">#{tx.budgetCode}</div>
-                    <div className="text-[10px] text-slate-400 max-w-[150px] truncate" title={tx.budgetDesc}>{tx.budgetDesc}</div>
-                  </TableCell>
-                  <TableCell className="font-bold text-sm text-slate-700">{tx.clientName}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{tx.method}</Badge>
-                  </TableCell>
-                  <TableCell>{tx.reference || '-'}</TableCell>
-                  <TableCell>
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead>Presupuesto</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Método</TableHead>
+                  <TableHead>Referencia</TableHead>
+                  <TableHead>Monto Original</TableHead>
+                  <TableHead className="text-right">Equivalente USD</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredTransactions.map((tx) => (
+                  <TableRow key={tx.id}>
+                    <TableCell>{new Date(tx.date).toLocaleDateString('es-VE')}</TableCell>
+                    <TableCell>
+                      <div className="font-mono text-xs font-bold text-slate-800">#{tx.budgetCode}</div>
+                      <div className="text-[10px] text-slate-400 max-w-[150px] truncate" title={tx.budgetDesc}>{tx.budgetDesc}</div>
+                    </TableCell>
+                    <TableCell className="font-bold text-sm text-slate-700">{tx.clientName}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{tx.method}</Badge>
+                    </TableCell>
+                    <TableCell>{tx.reference || '-'}</TableCell>
+                    <TableCell>
+                      {tx.currency === 'USD' || tx.currency === 'USDT' ? '$' : tx.currency === 'VES' ? 'Bs. ' : '€'}
+                      {tx.amount?.toLocaleString()} {tx.currency}
+                    </TableCell>
+                    <TableCell className="text-right font-bold text-green-600">
+                      {formatCurrency(tx.amountUSD)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={() => handleEdit(tx)} title="Editar abono">
+                          <Edit2 size={14} />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(tx)} title="Eliminar abono">
+                          <Trash2 size={14} />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filteredTransactions.length === 0 && (
+                   <TableRow>
+                     <TableCell colSpan={8} className="text-center p-8 text-slate-500">
+                       No se encontraron transacciones.
+                     </TableCell>
+                   </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="md:hidden flex flex-col gap-3">
+            {filteredTransactions.map(tx => (
+              <div key={tx.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3 relative">
+                <div className="flex justify-between items-start pr-12">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-bold text-sm text-slate-800">{tx.clientName}</span>
+                    <span className="font-mono text-xs font-bold text-slate-500">#{tx.budgetCode} - <span className="font-normal truncate inline-block max-w-[150px] align-bottom">{tx.budgetDesc}</span></span>
+                  </div>
+                  <div className="text-right flex flex-col items-end">
+                    <span className="font-black text-green-600">{formatCurrency(tx.amountUSD)}</span>
+                    <span className="text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase tracking-wider font-bold inline-flex items-center gap-1 mt-1">
+                      <Calendar size={10} />
+                      {new Date(tx.date).toLocaleDateString('es-VE')}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 text-xs items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
+                  <div className="flex items-center gap-1 bg-white px-2 py-1 rounded shadow-sm">
+                    <CreditCard size={12} className="text-blue-600" />
+                    <span className="font-bold text-slate-700">{tx.method}</span>
+                  </div>
+                  {tx.reference && (
+                    <span className="text-slate-500 font-medium">Ref: {tx.reference}</span>
+                  )}
+                  <span className="ml-auto text-slate-600 font-bold border-l pl-2">
                     {tx.currency === 'USD' || tx.currency === 'USDT' ? '$' : tx.currency === 'VES' ? 'Bs. ' : '€'}
                     {tx.amount?.toLocaleString()} {tx.currency}
-                  </TableCell>
-                  <TableCell className="text-right font-bold text-green-600">
-                    {formatCurrency(tx.amountUSD)}
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredTransactions.length === 0 && (
-                 <TableRow>
-                   <TableCell colSpan={7} className="text-center p-8 text-slate-500">
-                     No se encontraron transacciones.
-                   </TableCell>
-                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                  </span>
+                </div>
+
+                <div className="absolute top-3 right-3 flex flex-col gap-1">
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:bg-blue-50 hover:text-blue-600 rounded-full" onClick={() => handleEdit(tx)}>
+                    <Edit2 size={12} />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:bg-red-50 hover:text-red-600 rounded-full" onClick={() => handleDelete(tx)}>
+                    <Trash2 size={12} />
+                  </Button>
+                </div>
+              </div>
+            ))}
+            {filteredTransactions.length === 0 && (
+               <div className="text-center p-8 border rounded-xl bg-slate-50 text-slate-500">
+                 No se encontraron transacciones.
+               </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Registrar Nuevo Abono</DialogTitle>
-            <DialogDescription>
-              Ingrese los detalles del pago recibido.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="budgetId">Presupuesto Aprobado</Label>
-              <Select onValueChange={(v: string) => setValue('budgetId', v)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione un presupuesto" />
-                </SelectTrigger>
-                <SelectContent>
-                  {budgets.filter(b => b.status === 'approved' || b.status === 'in_production' || b.status === 'completed' || b.status === 'pending').map(b => (
-                    <SelectItem key={b._id} value={b._id}>
-                      #{b._id.toString().slice(-6).toUpperCase()} - {b.clientId?.razonSocial} (Saldo: {formatCurrency(Math.max(0, b.totalCost - (b.montoAbonado || 0)))})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.budgetId && <p className="text-xs text-destructive">{errors.budgetId.message}</p>}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="monto">Monto</Label>
-                <Input id="monto" type="number" step="0.01" {...register('monto', { valueAsNumber: true })} />
-                {errors.monto && <p className="text-xs text-destructive">{errors.monto.message}</p>}
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="moneda">Moneda</Label>
-                <Select defaultValue="USD" onValueChange={(v: any) => setValue('moneda', v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USD">USD ($)</SelectItem>
-                    <SelectItem value="VES">Bolívares (VES)</SelectItem>
-                    <SelectItem value="USDT">USDT/Crypto</SelectItem>
-                    <SelectItem value="EUR">Euros (€)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {moneda !== 'USD' && moneda !== 'USDT' && (
-              <div className="space-y-2">
-                <Label htmlFor="tasaAplicada">Tasa de Cambio (a USD)</Label>
-                <Input id="tasaAplicada" type="number" step="0.01" {...register('tasaAplicada', { valueAsNumber: true })} />
-                {errors.tasaAplicada && <p className="text-xs text-destructive">{errors.tasaAplicada.message}</p>}
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="metodoPago">Método de Pago</Label>
-                <Select defaultValue="Efectivo" onValueChange={(v: any) => setValue('metodoPago', v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Efectivo">Efectivo</SelectItem>
-                    <SelectItem value="Transferencia">Transferencia</SelectItem>
-                    <SelectItem value="Pago Móvil">Pago Móvil</SelectItem>
-                    <SelectItem value="Zelle">Zelle</SelectItem>
-                    <SelectItem value="Binance">Binance</SelectItem>
-                    <SelectItem value="Punto de Venta">Punto de Venta</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="referencia">Referencia (Opcional)</Label>
-                <Input id="referencia" {...register('referencia')} />
-              </div>
-            </div>
-
-            <div className="bg-slate-50 p-4 rounded-lg border flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Equivalente en USD:</span>
-              <span className="text-xl font-bold text-green-600">
-                {formatCurrency(equivalenteUSD || 0)}
-              </span>
-            </div>
-
-            {status === 'error' && (
-              <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm">
-                Error al registrar el abono.
-              </div>
-            )}
-            {status === 'success' && (
-              <div className="p-3 bg-green-100 text-green-800 rounded-md text-sm">
-                ¡Abono registrado exitosamente!
-              </div>
-            )}
-
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setIsModalOpen(false)} disabled={status === 'loading'}>
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={status === 'loading' || status === 'success'}>
-                {status === 'loading' && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {status === 'success' ? 'Guardado' : 'Procesar Abono'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <BudgetPaymentModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        budgets={budgets} 
+        budget={budgetToEdit}
+        editPaymentId={editPaymentId}
+        onUpdate={fetchBudgets} 
+      />
     </div>
   );
 };
