@@ -175,39 +175,41 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent showCloseButton={true} className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto p-0 border-none">
-        <div className="bg-white sticky top-0 z-10 p-6 border-b border-slate-100">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-4">
+      <DialogContent showCloseButton={true} className="w-[95vw] sm:w-[98vw] max-w-[650px] max-h-[95vh] h-full sm:h-auto overflow-y-auto p-0 border-none rounded-none sm:rounded-2xl">
+        <div className="bg-white sticky top-0 z-10 p-4 sm:p-6 border-b border-slate-100 shadow-sm">
+          <div className="flex flex-col gap-4">
             <div className="space-y-1">
-              <DialogTitle className="text-2xl font-black text-slate-900 tracking-tight">Proceso Productivo</DialogTitle>
-              <div className="pt-1 space-y-0.5">
+              <DialogTitle className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Proceso Productivo</DialogTitle>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Cliente:</span>
-                  <span className="text-xs font-bold text-slate-700">{budget?.clientId?.razonSocial || 'Cliente no definido'}</span>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[50px]">Cliente:</span>
+                  <span className="text-xs font-bold text-slate-700 truncate">{budget?.clientId?.razonSocial || 'Cliente no definido'}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Proyecto:</span>
-                  <span className="text-xs text-slate-600 font-medium">{budget?.description || 'Sin descripción'}</span>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[50px]">Proyecto:</span>
+                  <span className="text-xs text-slate-600 font-medium truncate">{budget?.description || 'Sin descripción'}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Entrada:</span>
-                  <span className="text-xs text-slate-500">{budget?.createdAt ? new Date(budget.createdAt).toLocaleDateString() : '-'}</span>
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest min-w-[50px]">Entrada:</span>
+                  <span className="text-xs text-slate-500 font-bold">{budget?.createdAt ? new Date(budget.createdAt).toLocaleDateString() : '-'}</span>
                 </div>
               </div>
             </div>
 
-            {/* General Progress Bar (Proposed Logic 1: Weighted by Quantity) */}
-            <div className="w-full md:w-auto md:text-right min-w-[140px] bg-slate-50 p-3 rounded-xl border border-slate-100">
+            {/* General Progress Bar - Enhanced for Mobile */}
+            <div className="w-full bg-blue-50/50 p-3 sm:p-4 rounded-xl border border-blue-100/50">
               {(() => {
                 const items = localItems || [];
-                const totalUnits = items.reduce((sum, it) => sum + (it.cantidad || 0), 0);
+                const totalUnits = items.reduce((sum, it) => sum + (Number(it.cantidad) || 0), 0);
                 if (totalUnits === 0) return null;
 
                 let weightedSum = 0;
                 items.forEach(item => {
                   let itemWeightedSum = 0;
                   dynamicPhases.forEach(p => {
-                    itemWeightedSum += (item.productionStatus?.[p.key] || 0) * (p.weight || 0);
+                    const qty = Number(item.productionStatus?.[p.key]) || 0;
+                    const weight = Number(p.weight) || 0;
+                    itemWeightedSum += qty * weight;
                   });
                   weightedSum += itemWeightedSum;
                 });
@@ -215,16 +217,16 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
                 const generalProgress = Math.min(100, Math.round((weightedSum / totalUnits) * 100));
 
                 return (
-                  <div className="space-y-1">
-                    <div className="flex md:block justify-between items-end">
-                      <span className="text-[9px] font-black text-blue-600 uppercase tracking-tight block">Progreso General de Orden</span>
-                      <span className="text-2xl font-black text-slate-900 leading-none">{generalProgress}%</span>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex justify-between items-end px-1">
+                      <span className="text-[10px] font-black text-blue-700 uppercase tracking-tight">Progreso General de Orden</span>
+                      <span className="text-xl sm:text-2xl font-black text-blue-800 leading-none">{generalProgress}%</span>
                     </div>
-                    <div className="h-2 w-full md:w-32 bg-white rounded-full overflow-hidden mt-1 border border-slate-200">
+                    <div className="h-3 w-full bg-white rounded-full overflow-hidden border border-blue-200/50 shadow-inner">
                       <div 
                         className={cn(
                           "h-full transition-all duration-1000 ease-out",
-                          generalProgress === 100 ? "bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.3)]" : "bg-blue-600 shadow-[0_0_10px_rgba(37,99,235,0.2)]"
+                          generalProgress === 100 ? "bg-green-500" : "bg-blue-600"
                         )}
                         style={{ width: `${generalProgress}%` }}
                       />
@@ -234,15 +236,10 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
               })()}
             </div>
           </div>
-          
-          <p className="text-[11px] text-slate-500 leading-tight italic">
-            Visualiza y gestiona el flujo de trabajo de cada ítem del pedido.
-          </p>
         </div>
 
-        <div className="p-6 pt-2 space-y-4">
-          
-          <div className="space-y-3">
+        <div className="p-4 sm:p-6 pt-2 space-y-4 pb-24">
+          <div className="space-y-4">
             {localItems.map((item, idx) => {
               const id = item._id || String(idx);
               const isExpanded = expandedItems[id];
@@ -251,155 +248,128 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
               const remaining = item.cantidad - currentTotal;
 
               return (
-                <div key={id} className="border border-slate-200 rounded-lg overflow-hidden">
+                <div key={id} className="border border-slate-200 rounded-xl overflow-hidden bg-white shadow-sm">
                   <div 
-                    className="bg-slate-50 px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-slate-100 transition-colors"
+                    className="px-4 py-4 flex flex-col gap-3 cursor-pointer hover:bg-slate-50 transition-colors"
                     onClick={() => toggleExpand(id)}
                   >
-                    <div className="flex items-center gap-3">
-                       {isExpanded ? <ChevronDown size={18} className="text-slate-400" /> : <ChevronRight size={18} className="text-slate-400" />}
-                       <div className="flex flex-col">
-                         <span className="font-black text-sm text-slate-800 uppercase tracking-tight">
-                           {item.modeloId?.tipoPrenda || item.modeloId?.name || 'Ítem de Producción'}
-                         </span>
-                         <div className="flex items-center gap-2 mt-1">
-                            <span className="text-[10px] font-bold text-slate-500 uppercase">
-                              Total Pedido:
+                    <div className="flex items-start justify-between gap-2">
+                       <div className="flex items-center gap-3">
+                          <div className="h-8 w-8 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                            {isExpanded ? <ChevronDown size={18} className="text-slate-600" /> : <ChevronRight size={18} className="text-slate-600" />}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-black text-sm text-slate-900 uppercase leading-tight tracking-tight">
+                              {item.modeloId?.tipoPrenda || item.modeloId?.name || 'Ítem de Producción'}
                             </span>
-                            <div className="flex items-center gap-1">
-                              <Button 
-                                variant="outline" 
-                                size="icon" 
-                                className="h-5 w-5 rounded-sm" 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  updateItemTotalQty(idx, -1);
-                                }}
-                              >
-                                -
-                              </Button>
-                              <span className="text-xs font-black min-w-[20px] text-center">{item.cantidad}</span>
-                              <Button 
-                                variant="outline" 
-                                size="icon" 
-                                className="h-5 w-5 rounded-sm" 
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  updateItemTotalQty(idx, 1);
-                                }}
-                              >
-                                +
-                              </Button>
+                            <div className="flex items-center gap-2 mt-1">
+                               <span className="text-[10px] font-bold text-slate-400 uppercase">Cantidad:</span>
+                               <span className="text-xs font-black text-slate-700">{item.cantidad} ups</span>
                             </div>
-                         </div>
-
-                         {/* Item-specific progress bar */}
-                         <div className="mt-2 w-full max-w-[200px] space-y-1">
-                            {(() => {
-                              const totalUnits = item.cantidad || 0;
-                              if (totalUnits === 0) return null;
-                              
-                              let weightedSum = 0;
-                              dynamicPhases.forEach(p => {
-                                const qtyInPhase = item.productionStatus?.[p.key] || 0;
-                                weightedSum += qtyInPhase * (p.weight || 0);
-                              });
-                              
-                              const itemProgress = Math.min(100, Math.round((weightedSum / totalUnits) * 100));
-                              
-                              return (
-                                <>
-                                  <div className="flex justify-between items-center px-0.5">
-                                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-tighter">Progreso Item</span>
-                                    <span className="text-[10px] font-black text-blue-600">{itemProgress}%</span>
-                                  </div>
-                                  <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/50">
-                                    <div 
-                                      className={cn(
-                                        "h-full transition-all duration-500 ease-out",
-                                        itemProgress === 100 ? "bg-green-500" : "bg-blue-500"
-                                      )}
-                                      style={{ width: `${itemProgress}%` }}
-                                    />
-                                  </div>
-                                </>
-                              );
-                            })()}
-                         </div>
-                      </div>
+                          </div>
+                       </div>
+                       <div className="flex items-center gap-1">
+                         <Button 
+                           variant="ghost" 
+                           size="icon" 
+                           className="h-8 w-8 text-slate-400"
+                           onClick={(e) => { e.stopPropagation(); duplicateItem(idx); }}
+                         >
+                           <Copy size={14} />
+                         </Button>
+                         <Button 
+                           variant="ghost" 
+                           size="icon" 
+                           className="h-8 w-8 text-rose-300"
+                           onClick={(e) => { e.stopPropagation(); if (confirm("¿Eliminar ítem?")) removeItem(idx); }}
+                         >
+                           <Trash2 size={14} />
+                         </Button>
+                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                       <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-slate-400 hover:text-blue-600"
-                        title="Duplicar ítem"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          duplicateItem(idx);
-                        }}
-                      >
-                        <Copy size={16} />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 text-slate-400 hover:text-rose-600"
-                        title="Eliminar ítem"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm("¿Está seguro de eliminar este ítem del presupuesto?")) {
-                            removeItem(idx);
-                          }
-                        }}
-                      >
-                        <Trash2 size={16} />
-                      </Button>
+
+                    {/* Progress Bar Item Context */}
+                    <div className="w-full space-y-1.5 bg-slate-50/50 p-2 sm:p-3 rounded-lg border border-slate-100">
+                       {(() => {
+                         const totalUnits = Number(item.cantidad) || 0;
+                         let wSum = 0;
+                         dynamicPhases.forEach(p => {
+                            const qty = Number(item.productionStatus?.[p.key]) || 0;
+                            const weight = Number(p.weight) || 0;
+                            wSum += qty * weight;
+                         });
+                         const iProg = totalUnits === 0 ? 0 : Math.round((wSum / totalUnits) * 100);
+                         
+                         return (
+                           <div className="flex flex-col gap-1.5">
+                             <div className="flex justify-between items-center px-0.5">
+                               <span className="text-[9px] font-black text-slate-500 uppercase tracking-tight">Progreso del Artículo</span>
+                               <span className="text-xs font-black text-blue-600">{iProg}%</span>
+                             </div>
+                             <div className="h-2 w-full bg-slate-200 rounded-full overflow-hidden">
+                               <div 
+                                 className={cn("h-full transition-all duration-500", iProg === 100 ? "bg-green-500" : "bg-blue-500")}
+                                 style={{ width: `${iProg}%` }}
+                               />
+                             </div>
+                           </div>
+                         );
+                       })()}
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="outline" 
+                          className="h-8 w-8 p-0" 
+                          onClick={(e) => { e.stopPropagation(); updateItemTotalQty(idx, -1); }}
+                        >-</Button>
+                        <span className="text-xs font-black w-6 text-center">{item.cantidad}</span>
+                        <Button 
+                          variant="outline" 
+                          className="h-8 w-8 p-0" 
+                          onClick={(e) => { e.stopPropagation(); updateItemTotalQty(idx, 1); }}
+                        >+</Button>
+                      </div>
                       {remaining === 0 ? (
-                        <Badge variant="default" className="bg-green-600 text-[10px]">Asignado</Badge>
+                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 border-green-200 text-[10px]">Listo</Badge>
                       ) : (
-                        <Badge variant="outline" className="text-[10px] border-slate-300">{remaining} por asignar</Badge>
+                        <Badge variant="outline" className="text-[10px] bg-amber-50 text-amber-700 border-amber-200">{remaining} pdt.</Badge>
                       )}
                     </div>
                   </div>
+
                   {isExpanded && (
-                    <div className="p-4 bg-white space-y-3 border-t border-slate-100">
-                      {dynamicPhases.map(phase => (
-                        <div key={phase.key} className="flex items-center justify-between pl-4">
-                          <span className="text-xs font-bold text-slate-600 uppercase tracking-tighter">{phase.name || phase.label}</span>
-                          <div className="flex items-center gap-2">
-                            <Input 
-                              type="number"
-                              min="0"
-                              max={item.cantidad}
-                              value={item.productionStatus?.[phase.key] || 0}
-                              onChange={(e) => {
-                                const val = parseInt(e.target.value, 10) || 0;
-                                const otherPhasesSum = dynamicPhases.filter(p => p.key !== phase.key)
-                                  .reduce((sum, p) => sum + (item.productionStatus?.[p.key] || 0), 0);
-                                
-                                if (val + otherPhasesSum > item.cantidad) {
-                                  toast({ 
-                                    title: 'Límite Superado', 
-                                    description: `No puede asignar más de ${item.cantidad} unidades para este modelo.`, 
-                                    variant: 'destructive' 
-                                  });
-                                  handlePhaseChange(idx, phase.key, String(item.cantidad - otherPhasesSum));
-                                } else {
-                                  handlePhaseChange(idx, phase.key, e.target.value);
-                                }
-                              }}
-                              className="w-24 h-9 text-right text-sm font-black border-slate-200"
-                            />
+                    <div className="p-4 bg-white space-y-4 border-t border-slate-100">
+                      <div className="grid grid-cols-1 gap-3">
+                        {dynamicPhases.map(phase => (
+                          <div key={phase.key} className="flex items-center justify-between bg-slate-50/30 p-2 rounded-lg border border-slate-50">
+                            <span className="text-xs font-bold text-slate-600 uppercase tracking-tight">{phase.name || phase.label}</span>
+                            <div className="flex items-center gap-2">
+                              <Input 
+                                type="number"
+                                value={item.productionStatus?.[phase.key] || 0}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value, 10) || 0;
+                                  const otherSum = dynamicPhases.filter(p => p.key !== phase.key)
+                                    .reduce((s, p) => s + (item.productionStatus?.[p.key] || 0), 0);
+                                  
+                                  if (val + otherSum > item.cantidad) {
+                                    toast({ title: 'Límite', description: `Máximo ${item.cantidad}`, variant: 'destructive' });
+                                    handlePhaseChange(idx, phase.key, String(item.cantidad - otherSum));
+                                  } else {
+                                    handlePhaseChange(idx, phase.key, e.target.value);
+                                  }
+                                }}
+                                className="w-20 h-9 text-right text-sm font-black border-slate-200 bg-white"
+                              />
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                      <div className="pt-2 mt-2 border-t border-slate-100 flex justify-between items-center pr-1">
-                        <span className="text-[10px] font-bold text-slate-400 uppercase">Total en Fases</span>
-                        <span className={cn(
-                          "text-sm font-black",
-                          currentTotal > item.cantidad ? "text-rose-600" : "text-slate-800"
-                        )}>
+                        ))}
+                      </div>
+                      <div className="pt-2 flex justify-between items-center text-xs font-black uppercase tracking-wider text-slate-400">
+                        <span>Total Asignado</span>
+                        <span className={cn(currentTotal > item.cantidad ? "text-rose-600" : "text-slate-800")}>
                           {currentTotal} / {item.cantidad}
                         </span>
                       </div>
@@ -410,14 +380,16 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
             })}
           </div>
         </div>
-        <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button variant="outline" onClick={onClose} disabled={isSaving}>Cancelar</Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            <Save className="mr-2 h-4 w-4" /> Guardar Unidades
+        
+        <div className="fixed sm:static bottom-0 left-0 w-full bg-white p-4 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-2 z-20">
+          <Button variant="outline" className="w-full sm:w-auto h-11 sm:h-10 text-xs font-bold" onClick={onClose} disabled={isSaving}>Cerrar</Button>
+          <Button className="w-full sm:w-auto h-11 sm:h-10 text-xs font-black shadow-lg shadow-blue-200" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            Guardar Producción
           </Button>
         </div>
       </DialogContent>
+
     </Dialog>
   );
 }
