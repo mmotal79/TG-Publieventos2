@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { Switch } from '@/components/ui/switch';
 import { 
   Building2, 
   Phone, 
@@ -14,7 +15,9 @@ import {
   Trash2, 
   CheckCircle2, 
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -24,6 +27,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { GlobalConfig } from '@/types';
+import { cn } from '@/lib/utils';
 
 export default function GlobalConfigPage() {
   const [loading, setLoading] = useState(true);
@@ -255,6 +259,47 @@ export default function GlobalConfigPage() {
               />
               <div className="flex items-center gap-2 text-[10px] text-blue-600 font-medium">
                 <CheckCircle2 size={12} /> Esta información se adjunta automáticamente a las notificaciones de cobro.
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Visibility Section */}
+        <Card className="md:col-span-3">
+          <CardHeader>
+            <CardTitle className="text-sm font-bold uppercase text-slate-500 flex items-center gap-2">
+              <Eye size={16} /> Configuración de Visualización (Landing Page)
+            </CardTitle>
+            <CardDescription>Gestione qué secciones son visibles para los visitantes del sitio público.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 gap-4">
+              <div className="flex gap-4">
+                <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm h-fit">
+                  {watch('mostrarConfiguradorLanding') ? (
+                    <Eye className="text-primary h-6 w-6" />
+                  ) : (
+                    <EyeOff className="text-slate-400 h-6 w-6" />
+                  )}
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900">Configurador Global Interactivo</h4>
+                  <p className="text-sm text-slate-500 max-w-md">
+                    Habilita el estimador de presupuestos en tiempo real para que los clientes puedan proyectar sus costos directamente desde el sitio web.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full border shadow-sm">
+                <span className={cn(
+                  "text-[10px] font-black uppercase tracking-widest",
+                   watch('mostrarConfiguradorLanding') ? "text-primary" : "text-slate-400"
+                )}>
+                  {watch('mostrarConfiguradorLanding') ? "Habilitado" : "Deshabilitado"}
+                </span>
+                <Switch 
+                  checked={watch('mostrarConfiguradorLanding')}
+                  onCheckedChange={(val) => setValue('mostrarConfiguradorLanding', val, { shouldDirty: true })}
+                />
               </div>
             </div>
           </CardContent>

@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ClientFormModal } from './ClientFormModal';
-import { formatCurrency } from '@/services/budgetService';
+import { formatCurrency, calculateBudgetPrice } from '@/services/budgetService';
 import { cn } from '@/lib/utils';
 import { Client, Tela, Modelo, Corte, EstructuraCostos, Budget } from '@/types';
 import BudgetPreviewDialog from './BudgetPreviewDialog';
@@ -161,55 +161,39 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
 
       if (!modelo || !tela || !corte) return { unit: 0, total: 0, baseUnit: 0 };
 
-      const Costo_Tela = tela.costoPorMetro || 0;
-      const Factor_Corte = corte.factorConsumoTela || 0;
-      const Costo_Modelo = modelo.costoBase || 0;
-      const Factor_Complejidad = modelo.factorComplejidad || 1.0;
       const personalizacion = isNaN(item.personalizacion) ? 0 : (item.personalizacion || 0);
       const acabados = isNaN(item.acabados) ? 0 : (item.acabados || 0);
       const cantidad = isNaN(item.cantidad) ? 0 : (item.cantidad || 0);
 
       if (cantidad <= 0) return { unit: 0, total: 0, baseUnit: 0 };
 
-      const baseCost = (Costo_Tela * Factor_Corte) + (Costo_Modelo * Factor_Complejidad) + personalizacion + acabados;
-      const margen = selectedEstructura.margenGanancia || 0;
-      const totalConMargen = baseCost * (1 + (margen / 100));
+      // Use shared unified calculation logic
+      const result = calculateBudgetPrice(modelo, tela, corte, selectedEstructura, cantidad, {
+        personalizacion,
+        acabados,
+        urgencia: watchedUrgencia,
+        incluirIVA: false // Summary shows Net Total
+      });
 
-      const recargos = selectedEstructura.recargosUrgencia || { normal: 0, urgente: 0, planificada: 0 };
-      const recargoUrgent = watchedUrgencia === 'urgente' ? (recargos.urgente || 0) : 
-                          watchedUrgencia === 'planificada' ? (recargos.planificada || 0) : 
-                          (recargos.normal || 0);
-      const urgencyMultiplier = 1 + (recargoUrgent / 100);
+      // 1-Unit Price for comparison (Savings)
+      const resultOne = calculateBudgetPrice(modelo, tela, corte, selectedEstructura, 1, {
+        personalizacion,
+        acabados,
+        urgencia: watchedUrgencia,
+        incluirIVA: false
+      });
 
-      // Current Volume Factor
-      let factorVolumen = 1.0;
-      if (selectedEstructura.factoresVolumen) {
-        const range = selectedEstructura.factoresVolumen.find(f => 
-          cantidad >= f.minUnidades && cantidad <= f.hastaUnidades
-        );
-        if (range) factorVolumen = range.multiplicador;
-      }
-
-      // 1-Unit Volume Factor (Reference)
-      let factorVolumenOne = 1.0;
-      if (selectedEstructura.factoresVolumen) {
-        const rangeOne = selectedEstructura.factoresVolumen.find(f => 
-          1 >= f.minUnidades && 1 <= f.hastaUnidades
-        );
-        if (rangeOne) factorVolumenOne = rangeOne.multiplicador;
-      }
-
-      const baseUnitPrice = totalConMargen * urgencyMultiplier * factorVolumenOne;
-      const precioUnitario = (totalConMargen * urgencyMultiplier) * factorVolumen;
+      const baseUnitPrice = resultOne.unitWithMargin;
+      const precioUnitario = result.unitWithMargin;
 
       const lineSavings = (baseUnitPrice - precioUnitario) * cantidad;
       totalSavingsAccumulator += Math.max(0, lineSavings);
       totalBaseAmountAccumulator += baseUnitPrice * cantidad;
       
       return {
-        unit: isNaN(precioUnitario) ? 0 : precioUnitario,
-        total: isNaN(precioUnitario * cantidad) ? 0 : precioUnitario * cantidad,
-        baseUnit: isNaN(baseUnitPrice) ? 0 : baseUnitPrice
+        unit: precioUnitario,
+        total: result.totalPrice,
+        baseUnit: baseUnitPrice
       };
     });
 

@@ -87,6 +87,25 @@ const EstructuraCostosSchema = new Schema({
   activo: { type: Boolean, default: true }
 });
 
+const PortafolioSchema = new Schema({
+  clienteId: { type: String, required: true },
+  nombreCliente: { type: String, required: true },
+  imagen: { type: String, required: true },
+  comentario: { type: String },
+  activo: { type: Boolean, default: true },
+  mostrarTestimonio: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const CreacionSchema = new Schema({
+  titulo: { type: String, required: true },
+  descripcion: { type: String, required: true },
+  imagen: { type: String, required: true },
+  precioBase: { type: Number, required: true },
+  activo: { type: Boolean, default: true },
+  createdAt: { type: Date, default: Date.now }
+});
+
 export const TelaModel = mongoose.model('Tela', TelaSchema);
 export const ModeloModel = mongoose.model('Modelo', ModeloSchema);
 export const CorteModel = mongoose.model('Corte', CorteSchema);
@@ -95,3 +114,5 @@ export const EstampadoModel = mongoose.model('Estampado', EstampadoSchema);
 export const AcabadoModel = mongoose.model('Acabado', AcabadoSchema);
 export const ConfiguracionModel = mongoose.model('Configuracion', ConfiguracionSchema);
 export const EstructuraCostosModel = mongoose.model('EstructuraCostos', EstructuraCostosSchema);
+export const PortafolioModel = mongoose.model('Portafolio', PortafolioSchema);
+export const CreacionModel = mongoose.model('Creacion', CreacionSchema);

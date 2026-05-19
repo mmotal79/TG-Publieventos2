@@ -30,6 +30,7 @@ export interface GlobalConfig {
   nombreAsesor: string; // Dynamic advisor name
   informacionPago: string;
   logoBase64: string;
+  mostrarConfiguradorLanding: boolean;
   updatedAt?: string;
 }
 
@@ -143,4 +144,25 @@ export interface EstructuraCostos {
   recargosUrgencia: RecargosUrgencia;
   imagenReferencial?: string;
   activo: boolean;
+}
+
+export interface PortafolioItem {
+  _id?: string;
+  clienteId: string;
+  nombreCliente: string;
+  imagen: string;
+  comentario?: string;
+  activo: boolean;
+  mostrarTestimonio: boolean;
+  createdAt?: string;
+}
+
+export interface CreacionItem {
+  _id?: string;
+  titulo: string;
+  descripcion: string;
+  imagen: string;
+  precioBase: number;
+  activo: boolean;
+  createdAt?: string;
 }

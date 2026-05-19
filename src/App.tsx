@@ -13,6 +13,7 @@ import SecurityDashboard from './pages/SecurityDashboard';
 import Clients from './pages/Clients';
 import Production from './pages/Production';
 import Login from './pages/Login';
+import LandingPage from './pages/LandingPage';
 import Transactions from './pages/Transactions';
 import TelasCatalog from './pages/catalogs/TelasCatalog';
 import UsuariosCatalog from './pages/catalogs/UsuariosCatalog';
@@ -21,6 +22,8 @@ import CortesCatalog from './pages/catalogs/CortesCatalog';
 import AcabadosCatalog from './pages/catalogs/AcabadosCatalog';
 import ProductionPhasesCatalog from './pages/catalogs/ProductionPhasesCatalog';
 import CostStructureCatalog from './pages/catalogs/CostStructureCatalog';
+import PortafolioCatalog from './pages/catalogs/PortafolioCatalog';
+import CreacionesCatalog from './pages/catalogs/CreacionesCatalog';
 import GlobalConfigPage from './pages/catalogs/GlobalConfig';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
@@ -38,7 +41,7 @@ const AppContent = () => {
   if (isLoginPage) {
     return (
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<LandingPage />} />
       </Routes>
     );
   }
@@ -63,6 +66,8 @@ const AppContent = () => {
           <Route path="/catalogs/acabados" element={<AcabadosCatalog />} />
           <Route path="/catalogs/fases-produccion" element={<ProductionPhasesCatalog />} />
           <Route path="/catalogs/estructura-costos" element={<CostStructureCatalog />} />
+          <Route path="/catalogs/portafolio" element={<PortafolioCatalog />} />
+          <Route path="/catalogs/creaciones" element={<CreacionesCatalog />} />
           <Route path="/catalogs/usuarios" element={<UsuariosCatalog />} />
           <Route path="/catalogs/configuracion" element={<GlobalConfigPage />} />
           

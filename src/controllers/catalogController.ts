@@ -5,7 +5,7 @@
 
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
-import { TelaModel, ModeloModel, CorteModel, BordadoModel, EstampadoModel, AcabadoModel, ConfiguracionModel, EstructuraCostosModel } from '../models/Catalogs.model.js';
+import { TelaModel, ModeloModel, CorteModel, BordadoModel, EstampadoModel, AcabadoModel, ConfiguracionModel, EstructuraCostosModel, PortafolioModel, CreacionModel } from '../models/Catalogs.model.js';
 
 const getModel = (type: string): mongoose.Model<any> | null => {
   switch(type) {
@@ -17,6 +17,8 @@ const getModel = (type: string): mongoose.Model<any> | null => {
     case 'acabados': return AcabadoModel;
     case 'configuracion': return ConfiguracionModel;
     case 'estructura-costos': return EstructuraCostosModel;
+    case 'portafolio': return PortafolioModel;
+    case 'creaciones': return CreacionModel;
     default: return null;
   }
 };

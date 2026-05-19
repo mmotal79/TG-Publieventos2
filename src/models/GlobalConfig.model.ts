@@ -12,6 +12,7 @@ export interface IGlobalConfig extends Document {
   telefonoCorporativo: string;
   informacionPago: string;
   logoBase64: string;
+  mostrarConfiguradorLanding: boolean;
   updatedAt: Date;
 }
 
@@ -22,6 +23,7 @@ const GlobalConfigSchema: Schema = new Schema({
   telefonoCorporativo: { type: String, default: '' },
   informacionPago: { type: String, default: '' },
   logoBase64: { type: String, default: '' },
+  mostrarConfiguradorLanding: { type: Boolean, default: true },
   updatedAt: { type: Date, default: Date.now }
 });
 

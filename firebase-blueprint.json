@@ -46,6 +46,37 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "clientId", "salesId", "totalCost", "status"]
+    },
+    "Portafolio": {
+      "title": "Portafolio",
+      "description": "Portfolio of delivered designs and client testimonials",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clientId": { "type": "string" },
+        "nombreCliente": { "type": "string" },
+        "imagen": { "type": "string", "description": "Base64 or URL" },
+        "comentario": { "type": "string" },
+        "activo": { "type": "boolean" },
+        "mostrarTestimonio": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["clientId", "imagen", "activo"]
+    },
+    "Creacion": {
+      "title": "Creacion",
+      "description": "Showcase of produced designs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "titulo": { "type": "string" },
+        "descripcion": { "type": "string" },
+        "imagen": { "type": "string" },
+        "precioBase": { "type": "number" },
+        "activo": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["titulo", "imagen", "precioBase", "activo"]
     }
   },
   "firestore": {
@@ -60,6 +91,14 @@
     "/budgets/{budgetId}": {
       "schema": "Budget",
       "description": "Budgets and orders"
+    },
+    "/portafolio/{itemId}": {
+      "schema": "Portafolio",
+      "description": "Showcase items"
+    },
+    "/creaciones/{itemId}": {
+      "schema": "Creacion",
+      "description": "Production showcase"
     }
   }
 }

@@ -22,7 +22,9 @@ import {
   Palette,
   Layers,
   Calculator,
-  ShieldAlert
+  ShieldAlert,
+  Briefcase,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -42,8 +44,20 @@ interface LayoutProps {
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { profile } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [logo, setLogo] = React.useState<string | null>(null);
+  const [companyName, setCompanyName] = React.useState('TG-Textiles');
   const location = useLocation();
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(config => {
+        if (config.logoBase64) setLogo(config.logoBase64);
+        if (config.nombreComercial) setCompanyName(config.nombreComercial);
+      })
+      .catch(console.error);
+  }, []);
 
   const currentRole = profile?.role ?? 4;
   const isAdminOrManager = currentRole === 0 || currentRole === 1;
@@ -66,6 +80,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Acabados', path: '/catalogs/acabados', icon: BookOpen, show: true },
     { name: 'Fases Producción', path: '/catalogs/fases-produccion', icon: Settings, show: true },
     { name: 'Estructura de Costos', path: '/catalogs/estructura-costos', icon: Calculator, show: isAdminOrManager },
+    { name: 'Portafolio de Entregas', path: '/catalogs/portafolio', icon: Briefcase, show: isAdminOrManager },
+    { name: 'Nuestras Creaciones', path: '/catalogs/creaciones', icon: Sparkles, show: isAdminOrManager },
     { name: 'Usuarios', path: '/catalogs/usuarios', icon: Users, show: isAdminOrManager },
     { name: 'Configuración', path: '/catalogs/configuracion', icon: Settings, show: isAdminOrManager },
   ];
@@ -79,7 +95,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row">
       {/* Mobile Header */}
       <div className="md:hidden bg-white border-b p-4 flex justify-between items-center sticky top-0 z-50">
-        <h1 className="font-bold text-xl text-primary">TG-Publieventos</h1>
+        <div className="flex items-center gap-2">
+          {logo && <img src={logo} alt="Logo" className="w-8 h-8 object-contain" />}
+          <h1 className="font-bold text-xl text-primary">{companyName}</h1>
+        </div>
         <Button variant="ghost" size="icon" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
           {isSidebarOpen ? <X /> : <Menu />}
         </Button>
@@ -91,8 +110,17 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-6 hidden md:block">
-          <h1 className="font-bold text-2xl text-primary">TG-Publieventos</h1>
-          <p className="text-xs text-muted-foreground mt-1">Gestión Textil Integral</p>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center p-1 border shadow-sm">
+               {logo ? (
+                 <img src={logo} alt="Logo" className="w-full h-full object-contain" />
+               ) : (
+                 <Factory className="text-primary w-6 h-6" />
+               )}
+            </div>
+            <h1 className="font-bold text-xl text-primary tracking-tighter leading-none">{companyName}</h1>
+          </div>
+          <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest pl-1">Gestión Textil Integral</p>
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 space-y-1 mt-4">
@@ -178,10 +206,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
 
       {/* Main Content */}
-      <main className="flex-1 p-4 md:p-8 overflow-auto">
-        <div className="max-w-7xl mx-auto">
+      <main className="flex-1 p-4 md:p-8 overflow-auto flex flex-col">
+        <div className="max-w-7xl mx-auto flex-1 w-full">
           {children}
         </div>
+        
+        <footer className="mt-8 pt-6 border-t text-center space-y-1">
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            © {new Date().getFullYear()} Todos los derechos reservados.
+          </p>
+          <p className="text-[10px] font-medium text-slate-400 uppercase tracking-widest">
+            Desarrollado por: <span className="font-black text-slate-500">Ing. Miguel Mota</span>,{' '}
+            <a 
+              href="https://ing-ti-miguelmota.netlify.app/" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-primary hover:underline font-black"
+            >
+              Desarrollo de Sistemas Creativos
+            </a>
+          </p>
+        </footer>
       </main>
       <Toaster />
     </div>
