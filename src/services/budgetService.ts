@@ -86,5 +86,6 @@ export const calculateBudgetPrice = (
     unitWithMargin: unitPrice,
     totalPrice: total,
     ivaAmount: total * (estructura.iva || 16) / 100,
+    volumeFactor: volumeFact,
   };
 };

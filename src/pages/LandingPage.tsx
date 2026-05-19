@@ -366,15 +366,15 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* --- Nuestras Creaciones Showcase (DARK BACKGROUND) --- */}
+      {/* --- Nuestras Creaciones Showcase (Flowing White) --- */}
       {creaciones.length > 0 && (
-        <section id="creaciones" className="py-32 bg-slate-950 relative overflow-hidden">
+        <section id="creaciones" className="py-32 bg-white relative overflow-hidden">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
           
           <div className="container max-w-7xl mx-auto px-6 relative z-10">
             <div className="flex flex-col items-center text-center mb-20">
               <h2 className="text-primary font-black uppercase tracking-[0.5em] text-[11px] mb-6">Exhibición Exclusiva</h2>
-              <h3 className="text-6xl md:text-8xl font-black text-white tracking-tighter uppercase leading-[0.85]">
+              <h3 className="text-6xl md:text-8xl font-black text-slate-900 tracking-tighter uppercase leading-[0.85]">
                 Nuestras <br /> <span className="text-primary italic">Creaciones.</span>
               </h3>
             </div>
@@ -388,31 +388,31 @@ const LandingPage: React.FC = () => {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
-                      className="relative aspect-[4/5] md:aspect-video rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl bg-slate-900"
+                      className="relative aspect-[4/5] md:aspect-video rounded-[3rem] overflow-hidden border border-slate-100 shadow-2xl bg-white"
                     >
                       <img 
                         src={creaciones[currentShowcaseIdx].imagen} 
                         alt={creaciones[currentShowcaseIdx].titulo} 
                         className="w-full h-full object-cover"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-40" />
                     </motion.div>
                   </AnimatePresence>
                   
                   {/* Controls */}
-                  <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/5 backdrop-blur-md border border-white/10 p-2 rounded-2xl">
+                  <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/80 backdrop-blur-md border border-slate-200 p-2 rounded-2xl shadow-xl">
                     <button 
                       onClick={() => setCurrentShowcaseIdx(prev => (prev === 0 ? creaciones.length - 1 : prev - 1))}
-                      className="w-12 h-12 rounded-xl bg-white/5 hover:bg-white/10 text-white flex items-center justify-center transition-all"
+                      className="w-12 h-12 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-900 flex items-center justify-center transition-all"
                     >
                       <ArrowRight className="rotate-180" size={20} />
                     </button>
-                    <div className="px-4 text-[10px] font-black text-white uppercase tracking-widest">
+                    <div className="px-4 text-[10px] font-black text-slate-900 uppercase tracking-widest">
                        {currentShowcaseIdx + 1} / {creaciones.length}
                     </div>
                     <button 
                       onClick={() => setCurrentShowcaseIdx(prev => (prev === creaciones.length - 1 ? 0 : prev + 1))}
-                      className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center transition-all hover:scale-105"
+                      className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center transition-all hover:scale-105 shadow-lg shadow-primary/30"
                     >
                       <ArrowRight size={20} />
                     </button>
@@ -429,28 +429,28 @@ const LandingPage: React.FC = () => {
                        className="space-y-8"
                      >
                        <div className="space-y-4">
-                         <Badge className="bg-primary/20 text-primary border-primary/30 uppercase tracking-[0.2em] font-black text-[10px] px-4 py-1.5 rounded-full">
+                         <Badge className="bg-primary/10 text-primary border-primary/20 uppercase tracking-[0.2em] font-black text-[10px] px-4 py-1.5 rounded-full">
                            Diseño Premium
                          </Badge>
-                         <h4 className="text-4xl md:text-5xl font-black text-white tracking-tighter uppercase leading-none italic">
+                         <h4 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter uppercase leading-none italic">
                            {creaciones[currentShowcaseIdx].titulo}
                          </h4>
                        </div>
                        
-                       <p className="text-slate-400 text-lg font-medium leading-relaxed">
+                       <p className="text-slate-500 text-lg font-medium leading-relaxed">
                          {creaciones[currentShowcaseIdx].descripcion}
                        </p>
 
-                       <div className="pt-8 border-t border-white/10">
-                         <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">Precio Base Sugerido</div>
+                       <div className="pt-8 border-t border-slate-100">
+                         <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Precio Base Sugerido</div>
                          <div className="text-4xl font-black text-primary tracking-tighter">
-                            ${(creaciones[currentShowcaseIdx].precioBase || 0).toLocaleString()} <span className="text-xs text-slate-600 font-bold ml-1 uppercase">USD</span>
+                            ${(creaciones[currentShowcaseIdx].precioBase || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })} <span className="text-xs text-slate-400 font-bold ml-1 uppercase">USD</span>
                          </div>
                        </div>
 
                        <Button 
                         onClick={() => scrollToSection('estimador')}
-                        className="w-full h-16 rounded-2xl bg-white text-slate-950 font-black uppercase tracking-widest text-[10px] hover:bg-slate-200"
+                        className="w-full h-16 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 shadow-xl"
                        >
                          Solicitar Cotización Similar
                        </Button>
@@ -570,7 +570,7 @@ const LandingPage: React.FC = () => {
                     <div className="flex flex-col items-end">
                       <Label className="text-[10px] uppercase tracking-[0.3em] font-black text-slate-500 mb-2">Saldo Proyectado</Label>
                       <span className="text-3xl font-black text-primary tabular-nums tracking-tighter">
-                        ${Math.round(estimate || 0).toLocaleString()}
+                        ${(estimate || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </span>
                     </div>
                   </div>
@@ -600,9 +600,9 @@ const LandingPage: React.FC = () => {
                   key={estimate}
                   initial={{ scale: 0.9, opacity: 0, y: 10 }}
                   animate={{ scale: 1, opacity: 1, y: 0 }}
-                  className="text-8xl md:text-[130px] font-black tracking-tighter text-white mb-10 tabular-nums leading-none drop-shadow-[0_10px_30px_rgba(37,99,235,0.4)]"
+                  className="text-8xl md:text-[130px] font-black tracking-tighter text-white mb-10 tabular-nums leading-none drop-shadow-[0_10px_30px_rgba(var(--primary),0.4)]"
                 >
-                  ${Math.round(estimate).toLocaleString()}
+                  ${estimate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </motion.div>
                 
                 <div className="bg-slate-900/40 backdrop-blur p-8 rounded-3xl border border-white/5 mb-12 w-full max-w-sm">
@@ -625,17 +625,17 @@ const LandingPage: React.FC = () => {
         </section>
       )}
 
-      {/* --- Gallery / Showcase Section (WHITE BACKGROUND) --- */}
-      <section id="gallery" className="py-32 bg-white relative overflow-hidden">
+      {/* --- Gallery / Showcase Section (Dynamic Background) --- */}
+      <section id="gallery" className={cn("py-32 relative overflow-hidden transition-colors duration-500", showCalculator ? "bg-white" : "bg-slate-950")}>
         <div className="container max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
             <div className="max-w-xl">
                <h2 className="text-primary font-black uppercase tracking-[0.4em] text-[11px] mb-6">Portafolio de Entregas</h2>
-               <h3 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tighter uppercase leading-none">
+               <h3 className={cn("text-5xl md:text-6xl font-black tracking-tighter uppercase leading-none", showCalculator ? "text-slate-900" : "text-white")}>
                  Excelencia en <br /> <span className="text-primary">Cada Fibra.</span>
                </h3>
             </div>
-            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px] mb-2 border-b-2 border-primary pb-2">
+            <p className={cn("font-bold uppercase tracking-widest text-[10px] mb-2 border-b-2 border-primary pb-2", showCalculator ? "text-slate-500" : "text-slate-400")}>
               Colecciones Recientes
             </p>
           </div>
@@ -651,7 +651,7 @@ const LandingPage: React.FC = () => {
                     viewport={{ once: true }}
                     className="min-w-[300px] md:min-w-[450px] snap-center"
                   >
-                    <div className="bg-slate-50 rounded-[2.5rem] overflow-hidden border border-slate-100 shadow-xl group">
+                    <div className={cn("rounded-[2.5rem] overflow-hidden border shadow-xl group", showCalculator ? "bg-slate-50 border-slate-100" : "bg-slate-900 border-white/5")}>
                       <div className="relative aspect-[4/3] overflow-hidden">
                         <img 
                           src={item.imagen} 
@@ -663,7 +663,7 @@ const LandingPage: React.FC = () => {
                         </div>
                       </div>
                       {item.mostrarTestimonio && item.comentario && (
-                        <div className="p-10 border-t border-slate-100 italic text-slate-600 bg-white">
+                        <div className={cn("p-10 border-t italic", showCalculator ? "border-slate-100 text-slate-600 bg-white" : "border-white/5 text-slate-400 bg-slate-950")}>
                            <Quote className="text-primary/20 w-8 h-8 mb-4" />
                            <p className="text-sm font-medium leading-relaxed">
                              "{item.comentario}"
@@ -674,7 +674,7 @@ const LandingPage: React.FC = () => {
                   </motion.div>
                 ))
               ) : (
-                <div className="flex gap-4 w-full justify-center opacity-30 italic font-medium py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                <div className={cn("flex gap-4 w-full justify-center opacity-30 italic font-medium py-20 rounded-3xl border border-dashed", showCalculator ? "bg-slate-50 border-slate-200" : "bg-slate-900 border-white/10")}>
                   Cargando piezas exclusivas...
                 </div>
               )}
@@ -683,8 +683,8 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* --- Advantages Section (DARK BACKGROUND) --- */}
-      <section id="ventajas" className="py-32 bg-slate-950">
+      {/* --- Advantages Section (Dynamic Background) --- */}
+      <section id="ventajas" className={cn("py-32 transition-colors duration-500", showCalculator ? "bg-slate-950" : "bg-white")}>
         <div className="container max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
             {[
@@ -693,21 +693,21 @@ const LandingPage: React.FC = () => {
               { icon: <Quote className="w-8 h-8" />, title: 'Compromiso y Entrega', desc: 'Cumplimiento riguroso de cronogramas y trazabilidad real del avance de su producción.' },
             ].map((adv, idx) => (
               <div key={idx} className="flex flex-col items-center text-center group">
-                <div className="w-24 h-24 bg-slate-900 border border-white/5 shadow-2xl rounded-[2.5rem] flex items-center justify-center text-primary mb-10 group-hover:rotate-12 transition-transform">
+                <div className={cn("w-24 h-24 border shadow-2xl rounded-[2.5rem] flex items-center justify-center text-primary mb-10 group-hover:rotate-12 transition-transform", showCalculator ? "bg-slate-900 border-white/5" : "bg-slate-50 border-slate-100")}>
                   {adv.icon}
                 </div>
-                <h4 className="text-2xl font-black text-white uppercase tracking-tighter mb-5 italic">{adv.title}</h4>
-                <p className="text-slate-500 font-medium text-sm leading-relaxed max-w-xs group-hover:text-slate-400 transition-colors">{adv.desc}</p>
+                <h4 className={cn("text-2xl font-black uppercase tracking-tighter mb-5 italic", showCalculator ? "text-white" : "text-slate-900")}>{adv.title}</h4>
+                <p className={cn("font-medium text-sm leading-relaxed max-w-xs transition-colors", showCalculator ? "text-slate-500 group-hover:text-slate-400" : "text-slate-500 group-hover:text-slate-600")}>{adv.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* --- Acceso / Login Section (WHITE BACKGROUND) --- */}
-      <section id="acceso" className="py-32 bg-white relative">
+      {/* --- Acceso / Login Section (Dynamic Background) --- */}
+      <section id="acceso" className={cn("py-32 relative transition-colors duration-500", showCalculator ? "bg-white" : "bg-slate-950")}>
         <div className="container max-w-7xl mx-auto px-6 relative z-10">
-           <div className="rounded-[4rem] bg-slate-50 border border-slate-100 flex flex-col lg:flex-row shadow-2xl overflow-hidden min-h-[750px]">
+           <div className={cn("rounded-[4rem] border flex flex-col lg:flex-row shadow-2xl overflow-hidden min-h-[750px]", showCalculator ? "bg-slate-50 border-slate-100" : "bg-slate-900 border-white/5")}>
               <div className="lg:w-1/2 p-16 md:p-24 flex flex-col justify-center bg-slate-900 text-white">
                 <h2 className="text-primary font-black uppercase tracking-[0.5em] text-[11px] mb-8">Nuestra Promesa</h2>
                 <h3 className="text-6xl md:text-7xl font-black text-white tracking-tighter leading-[0.85] uppercase mb-12">

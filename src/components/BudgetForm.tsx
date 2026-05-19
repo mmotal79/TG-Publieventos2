@@ -63,6 +63,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
   const [modelos, setModelos] = useState<Modelo[]>([]);
   const [cortes, setCortes] = useState<Corte[]>([]);
   const [estructuras, setEstructuras] = useState<EstructuraCostos[]>([]);
+  const [exchangeRate, setExchangeRate] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -109,12 +110,13 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [cRes, tRes, mRes, crRes, ecRes] = await Promise.all([
+        const [cRes, tRes, mRes, crRes, ecRes, exRes] = await Promise.all([
           fetch('/api/clients'),
           fetch('/api/catalogs/telas'),
           fetch('/api/catalogs/modelos'),
           fetch('/api/catalogs/cortes'),
-          fetch('/api/catalogs/estructura-costos')
+          fetch('/api/catalogs/estructura-costos'),
+          fetch('/api/exchange-rates/current')
         ]);
         
         if (cRes.ok) {
@@ -125,6 +127,11 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
         if (mRes.ok) setModelos(await mRes.json());
         if (crRes.ok) setCortes(await crRes.json());
         if (ecRes.ok) setEstructuras(await ecRes.json());
+
+        if (exRes.ok) {
+          const exData = await exRes.json();
+          if (exData.rate) setExchangeRate(exData.rate);
+        }
       } catch (err) {
         console.error("Error loading catalogs:", err);
       } finally {
@@ -154,6 +161,9 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
     let totalSavingsAccumulator = 0;
     let totalBaseAmountAccumulator = 0;
 
+    let totalDiscountPercentSum = 0;
+    let itemsWithDiscountCount = 0;
+
     const calculations = watchedItems.map(item => {
       const modelo = modelos.find(m => m._id === item.modeloId);
       const tela = telas.find(t => t._id === item.telaId);
@@ -174,6 +184,13 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
         urgencia: watchedUrgencia,
         incluirIVA: false // Summary shows Net Total
       });
+
+      // Calculate individual discount for averaging
+      const itemDiscountPercent = Math.round((1 - (result.volumeFactor || 1)) * 100);
+      if (itemDiscountPercent > 0) {
+        totalDiscountPercentSum += itemDiscountPercent;
+        itemsWithDiscountCount++;
+      }
 
       // 1-Unit Price for comparison (Savings)
       const resultOne = calculateBudgetPrice(modelo, tela, corte, selectedEstructura, 1, {
@@ -197,7 +214,9 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
       };
     });
 
-    const percentResult = totalBaseAmountAccumulator > 0 ? Math.round((totalSavingsAccumulator / totalBaseAmountAccumulator) * 100) : 0;
+    const percentResult = itemsWithDiscountCount > 0 
+      ? Math.round(totalDiscountPercentSum / itemsWithDiscountCount) 
+      : 0;
     
     return {
       itemCalculations: calculations,
@@ -230,6 +249,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
       volumeDiscountAmount: volumeDiscountInfo.amount,
       volumeDiscountPercent: volumeDiscountInfo.percent,
       status: 'pending',
+      tasaBCV: exchangeRate,
       fecha: new Date().toISOString()
     };
     
@@ -847,6 +867,8 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
           clientId: selectedClient,
           estructuraCostosId: selectedEstructura,
           urgencia: watchedUrgencia,
+          tasaBCV: exchangeRate,
+          totalCost: grandTotal,
           items: watchedItems.map((item, idx) => ({
             ...item,
             modeloId: modelos.find(m => m._id === item.modeloId),
@@ -855,7 +877,6 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
             precioUnitario: itemCalculations[idx]?.unit || 0,
             totalItem: itemCalculations[idx]?.total || 0
           })),
-          totalCost: grandTotal,
           volumeDiscountAmount: volumeDiscountInfo.amount,
           volumeDiscountPercent: volumeDiscountInfo.percent
         }}

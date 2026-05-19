@@ -3,13 +3,15 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   TrendingUp, 
-  Users, 
   Clock, 
-  CheckCircle2 
+  CheckCircle2,
+  DollarSign,
+  Loader2,
+  Wallet
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -19,36 +21,55 @@ import {
   CartesianGrid, 
   Tooltip, 
   ResponsiveContainer,
-  LineChart,
-  Line
 } from 'recharts';
 import { cn } from '@/lib/utils';
 
-const data = [
-  { name: 'Ene', ventas: 4000 },
-  { name: 'Feb', ventas: 3000 },
-  { name: 'Mar', ventas: 2000 },
-  { name: 'Abr', ventas: 2780 },
-];
+const iconMap: Record<string, any> = {
+  TrendingUp,
+  Clock,
+  CheckCircle2,
+  DollarSign,
+  Wallet
+};
 
 const Dashboard: React.FC = () => {
-  const stats = [
-    { title: 'Ventas del Mes', value: '$12,450', icon: TrendingUp, color: 'text-blue-600' },
-    { title: 'Nuevos Clientes', value: '24', icon: Users, color: 'text-green-600' },
-    { title: 'Pedidos Pendientes', value: '18', icon: Clock, color: 'text-amber-600' },
-    { title: 'Completados', value: '142', icon: CheckCircle2, color: 'text-purple-600' },
-  ];
+  const [data, setData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/dashboard/stats');
+        if (res.ok) {
+          setData(await res.json());
+        }
+      } catch (err) {
+        console.error("Error fetching dashboard stats:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-[80vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
       <div>
         <h2 className="text-3xl font-bold tracking-tight">Panel de Control</h2>
-        <p className="text-muted-foreground">Bienvenido al sistema de gestión de TG-Publieventos.</p>
+        <p className="text-muted-foreground">Información real del sistema de gestión de TG-Publieventos.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {stats.map((stat) => {
-          const Icon = stat.icon;
+        {(data?.stats || []).map((stat: any) => {
+          const Icon = iconMap[stat.icon] || TrendingUp;
           return (
             <Card key={stat.title}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -59,9 +80,6 @@ const Dashboard: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">
-                  +12% desde el mes pasado
-                </p>
               </CardContent>
             </Card>
           );
@@ -71,11 +89,11 @@ const Dashboard: React.FC = () => {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
         <Card className="col-span-4">
           <CardHeader>
-            <CardTitle>Rendimiento de Ventas</CardTitle>
+            <CardTitle>Historial de Ventas (Últimos 6 meses)</CardTitle>
           </CardHeader>
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={data}>
+              <BarChart data={data?.chartData || []}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" />
                 <YAxis />
@@ -88,21 +106,27 @@ const Dashboard: React.FC = () => {
 
         <Card className="col-span-3">
           <CardHeader>
-            <CardTitle>Estado de Producción</CardTitle>
+            <CardTitle>Avance de Producción</CardTitle>
           </CardHeader>
           <CardContent>
              <div className="space-y-4">
-              {['Corte', 'Costura', 'Estampado', 'Acabado'].map((step) => (
-                <div key={step} className="space-y-2">
+              {(data?.production || []).map((phase: any) => (
+                <div key={phase.name} className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>{step}</span>
-                    <span className="font-medium">75%</span>
+                    <span className="font-medium text-slate-600">{phase.name}</span>
+                    <span className="font-bold">{phase.progress}%</span>
                   </div>
                   <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-primary w-3/4" />
+                    <div 
+                      className="h-full bg-primary transition-all duration-1000" 
+                      style={{ width: `${phase.progress}%` }} 
+                    />
                   </div>
                 </div>
               ))}
+              {(!data?.production || data.production.length === 0) && (
+                <p className="text-center py-8 text-slate-400 italic">No hay trabajos en producción activa actualmente.</p>
+              )}
             </div>
           </CardContent>
         </Card>

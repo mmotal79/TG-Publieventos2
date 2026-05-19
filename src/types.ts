@@ -86,6 +86,7 @@ export interface Budget {
   items: BudgetItem[];
   totalCost: number;
   status: 'pending' | 'approved' | 'rejected' | 'in_production' | 'completed';
+  tasaBCV?: number;
   createdAt?: string;
 }
 

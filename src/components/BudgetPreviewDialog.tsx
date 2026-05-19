@@ -292,7 +292,7 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
                      <div className="bg-zinc-900/40 backdrop-blur-md p-2 rounded-lg border border-white/10 text-center min-w-[150px] print-exact-color">
                        <p className="text-[9px] font-black opacity-70 uppercase tracking-widest mb-0.5 italic print-exact-color">N° {budget._id?.toString().slice(-6).toUpperCase() || 'PROV'}</p>
                        <p className="text-xl font-black print-exact-color">{fecha}</p>
-                       <p className="text-[8px] font-bold uppercase tracking-tight opacity-80 mt-0.5 no-print">Tasa BCV: {exchangeRate > 0 ? `${exchangeRate.toFixed(2)} Bs/USD` : 'S/N'}</p>
+                       <p className="text-[8px] font-bold uppercase tracking-tight opacity-80 mt-0.5 print-exact-color italic">Tasa BCV: {budget.tasaBCV || exchangeRate > 0 ? `${(budget.tasaBCV || exchangeRate).toFixed(2)} BS/USD` : 'S/N'}</p>
                      </div>
                   </div>
                 </div>
@@ -325,17 +325,17 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
                         </div>
                       </div>
                     </div>
-                    <div className="text-right space-y-3 mr-4 flex flex-col justify-between">
+                    <div className="text-right space-y-3 mr-4 flex flex-col justify-end">
                       <div className="border-r-4 border-slate-200 pr-4 py-1">
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 text-right">Contacto Directo</p>
                         <p className="text-lg font-bold text-slate-700 uppercase text-right">{budget.clientId?.contacto || budget.clientId?.personaContacto || '-'}</p>
                       </div>
-                      <div className="border-r-4 border-slate-200 pr-4 py-1 text-xs">
-                         <div className="flex justify-end gap-3 text-slate-600 font-bold uppercase tracking-tight">
-                           <span>Total: <span className="text-slate-900">{formatCurrency(budget.totalCost)}</span></span>
-                           <span><span className="text-xs text-slate-400">|</span> Abono: <span className="text-blue-600">{formatCurrency(budget.pagos?.reduce((sum: number, p: any) => sum + (p.status === 'aprobado' ? p.amount : 0), 0) || 0)}</span></span>
-                           <span><span className="text-xs text-slate-400">|</span> Saldo: <span className="text-rose-600">{formatCurrency((budget.totalCost || 0) - (budget.pagos?.reduce((sum: number, p: any) => sum + (p.status === 'aprobado' ? p.amount : 0), 0) || 0))}</span></span>
-                         </div>
+
+                      <div className="text-right pt-4">
+                        <div className="flex justify-end items-center gap-4">
+                           <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 italic">Total Presupuesto:</span>
+                           <span className="text-lg font-black text-slate-900 italic">{formatCurrency(budget.totalCost)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -395,50 +395,49 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
                   </table>
                 </div>
 
-                <div className="grid grid-cols-2 gap-16 mt-auto">
+                <div className="grid grid-cols-2 gap-8 mt-auto">
                   <div className="text-left">
-                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-600 mb-2 flex items-center gap-2">
+                    <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-rose-600 mb-2 flex items-center gap-2">
                       <div className="w-4 h-0.5 bg-rose-600"/> Condiciones de Pago
                     </h3>
-                    <div className="text-[10px] text-slate-500 whitespace-pre-wrap leading-relaxed font-bold px-2">
+                    <div className="text-[8.5px] text-slate-500 whitespace-pre-wrap leading-tight font-bold px-2">
                       {config?.informacionPago || `70% para comenzar, 30% al entregar.\nTiempo de entrega sujeto a volumen de pedido.\nPrecios en Divisas ($).\nValidez de la oferta: 5 días hábiles.`}
                     </div>
                     {budget.observations && (
                       <div className="mt-4">
-                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 flex items-center gap-2">
+                        <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-1 flex items-center gap-2">
                           <div className="w-4 h-0.5 bg-slate-300"/> Notas Adicionales
                         </h3>
-                        <p className="text-[10px] text-slate-400 px-2 font-medium leading-normal">{budget.observations}</p>
+                        <p className="text-[8.5px] text-slate-400 px-2 font-medium leading-normal">{budget.observations}</p>
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col justify-end text-left">
-                    <div className="bg-slate-50 rounded-xl p-4 border-r-[4px] border-zinc-900 shadow-inner print:hidden">
-                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 text-left italic">Métricas del Presupuesto</h3>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center text-[10px] border-b border-slate-200 pb-1">
-                          <span className="text-slate-400 font-bold uppercase tracking-widest italic">Urgencia:</span>
-                          <span className={cn(
-                            "font-black py-0.5 px-2 rounded-full text-[8px] uppercase tracking-tighter italic shadow-sm",
-                            budget.urgencia === 'urgente' ? "bg-rose-100 text-rose-600" : 
-                            budget.urgencia === 'planificada' ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-600"
-                          )}>
-                            {budget.urgencia}
-                          </span>
-                        </div>
-                        {budget.volumeDiscountPercent > 0 && (
-                          <div className="flex justify-between items-center text-[10px] border-b border-slate-200 pb-1">
-                            <span className="text-emerald-500 font-black uppercase tracking-tighter italic">Desc. x Volumen Aplicado:</span>
-                            <span className="font-black text-emerald-600 text-xs">-{budget.volumeDiscountPercent}%</span>
+                  <div className="flex flex-col justify-end text-left h-full min-w-[220px]">
+                    {/* Metrics Section Re-integrated Here */}
+                    <div className="bg-slate-50/80 rounded-xl p-3 border-r-[4px] border-zinc-900 shadow-sm mb-4">
+                        <h3 className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2 text-left italic">Métricas del Presupuesto</h3>
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between items-center text-[8.5px] border-b border-slate-200 pb-1">
+                            <span className="text-slate-400 font-bold uppercase tracking-widest italic">Urgencia:</span>
+                            <span className={cn(
+                              "font-black py-0.5 px-2 rounded-full text-[7.5px] uppercase tracking-tighter italic shadow-sm",
+                              budget.urgencia === 'urgente' ? "bg-rose-100 text-rose-600" : 
+                              budget.urgencia === 'planificada' ? "bg-emerald-100 text-emerald-600" : "bg-slate-200 text-slate-600"
+                            )}>
+                              {budget.urgencia}
+                            </span>
                           </div>
-                        )}
-                        <div className="flex justify-between items-center text-[10px] pt-1">
-                          <span className="text-slate-400 font-bold uppercase tracking-widest italic text-[8px]">Representante Ventas:</span>
-                          <p className="font-black text-zinc-900 uppercase tracking-tighter italic">{config?.nombreAsesor || 'Ramón Torrealba'}</p>
+                          <div className="flex justify-between items-center text-[8.5px] border-b border-slate-200 pb-1">
+                            <span className="text-emerald-500 font-black uppercase tracking-tighter italic">Desc. x Volumen Promedio:</span>
+                            <span className="font-black text-emerald-600 text-[10px]">-{budget.volumeDiscountPercent || 0}%</span>
+                          </div>
+                          <div className="flex justify-between items-center text-[8.5px] pt-1">
+                            <span className="text-slate-400 font-bold uppercase tracking-widest italic text-[7.5px]">Representante Ventas:</span>
+                            <p className="font-black text-zinc-900 uppercase tracking-tighter italic">{config?.nombreAsesor || 'Ramón Torrealba'}</p>
+                          </div>
                         </div>
-                      </div>
                     </div>
-                    <div className="mt-2 text-[8px] text-slate-300 font-bold flex items-center justify-end h-full">
+                    <div className="text-[8px] text-slate-300 font-bold flex items-center justify-end">
                       <p className="uppercase tracking-[0.3em]">Documento no válido como factura fiscal</p>
                     </div>
                   </div>

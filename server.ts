@@ -20,6 +20,7 @@ import budgetRoutes from "./src/routes/budgetRoutes.js";
 import securityRoutes from "./src/routes/securityRoutes.js";
 import exchangeRateRoutes from "./src/routes/exchangeRateRoutes.js";
 import productionPhaseRoutes from "./src/routes/productionPhaseRoutes.js";
+import dashboardRoutes from "./src/routes/dashboardRoutes.js";
 import { initializeAdmin } from "./src/lib/dbInit.js";
 
 dotenv.config();
@@ -94,6 +95,7 @@ async function startServer() {
   app.use("/api/security", securityRoutes);
   app.use("/api/exchange-rates", exchangeRateRoutes);
   app.use("/api/production-phases", productionPhaseRoutes);
+  app.use("/api/dashboard", dashboardRoutes);
 
   // --- API GUARD (Filtro de Seguridad) ---
   // Cualquier petición que empiece por /api/ y llegue aquí es un 404 real.
