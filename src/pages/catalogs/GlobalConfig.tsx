@@ -273,33 +273,59 @@ export default function GlobalConfigPage() {
             <CardDescription>Gestione qué secciones son visibles para los visitantes del sitio público.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 gap-4">
-              <div className="flex gap-4">
-                <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm h-fit">
-                  {watch('mostrarConfiguradorLanding') ? (
-                    <Eye className="text-primary h-6 w-6" />
-                  ) : (
-                    <EyeOff className="text-slate-400 h-6 w-6" />
-                  )}
+            <div className="space-y-4">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 gap-4">
+                <div className="flex gap-4">
+                  <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm h-fit">
+                    {watch('mostrarConfiguradorLanding') ? (
+                      <Eye className="text-primary h-6 w-6" />
+                    ) : (
+                      <EyeOff className="text-slate-400 h-6 w-6" />
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-900">Calculadora de Presupuesto</h4>
+                    <p className="text-sm text-slate-500 max-w-md">
+                      Habilita el estimador de presupuestos en tiempo real para que los clientes puedan proyectar sus costos.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-bold text-slate-900">Configurador Global Interactivo</h4>
-                  <p className="text-sm text-slate-500 max-w-md">
-                    Habilita el estimador de presupuestos en tiempo real para que los clientes puedan proyectar sus costos directamente desde el sitio web.
-                  </p>
+                <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full border shadow-sm">
+                  <span className={cn(
+                    "text-[10px] font-black uppercase tracking-widest",
+                     watch('mostrarConfiguradorLanding') ? "text-primary" : "text-slate-400"
+                  )}>
+                    {watch('mostrarConfiguradorLanding') ? "Habilitado" : "Deshabilitado"}
+                  </span>
+                  <Switch 
+                    checked={watch('mostrarConfiguradorLanding')}
+                    onCheckedChange={(val) => setValue('mostrarConfiguradorLanding', val, { shouldDirty: true })}
+                  />
                 </div>
               </div>
-              <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full border shadow-sm">
-                <span className={cn(
-                  "text-[10px] font-black uppercase tracking-widest",
-                   watch('mostrarConfiguradorLanding') ? "text-primary" : "text-slate-400"
-                )}>
-                  {watch('mostrarConfiguradorLanding') ? "Habilitado" : "Deshabilitado"}
-                </span>
-                <Switch 
-                  checked={watch('mostrarConfiguradorLanding')}
-                  onCheckedChange={(val) => setValue('mostrarConfiguradorLanding', val, { shouldDirty: true })}
-                />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="flex flex-col">
+                    <span className="font-bold text-slate-900 text-sm">Sección Portafolio</span>
+                    <span className="text-[10px] text-slate-500">Mostrar galería de entregas</span>
+                  </div>
+                  <Switch 
+                    checked={watch('showPortfolio')}
+                    onCheckedChange={(val) => setValue('showPortfolio', val, { shouldDirty: true })}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                  <div className="flex flex-col">
+                    <span className="font-bold text-slate-900 text-sm">Nuestras Creaciones</span>
+                    <span className="text-[10px] text-slate-500">Mostrar catálogo de productos</span>
+                  </div>
+                  <Switch 
+                    checked={watch('showCreations')}
+                    onCheckedChange={(val) => setValue('showCreations', val, { shouldDirty: true })}
+                  />
+                </div>
               </div>
             </div>
           </CardContent>

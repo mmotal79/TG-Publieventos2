@@ -77,6 +77,8 @@ const LandingPage: React.FC = () => {
   const [creaciones, setCreaciones] = useState<any[]>([]);
   const [currentShowcaseIdx, setCurrentShowcaseIdx] = useState(0);
   const [showCalculator, setShowCalculator] = useState(true);
+  const [showPortfolio, setShowPortfolio] = useState(true);
+  const [showCreations, setShowCreations] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,6 +98,8 @@ const LandingPage: React.FC = () => {
           if (config.nombreComercial) setCompanyName(config.nombreComercial);
           if (config.logoBase64) setLogo(config.logoBase64);
           setShowCalculator(config.mostrarConfiguradorLanding !== false);
+          setShowPortfolio(config.showPortfolio !== false);
+          setShowCreations(config.showCreations !== false);
         }
 
         const mData = modelosRes.ok ? await modelosRes.json() : [];
@@ -197,13 +201,22 @@ const LandingPage: React.FC = () => {
           </div>
 
           <div className="hidden md:flex items-center gap-10">
-            {['Proceso', showCalculator ? 'Presupuesto' : null, 'Creaciones', 'Ventajas', 'Acceso']
+            {[
+              'Proceso', 
+              showCreations ? 'Creaciones' : null, 
+              showCalculator ? 'Presupuesto' : null, 
+              showPortfolio ? 'Portafolio' : null, 
+              'Ventajas', 
+              'Acceso'
+            ]
               .filter(Boolean)
               .map((item) => (
               <button 
                 key={item}
                 onClick={() => {
-                  const target = item === 'Presupuesto' ? 'estimador' : item?.toLowerCase();
+                  let target = item?.toLowerCase();
+                  if (item === 'Presupuesto') target = 'estimador';
+                  if (item === 'Portafolio') target = 'gallery';
                   if (target) scrollToSection(target);
                 }}
                 className="text-[10px] font-black text-slate-400 hover:text-white transition-colors uppercase tracking-[0.2em]"
@@ -234,10 +247,21 @@ const LandingPage: React.FC = () => {
             exit={{ opacity: 0, scale: 1.1 }}
             className="fixed inset-0 bg-slate-950 z-40 flex flex-col p-12 pt-32 gap-8 md:hidden"
           >
-            {['Proceso', 'Estimador', 'Ventajas', 'Acceso'].map((item) => (
+            {[
+              'Proceso', 
+              showCreations ? 'Creaciones' : null,
+              showCalculator ? 'Estimador' : null, 
+              showPortfolio ? 'Portafolio' : null,
+              'Ventajas', 
+              'Acceso'
+            ].filter(Boolean).map((item) => (
               <button 
                 key={item}
-                onClick={() => scrollToSection(item.toLowerCase())}
+                onClick={() => {
+                  let target = item.toLowerCase();
+                  if (item === 'Portafolio') target = 'gallery';
+                  scrollToSection(target);
+                }}
                 className="text-4xl font-black text-white text-left border-b border-white/10 pb-6 uppercase tracking-tighter"
               >
                 {item}
@@ -367,7 +391,7 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* --- Nuestras Creaciones Showcase (Flowing White) --- */}
-      {creaciones.length > 0 && (
+      {showCreations && creaciones.length > 0 && (
         <section id="creaciones" className="py-32 bg-white relative overflow-hidden">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-[500px] bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
           
@@ -626,7 +650,11 @@ const LandingPage: React.FC = () => {
       )}
 
       {/* --- Gallery / Showcase Section (Dynamic Background) --- */}
-      <section id="gallery" className={cn("py-32 relative overflow-hidden transition-colors duration-500", showCalculator ? "bg-white" : "bg-slate-950")}>
+      {showPortfolio && (
+        <section id="gallery" className={cn(
+          "py-32 relative overflow-hidden transition-colors duration-500", 
+          showCalculator ? "bg-white" : "bg-slate-950"
+        )}>
         <div className="container max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
             <div className="max-w-xl">
@@ -682,9 +710,13 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
       </section>
+      )}
 
       {/* --- Advantages Section (Dynamic Background) --- */}
-      <section id="ventajas" className={cn("py-32 transition-colors duration-500", showCalculator ? "bg-slate-950" : "bg-white")}>
+      <section id="ventajas" className={cn(
+        "py-32 transition-colors duration-500", 
+        (showPortfolio ? (showCalculator ? false : true) : (showCalculator ? true : false)) ? "bg-white" : "bg-slate-950"
+      )}>
         <div className="container max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-16">
             {[
@@ -705,7 +737,10 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* --- Acceso / Login Section (Dynamic Background) --- */}
-      <section id="acceso" className={cn("py-32 relative transition-colors duration-500", showCalculator ? "bg-white" : "bg-slate-950")}>
+      <section id="acceso" className={cn(
+        "py-32 relative transition-colors duration-500", 
+        (showPortfolio ? (showCalculator ? true : false) : (showCalculator ? false : true)) ? "bg-white" : "bg-slate-950"
+      )}>
         <div className="container max-w-7xl mx-auto px-6 relative z-10">
            <div className={cn("rounded-[4rem] border flex flex-col lg:flex-row shadow-2xl overflow-hidden min-h-[750px]", showCalculator ? "bg-slate-50 border-slate-100" : "bg-slate-900 border-white/5")}>
               <div className="lg:w-1/2 p-16 md:p-24 flex flex-col justify-center bg-slate-900 text-white">

@@ -13,6 +13,8 @@ export interface IGlobalConfig extends Document {
   informacionPago: string;
   logoBase64: string;
   mostrarConfiguradorLanding: boolean;
+  showPortfolio: boolean;
+  showCreations: boolean;
   updatedAt: Date;
 }
 
@@ -24,6 +26,8 @@ const GlobalConfigSchema: Schema = new Schema({
   informacionPago: { type: String, default: '' },
   logoBase64: { type: String, default: '' },
   mostrarConfiguradorLanding: { type: Boolean, default: true },
+  showPortfolio: { type: Boolean, default: true },
+  showCreations: { type: Boolean, default: true },
   updatedAt: { type: Date, default: Date.now }
 });
 

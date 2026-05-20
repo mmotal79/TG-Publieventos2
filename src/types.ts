@@ -31,6 +31,8 @@ export interface GlobalConfig {
   informacionPago: string;
   logoBase64: string;
   mostrarConfiguradorLanding: boolean;
+  showPortfolio: boolean;
+  showCreations: boolean;
   updatedAt?: string;
 }
 
