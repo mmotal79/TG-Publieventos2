@@ -23,6 +23,7 @@ const userSchema = z.object({
   email: z.string().email("Email inválido"),
   rol: z.number().min(0).max(4),
   estado: z.enum(['Activo', 'Bloqueado', 'Suspendido', 'Baja Laboral']),
+  identificacion: z.string().min(1, "La identificación es requerida"),
   salarioBaseUSD: z.number().min(0).optional(),
   porcentajeComision: z.number().min(0).max(100).optional(),
   frecuenciaPago: z.enum(['Semanal', 'Quincenal', 'Mensual']).optional(),
@@ -61,6 +62,7 @@ const UsuariosCatalog: React.FC = () => {
     defaultValues: {
       rol: 3,
       estado: 'Activo',
+      identificacion: '',
       salarioBaseUSD: 0,
       porcentajeComision: 0,
       frecuenciaPago: 'Quincenal'
@@ -98,6 +100,7 @@ const UsuariosCatalog: React.FC = () => {
         email: user.email,
         rol: user.rol,
         estado: user.estado,
+        identificacion: user.identificacion || '',
         salarioBaseUSD: user.salarioBaseUSD || 0,
         porcentajeComision: user.porcentajeComision || 0,
         frecuenciaPago: user.frecuenciaPago || 'Quincenal'
@@ -109,6 +112,7 @@ const UsuariosCatalog: React.FC = () => {
         email: '',
         rol: 3,
         estado: 'Activo',
+        identificacion: '',
         salarioBaseUSD: 0,
         porcentajeComision: 0,
         frecuenciaPago: 'Quincenal'
@@ -277,7 +281,7 @@ const UsuariosCatalog: React.FC = () => {
                             size="icon" 
                             className="text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => handleDelete(u)}
-                            disabled={(currentRole === 1 && u.rol === 0) || u.email === profile?.email}
+                            disabled={u.rol === 0 || u.email === profile?.email}
                           >
                             <Trash2 size={16} />
                           </Button>
@@ -311,6 +315,12 @@ const UsuariosCatalog: React.FC = () => {
                 <Input id="email" type="email" {...register('email')} disabled={!!editingUser} />
                 <p className="text-xs text-muted-foreground">El usuario iniciará sesión con esta cuenta de Google.</p>
                 {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="identificacion">Identificación (Cédula)</Label>
+                <Input id="identificacion" {...register('identificacion')} />
+                {errors.identificacion && <p className="text-xs text-destructive">{errors.identificacion.message}</p>}
               </div>
 
               <div className="space-y-2">

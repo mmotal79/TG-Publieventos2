@@ -15,6 +15,7 @@ export interface IGlobalConfig extends Document {
   mostrarConfiguradorLanding: boolean;
   showPortfolio: boolean;
   showCreations: boolean;
+  showPayroll: boolean;
   updatedAt: Date;
 }
 
@@ -28,6 +29,7 @@ const GlobalConfigSchema: Schema = new Schema({
   mostrarConfiguradorLanding: { type: Boolean, default: true },
   showPortfolio: { type: Boolean, default: true },
   showCreations: { type: Boolean, default: true },
+  showPayroll: { type: Boolean, default: true },
   updatedAt: { type: Date, default: Date.now }
 });
 

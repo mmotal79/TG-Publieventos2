@@ -5,6 +5,7 @@
 
 import { Request, Response } from 'express';
 import User, { IUser } from '../models/User.model.js';
+import Worker from '../models/Worker.model.js';
 
 export const getUsers = async (req: Request, res: Response) => {
   try {
@@ -63,10 +64,27 @@ export const updateUser = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // TODO: If status is 'Bloqueado', use Firebase Admin SDK to revoke refresh tokens
-    // if (updates.estado === 'Bloqueado') {
-    //   await admin.auth().revokeRefreshTokens(firebaseUid);
-    // }
+    // Bidirectional sync: User -> Worker
+    if (updates.estado || updates.nombre || updates.email || updates.identificacion) {
+      const workerStatusMap: Record<string, string> = {
+        'Activo': 'activo',
+        'Bloqueado': 'inactivo',
+        'Suspendido': 'retirado',
+        'Baja Laboral': 'retirado'
+      };
+
+      const workerUpdates: any = {};
+      if (updates.estado) workerUpdates.status = workerStatusMap[updates.estado] || 'inactivo';
+      if (updates.nombre) workerUpdates.nombre = updates.nombre;
+      if (updates.email) workerUpdates.email = updates.email;
+      if (updates.identificacion) workerUpdates.cedula = updates.identificacion;
+
+      // Update by linked userId or by identificacion/cedula
+      await Worker.findOneAndUpdate(
+        { $or: [{ userId: id }, { cedula: updatedUser.identificacion }] },
+        workerUpdates
+      );
+    }
 
     res.json(updatedUser);
   } catch (error: any) {
@@ -98,5 +116,44 @@ export const calculatePayroll = async (req: Request, res: Response) => {
     res.json(payroll);
   } catch (error) {
     res.status(500).json({ message: 'Error calculating payroll', error });
+  }
+};
+
+export const deleteUser = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    if (user.rol === 0) {
+      return res.status(403).json({ message: 'Está estrictamente prohibido eliminar usuarios con el rol de administrador.' });
+    }
+
+    // Identify worker by identificacion (cedula) or email or linked userId
+    const worker = await Worker.findOne({ 
+      $or: [
+        { userId: id },
+        { cedula: user.identificacion },
+        { email: user.email }
+      ] 
+    });
+
+    // Proceed with deletion from Users module
+    await User.findByIdAndDelete(id);
+
+    // If worker exists, deactivate system access
+    if (worker) {
+      await Worker.findByIdAndUpdate(worker._id, {
+        hasSystemAccess: false,
+        userId: null
+      });
+    }
+
+    res.json({ message: 'Usuario eliminado correctamente y sincronizado con nómina.' });
+  } catch (error: any) {
+    res.status(500).json({ message: 'Error en el proceso de eliminación', error: error.message });
   }
 };

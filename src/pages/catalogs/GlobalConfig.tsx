@@ -28,8 +28,10 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { GlobalConfig } from '@/types';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function GlobalConfigPage() {
+  const { profile } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
@@ -326,6 +328,19 @@ export default function GlobalConfigPage() {
                     onCheckedChange={(val) => setValue('showCreations', val, { shouldDirty: true })}
                   />
                 </div>
+
+                {profile?.role === 0 && (
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                    <div className="flex flex-col">
+                      <span className="font-bold text-slate-900 text-sm">Visibilidad de Nómina</span>
+                      <span className="text-[10px] text-slate-500">Habilitar/Deshabilitar para Gerentes</span>
+                    </div>
+                    <Switch 
+                      checked={watch('showPayroll')}
+                      onCheckedChange={(val) => setValue('showPayroll', val, { shouldDirty: true })}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>

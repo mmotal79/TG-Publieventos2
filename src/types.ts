@@ -33,6 +33,7 @@ export interface GlobalConfig {
   mostrarConfiguradorLanding: boolean;
   showPortfolio: boolean;
   showCreations: boolean;
+  showPayroll: boolean;
   updatedAt?: string;
 }
 
@@ -167,5 +168,37 @@ export interface CreacionItem {
   imagen: string;
   precioBase: number;
   activo: boolean;
+  createdAt?: string;
+}
+
+export type WorkerStatus = 'activo' | 'inactivo' | 'retirado';
+export type PaymentFrequency = 'Semanal' | 'Quincenal' | 'Mensual';
+
+export interface Worker {
+  _id?: string;
+  nombre: string;
+  cedula: string;
+  email: string;
+  direccion: string;
+  telefono: string;
+  cargo: string;
+  frecuenciaPago: PaymentFrequency;
+  sueldoBase?: number;
+  comision?: number;
+  banco: string;
+  codigoBIN: string;
+  status: WorkerStatus;
+  hasSystemAccess: boolean;
+  userId?: string; // Reference to User if system access is true
+  createdAt?: string;
+}
+
+export interface SystemUser {
+  _id?: string;
+  nombre: string;
+  email: string;
+  rol: number;
+  estado: string;
+  identificacion: string; // To match worker.cedula
   createdAt?: string;
 }

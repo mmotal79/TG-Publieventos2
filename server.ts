@@ -17,6 +17,7 @@ import catalogRoutes from "./src/routes/catalogRoutes.js";
 import clientRoutes from "./src/routes/clientRoutes.js";
 import configRoutes from "./src/routes/configRoutes.js";
 import budgetRoutes from "./src/routes/budgetRoutes.js";
+import workerRoutes from "./src/routes/workerRoutes.js";
 import securityRoutes from "./src/routes/securityRoutes.js";
 import exchangeRateRoutes from "./src/routes/exchangeRateRoutes.js";
 import productionPhaseRoutes from "./src/routes/productionPhaseRoutes.js";
@@ -92,6 +93,7 @@ async function startServer() {
   app.use("/api/clients", clientRoutes);
   app.use("/api/config", configRoutes);
   app.use("/api/budgets", budgetRoutes);
+  app.use("/api/workers", workerRoutes);
   app.use("/api/security", securityRoutes);
   app.use("/api/exchange-rates", exchangeRateRoutes);
   app.use("/api/production-phases", productionPhaseRoutes);

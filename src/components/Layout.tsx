@@ -46,6 +46,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [logo, setLogo] = React.useState<string | null>(null);
   const [companyName, setCompanyName] = React.useState('TG-Textiles');
+  const [showPayroll, setShowPayroll] = React.useState(true);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -55,21 +56,27 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       .then(config => {
         if (config.logoBase64) setLogo(config.logoBase64);
         if (config.nombreComercial) setCompanyName(config.nombreComercial);
+        setShowPayroll(config.showPayroll !== false);
       })
       .catch(console.error);
   }, []);
 
   const currentRole = profile?.role ?? 4;
-  const isAdminOrManager = currentRole === 0 || currentRole === 1;
+  const isAdmin = currentRole === 0;
+  const isManager = currentRole === 1;
+  const isAdminOrManager = isAdmin || isManager;
+  
+  // RBAC for Payroll: Admins always see, Managers see if enabled
+  const canSeePayroll = isAdmin || (isManager && showPayroll);
 
   const menuItems = [
-    { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-    { name: 'Clientes', path: '/clients', icon: Users },
-    { name: 'Presupuestos', path: '/budgets', icon: FileText },
-    { name: 'Transacciones', path: '/transactions', icon: CreditCard },
-    { name: 'Producción', path: '/production', icon: Factory },
-    { name: 'Nómina', path: '/payroll', icon: Wallet },
-    { name: 'Seguridad', path: '/security', icon: ShieldAlert },
+    { name: 'Dashboard', path: '/', icon: LayoutDashboard, show: true },
+    { name: 'Clientes', path: '/clients', icon: Users, show: true },
+    { name: 'Presupuestos', path: '/budgets', icon: FileText, show: true },
+    { name: 'Transacciones', path: '/transactions', icon: CreditCard, show: true },
+    { name: 'Producción', path: '/production', icon: Factory, show: true },
+    { name: 'Nómina', path: '/payroll', icon: Wallet, show: canSeePayroll },
+    { name: 'Seguridad', path: '/security', icon: ShieldAlert, show: isAdmin },
   ];
 
   const catalogItems = [
@@ -125,7 +132,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
         <div className="flex-1 overflow-y-auto px-4 space-y-1 mt-4">
           <nav className="space-y-1">
-            {menuItems.map((item) => {
+            {menuItems.filter(item => item.show).map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               return (

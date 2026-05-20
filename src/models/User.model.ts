@@ -10,6 +10,7 @@ export interface IUser extends Document {
   email: string;
   rol: number; // 0: Admin, 1: Gerente, 2: Vendedor, 3: Empleado, 4: Cliente
   estado: 'Activo' | 'Bloqueado' | 'Suspendido' | 'Baja Laboral';
+  identificacion: string;
   salarioBaseUSD?: number;
   porcentajeComision?: number;
   frecuenciaPago?: 'Semanal' | 'Quincenal' | 'Mensual';
@@ -31,6 +32,7 @@ const UserSchema: Schema = new Schema({
     enum: ['Activo', 'Bloqueado', 'Suspendido', 'Baja Laboral'], 
     default: 'Activo' 
   },
+  identificacion: { type: String, default: '' },
   salarioBaseUSD: { type: Number, default: 0 },
   porcentajeComision: { type: Number, default: 0 },
   frecuenciaPago: { type: String, enum: ['Semanal', 'Quincenal', 'Mensual'] },
