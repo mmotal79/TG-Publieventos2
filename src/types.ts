@@ -88,7 +88,10 @@ export interface Budget {
   description: string;
   items: BudgetItem[];
   totalCost: number;
-  status: 'pending' | 'approved' | 'rejected' | 'in_production' | 'completed';
+  status: 'pendiente' | 'aceptado_con_abono' | 'en_proceso' | 'culminado' | 'entregado_y_pagado' | 'anulado';
+  disenoVectorialAprobado?: boolean;
+  tallasValidadasConMuestra?: boolean;
+  frozenVolumeData?: any;
   tasaBCV?: number;
   createdAt?: string;
 }

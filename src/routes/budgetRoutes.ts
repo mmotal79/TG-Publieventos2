@@ -4,6 +4,7 @@
  */
 
 import { Router } from "express";
+import mongoose from "mongoose";
 import { BudgetModel } from "../models/Budget.model.js";
 
 const router = Router();
@@ -48,6 +49,55 @@ router.post("/", async (req, res) => {
     res.status(201).json(newBudget);
   } catch (error: any) {
     res.status(400).json({ error: "Error al crear presupuesto", message: error.message });
+  }
+});
+
+// Update budget status with transition logic
+router.patch("/:id/status", async (req, res) => {
+  try {
+    const { status, montoAbonado, disenoVectorialAprobado, tallasValidadasConMuestra } = req.body;
+    const budget = await BudgetModel.findById(req.params.id).populate('clientId');
+    if (!budget) return res.status(404).json({ error: "Presupuesto no encontrado" });
+
+    const oldStatus = budget.status;
+    const newStatus = status;
+
+    // Side Effects:
+    // 1. 'anulado' -> Deactivate client access if applicable
+    if (newStatus === 'anulado') {
+      const User = mongoose.model('User');
+      await User.findOneAndUpdate(
+        { email: (budget.clientId as any)?.email },
+        { estado: 'Suspendido' }
+      );
+    }
+
+    // 2. 'aceptado_con_abono' -> Freeze data
+    if (newStatus === 'aceptado_con_abono') {
+      // Logic for freezing: capture current state of items and factors
+      budget.frozenVolumeData = {
+        items: budget.items,
+        totalCost: budget.totalCost,
+        capturedAt: new Date()
+      };
+    }
+
+    // Update budget
+    budget.status = newStatus;
+    if (montoAbonado !== undefined) {
+      budget.montoAbonado = montoAbonado;
+    }
+    if (disenoVectorialAprobado !== undefined) {
+      budget.disenoVectorialAprobado = disenoVectorialAprobado;
+    }
+    if (tallasValidadasConMuestra !== undefined) {
+      budget.tallasValidadasConMuestra = tallasValidadasConMuestra;
+    }
+
+    await budget.save();
+    res.json(budget);
+  } catch (error: any) {
+    res.status(400).json({ error: "Error al actualizar estatus", message: error.message });
   }
 });
 

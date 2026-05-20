@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2, Search, Loader2, Printer, Eye, MessageSquare, Mail } from 'lucide-react';
+import { Pencil, Trash2, Search, Loader2, Printer, Eye, MessageSquare, Mail, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/services/budgetService';
 import BudgetPreviewDialog from '@/components/BudgetPreviewDialog';
@@ -105,13 +105,12 @@ const Budgets: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'approved': return <Badge className="bg-blue-500">Aceptado con Abono</Badge>;
-      case 'rejected': return <Badge variant="destructive">Rechazado</Badge>;
-      case 'in_production': return <Badge className="bg-indigo-500">En Proceso</Badge>;
-      case 'completed': return <Badge className="bg-purple-500">Culminado</Badge>;
-      case 'delivered': return <Badge className="bg-green-500">Entregado y Pagado</Badge>;
-      case 'cancelled': return <Badge variant="destructive">Anulado</Badge>;
-      default: return <Badge variant="outline" className="bg-zinc-100 text-zinc-700 hover:bg-zinc-200">Pendiente</Badge>;
+      case 'aceptado_con_abono': return <Badge className="bg-blue-500 hover:bg-blue-600">Aceptado con Abono</Badge>;
+      case 'en_proceso': return <Badge className="bg-indigo-500 hover:bg-indigo-600">En Proceso</Badge>;
+      case 'culminado': return <Badge className="bg-purple-500 hover:bg-purple-600">Culminado</Badge>;
+      case 'entregado_y_pagado': return <Badge className="bg-green-500 hover:bg-green-600">Entregado y Pagado</Badge>;
+      case 'anulado': return <Badge variant="destructive">Anulado</Badge>;
+      default: return <Badge variant="outline" className="bg-zinc-100 text-zinc-700 hover:bg-zinc-200 uppercase text-[9px] font-black tracking-widest">Pendiente</Badge>;
     }
   };
 
@@ -202,10 +201,11 @@ const Budgets: React.FC = () => {
                             <TableCell className="pl-4">{getStatusBadge(b.status)}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
-                                <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-900" onClick={() => setPreviewingBudget(b)}><Printer size={16} /></Button>
-                                <Button variant="ghost" size="icon" className="h-9 w-9 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => setPayEditingBudget(b)}><CircleDollarSign size={16} /></Button>
-                                <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5" onClick={() => handleEdit(b)}><Pencil size={16} /></Button>
-                                <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50" onClick={() => handleDelete(b._id)}><Trash2 size={16} /></Button>
+                                <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-900" onClick={() => setPreviewingBudget(b)} title="Imprimir"><Printer size={16} /></Button>
+                                <Button variant="ghost" size="icon" className="h-9 w-9 text-amber-500 hover:text-amber-700 hover:bg-amber-50" onClick={() => setStatusEditingBudget(b)} title="Cambiar Estado"><Settings size={16} /></Button>
+                                <Button variant="ghost" size="icon" className="h-9 w-9 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => setPayEditingBudget(b)} title="Registrar Pago"><CircleDollarSign size={16} /></Button>
+                                <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5" onClick={() => handleEdit(b)} title="Editar"><Pencil size={16} /></Button>
+                                <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50" onClick={() => handleDelete(b._id)} title="Eliminar"><Trash2 size={16} /></Button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -269,25 +269,39 @@ const Budgets: React.FC = () => {
                               <Button 
                                 variant="outline" 
                                 size="lg" 
-                                className="flex-1 h-12 rounded-xl border-slate-200 text-slate-900 font-black uppercase text-[10px] tracking-widest shadow-sm"
+                                className="w-[45%] h-12 rounded-xl border-slate-200 text-slate-900"
                                 onClick={() => setPreviewingBudget(b)}
                               >
-                                <Printer size={14} className="mr-2" />
-                                PDF
+                                <Printer size={16} />
                               </Button>
                               <Button 
                                 variant="outline" 
                                 size="lg" 
-                                className="flex-1 h-12 rounded-xl border-emerald-200 text-emerald-600 font-black uppercase text-[10px] tracking-widest shadow-sm"
+                                className="w-[45%] h-12 rounded-xl border-amber-200 text-amber-600"
+                                onClick={() => setStatusEditingBudget(b)}
+                              >
+                                <Settings size={16} />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="lg" 
+                                className="w-[45%] h-12 rounded-xl border-emerald-200 text-emerald-600"
                                 onClick={() => setPayEditingBudget(b)}
                               >
-                                <CircleDollarSign size={14} className="mr-2" />
-                                Pago
+                                <CircleDollarSign size={16} />
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                size="lg" 
+                                className="w-[45%] h-12 rounded-xl border-rose-200 text-rose-500"
+                                onClick={() => handleDelete(b._id)}
+                              >
+                                <Trash2 size={16} />
                               </Button>
                               <Button 
                                 variant="secondary" 
                                 size="lg" 
-                                className="w-full h-14 rounded-2xl bg-primary text-white font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-primary/20"
+                                className="w-full h-14 rounded-2xl bg-primary text-white font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-primary/20 mt-2"
                                 onClick={() => handleEdit(b)}
                               >
                                 <Pencil size={14} className="mr-3" />

@@ -48,7 +48,7 @@ const Production: React.FC = () => {
         const data = await res.json();
         
         let jobs = data.filter((b: any) => {
-          return b.status !== 'pending' && (b.montoAbonado > 0 || (b.payments && b.payments.length > 0) || b.status === 'cancelled' || b.status === 'rejected');
+          return b.status !== 'pendiente' && b.status !== 'anulado' && (b.montoAbonado > 0 || b.status === 'aceptado_con_abono' || b.status === 'en_proceso' || b.status === 'culminado');
         });
 
         jobs.sort((a: any, b: any) => {
@@ -118,40 +118,39 @@ const Production: React.FC = () => {
     if (totalUnits === 0) return 0;
     const progressPercent = (totalWeightedProgress / totalUnits) * 100;
     
-    if (budget.status === 'completed' || budget.status === 'delivered') return 100;
+    if (budget.status === 'culminado' || budget.status === 'entregado_y_pagado') return 100;
     
     return Math.min(100, Math.round(progressPercent * 10) / 10);
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'approved': return 'Aprobado';
-      case 'in_production': return 'En Producción';
-      case 'completed': return 'Completado (Pendiente Entrega)';
-      case 'delivered': return 'Entregado';
-      case 'cancelled': return 'Cancelado';
-      case 'rejected': return 'Rechazado';
+      case 'aceptado_con_abono': return 'Aceptado con Abono';
+      case 'en_proceso': return 'En Producción';
+      case 'culminado': return 'Completado';
+      case 'entregado_y_pagado': return 'Entregado y Pagado';
+      case 'anulado': return 'Anulado';
       default: return status;
     }
   };
 
   const getStepText = (status: string) => {
     switch (status) {
-      case 'approved': return 'Por Iniciar';
-      case 'in_production': return 'En Proceso';
-      case 'completed': return 'Listo / Control de Calidad';
-      case 'delivered': return 'Entregado';
+      case 'aceptado_con_abono': return 'Por Iniciar';
+      case 'en_proceso': return 'En Proceso';
+      case 'culminado': return 'Listo / Control de Calidad';
+      case 'entregado_y_pagado': return 'Entregado';
       default: return '-';
     }
   };
 
-  const workQueue = budgets.filter(b => ['approved', 'in_production'].includes(b.status));
-  const completedQueue = budgets.filter(b => ['completed', 'delivered'].includes(b.status));
-  const cancelledQueue = budgets.filter(b => ['cancelled', 'rejected'].includes(b.status));
+  const workQueue = budgets.filter(b => ['aceptado_con_abono', 'en_proceso'].includes(b.status));
+  const completedQueue = budgets.filter(b => ['culminado', 'entregado_y_pagado'].includes(b.status));
+  const cancelledQueue = budgets.filter(b => b.status === 'anulado');
 
   const activeOrdersCount = workQueue.length;
-  const readyOrdersCount = budgets.filter(b => b.status === 'completed').length;
-  const waitingOrdersCount = budgets.filter(b => b.status === 'approved').length;
+  const readyOrdersCount = budgets.filter(b => b.status === 'culminado').length;
+  const waitingOrdersCount = budgets.filter(b => b.status === 'aceptado_con_abono').length;
 
   const renderBudgetList = (list: any[], emptyMessage: string) => {
     if (list.length === 0) {
@@ -169,8 +168,8 @@ const Production: React.FC = () => {
           {list.map((job, index) => {
             const progress = getFractionalProgress(job);
             const totalItems = job.items ? job.items.reduce((sum: number, it: any) => sum + (it.cantidad || 0), 0) : 0;
-            const isFinished = ['completed', 'delivered'].includes(job.status);
-            const isCancelled = ['cancelled', 'rejected'].includes(job.status);
+            const isFinished = ['culminado', 'entregado_y_pagado'].includes(job.status);
+            const isCancelled = job.status === 'anulado';
             
             return (
               <div key={job._id} className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 relative overflow-hidden">
@@ -260,8 +259,8 @@ const Production: React.FC = () => {
             <TableBody>
               {list.map((job, index) => {
                 const progress = getFractionalProgress(job);
-                const isFinished = ['completed', 'delivered'].includes(job.status);
-                const isCancelled = ['cancelled', 'rejected'].includes(job.status);
+                const isFinished = ['culminado', 'entregado_y_pagado'].includes(job.status);
+                const isCancelled = job.status === 'anulado';
                 const totalItems = job.items ? job.items.reduce((sum: number, it: any) => sum + (it.cantidad || 0), 0) : 0;
                 
                 return (
@@ -412,7 +411,7 @@ const Production: React.FC = () => {
               <>
                 <TabsContent value="work" className="mt-0 outline-none">
                   <div className="mb-6 flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                    <div className="h-2.5 w-2.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
                     <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Cola de Producción Activa</h3>
                   </div>
                   {renderBudgetList(workQueue, "No hay órdenes activas en producción.")}
