@@ -61,25 +61,25 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Panel de Control</h2>
-        <p className="text-muted-foreground">Información real del sistema de gestión de TG-Publieventos.</p>
+    <div className="space-y-6 md:space-y-8">
+      <div className="px-1 md:px-0">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter uppercase leading-none">Panel de Control</h2>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-1 sm:mt-2 font-medium">Información real del sistema de gestión de TG-Publieventos.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
         {(data?.stats || []).map((stat: any) => {
           const Icon = iconMap[stat.icon] || TrendingUp;
           return (
-            <Card key={stat.title}>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
+            <Card key={stat.title} className="border-none shadow-xl shadow-slate-200/50 rounded-[1.5rem] bg-white overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 sm:p-6 pb-2">
+                <CardTitle className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-slate-400">
                   {stat.title}
                 </CardTitle>
-                <Icon className={cn("h-4 w-4", stat.color)} />
+                <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", stat.color)} />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
+              <CardContent className="p-4 sm:p-6 pt-0">
+                <div className="text-xl sm:text-2xl font-black tracking-tighter uppercase text-slate-900">{stat.value}</div>
               </CardContent>
             </Card>
           );
@@ -87,45 +87,64 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
+        <Card className="col-span-full lg:col-span-4 border-none shadow-xl shadow-slate-200/50 rounded-[2rem] bg-white">
           <CardHeader>
-            <CardTitle>Historial de Ventas (Últimos 6 meses)</CardTitle>
+            <CardTitle className="text-lg font-black uppercase tracking-tight italic">Historial de Ventas</CardTitle>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Últimos 6 meses de facturación</p>
           </CardHeader>
-          <CardContent className="h-[300px]">
+          <CardContent className="h-[250px] sm:h-[300px] px-2 sm:px-6">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={data?.chartData || []}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="ventas" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                <XAxis 
+                  dataKey="name" 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }} 
+                />
+                <YAxis 
+                  axisLine={false} 
+                  tickLine={false} 
+                  tick={{ fontSize: 10, fontWeight: 800, fill: '#94a3b8' }} 
+                />
+                <Tooltip 
+                  cursor={{ fill: '#f8fafc' }}
+                  contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
+                />
+                <Bar dataKey="ventas" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        <Card className="col-span-3">
+        <Card className="col-span-full lg:col-span-3 border-none shadow-xl shadow-slate-200/50 rounded-[2rem] bg-white">
           <CardHeader>
-            <CardTitle>Avance de Producción</CardTitle>
+            <CardTitle className="text-lg font-black uppercase tracking-tight italic">Avance de Producción</CardTitle>
+            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado por fase operativa</p>
           </CardHeader>
           <CardContent>
              <div className="space-y-4">
               {(data?.production || []).map((phase: any) => (
                 <div key={phase.name} className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium text-slate-600">{phase.name}</span>
-                    <span className="font-bold">{phase.progress}%</span>
+                  <div className="flex justify-between items-end">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{phase.name}</span>
+                    <span className="text-sm font-black italic">{phase.progress}%</span>
                   </div>
-                  <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-primary transition-all duration-1000" 
-                      style={{ width: `${phase.progress}%` }} 
+                  <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                    <motion.div 
+                      initial={{ width: 0 }}
+                      animate={{ width: `${phase.progress}%` }}
+                      transition={{ duration: 1, ease: 'easeOut' }}
+                      className="h-full bg-primary" 
                     />
                   </div>
                 </div>
               ))}
               {(!data?.production || data.production.length === 0) && (
-                <p className="text-center py-8 text-slate-400 italic">No hay trabajos en producción activa actualmente.</p>
+                <div className="py-12 flex flex-col items-center justify-center text-slate-300">
+                  <Clock size={40} className="mb-4 opacity-10" />
+                  <p className="text-[10px] font-black uppercase tracking-widest">Sin procesos activos</p>
+                </div>
               )}
             </div>
           </CardContent>

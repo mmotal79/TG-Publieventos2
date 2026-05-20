@@ -43,80 +43,123 @@ const Payroll: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Nómina e Incentivos</h2>
-        <p className="text-muted-foreground">Gestión de pagos, salarios y comisiones del personal (Información Real).</p>
+    <div className="space-y-6 md:space-y-8">
+      <div className="px-1 md:px-0">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter uppercase leading-none">Nómina e Incentivos</h2>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-1 sm:mt-2 font-medium">Gestión de pagos, salarios y comisiones del personal institucional.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Nómina Mensual</CardTitle>
-            <Wallet className="h-4 w-4 text-muted-foreground" />
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
+        <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[1.5rem] bg-white overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 sm:p-6 pb-2">
+            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Mensual</CardTitle>
+            <Wallet className="h-4 w-4 text-primary" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalBase)}</div>
-            <p className="text-xs text-muted-foreground">Basado en salario base USD de {employees.length} empleados</p>
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tighter uppercase">{formatCurrency(totalBase)}</div>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-bold mt-1">Salario base total ({employees.length} pers.)</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Empleados</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+        <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[1.5rem] bg-white overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 sm:p-6 pb-2">
+            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Capital Humano</CardTitle>
+            <TrendingUp className="h-4 w-4 text-emerald-500" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{employees.length}</div>
-            <p className="text-xs text-muted-foreground">Personal administrativo y operativo</p>
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tighter uppercase">{employees.length} Activos</div>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-bold mt-1">Personal calificado</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Fecha de Corte</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+        <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[1.5rem] bg-white overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 p-4 sm:p-6 pb-2">
+            <CardTitle className="text-[10px] font-black uppercase tracking-widest text-slate-400">Periodo</CardTitle>
+            <Calendar className="h-4 w-4 text-blue-500" />
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{new Date().toLocaleDateString('es-VE', { month: 'long', year: 'numeric' })}</div>
-            <p className="text-xs text-muted-foreground">Mes en curso</p>
+          <CardContent className="p-4 sm:p-6 pt-0">
+            <div className="text-xl sm:text-2xl font-black text-slate-900 tracking-tighter uppercase">{new Date().toLocaleDateString('es-VE', { month: 'long', year: 'numeric' })}</div>
+            <p className="text-[10px] sm:text-xs text-slate-400 font-bold mt-1">Corte administrativo</p>
           </CardContent>
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Detalle del Personal</CardTitle>
+      <Card className="border-none shadow-none bg-transparent md:bg-white md:border md:shadow-xl md:shadow-slate-200/50 md:rounded-[2rem] overflow-hidden">
+        <CardHeader className="px-1 md:px-8 md:pt-8">
+          <CardTitle className="text-xl font-black uppercase tracking-tight italic">Detalle de Nómina</CardTitle>
+          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estructura salarial vigente</p>
         </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Cargo</TableHead>
-                <TableHead>Frecuencia</TableHead>
-                <TableHead>Sueldo Base</TableHead>
-                <TableHead>Comisión (%)</TableHead>
-                <TableHead>Estado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {employees.map((emp) => (
-                <TableRow key={emp._id}>
-                  <TableCell className="font-medium">{emp.nombre}</TableCell>
-                  <TableCell>
-                    {emp.rol === 0 ? 'Admin' : emp.rol === 1 ? 'Gerente' : emp.rol === 2 ? 'Vendedor' : 'Empleado'}
-                  </TableCell>
-                  <TableCell>{emp.frecuenciaPago || 'Mensual'}</TableCell>
-                  <TableCell className="font-bold">{formatCurrency(emp.salarioBaseUSD || 0)}</TableCell>
-                  <TableCell>{emp.porcentajeComision || 0}%</TableCell>
-                  <TableCell>
-                    <Badge variant={emp.estado === 'Activo' ? 'default' : 'secondary'}>
-                      {emp.estado}
-                    </Badge>
-                  </TableCell>
+        <CardContent className="p-0 md:p-8">
+          {/* Desktop view */}
+          <div className="hidden md:block overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-y border-slate-100 bg-slate-50/50">
+                  <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Colaborador</TableHead>
+                  <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Cargo</TableHead>
+                  <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Frecuencia</TableHead>
+                  <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Sueldo Base</TableHead>
+                  <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Variable (%)</TableHead>
+                  <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Estado</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {employees.map((emp) => (
+                  <TableRow key={emp._id} className="hover:bg-slate-50/50 transition-colors border-slate-100 group">
+                    <TableCell className="font-black text-slate-900 uppercase tracking-tight">{emp.nombre}</TableCell>
+                    <TableCell className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                      {emp.rol === 0 ? 'Admin' : emp.rol === 1 ? 'Gerente' : emp.rol === 2 ? 'Vendedor' : 'Empleado'}
+                    </TableCell>
+                    <TableCell className="text-xs font-bold italic">{emp.frecuenciaPago || 'Mensual'}</TableCell>
+                    <TableCell className="font-black text-primary">{formatCurrency(emp.salarioBaseUSD || 0)}</TableCell>
+                    <TableCell className="font-black italic text-rose-500">{emp.porcentajeComision || 0}%</TableCell>
+                    <TableCell>
+                      <Badge variant={emp.estado === 'Activo' ? 'default' : 'secondary'} className="px-3 py-0.5 rounded-full font-black text-[9px] uppercase tracking-widest">
+                        {emp.estado}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile approach */}
+          <div className="md:hidden space-y-4 px-1 pb-10">
+            {employees.map((emp) => (
+              <Card key={emp._id} className="border-none shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden bg-white active:scale-[0.98] transition-transform p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h4 className="font-black text-slate-900 uppercase tracking-tighter text-lg leading-none mb-1">{emp.nombre}</h4>
+                    <span className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">{emp.rol === 0 ? 'Admin' : emp.rol === 1 ? 'Gerente' : emp.rol === 2 ? 'Vendedor' : 'Operativo'}</span>
+                  </div>
+                  <Badge variant={emp.estado === 'Activo' ? 'default' : 'secondary'} className="rounded-xl px-2 py-1 text-[8px] font-black uppercase">
+                    {emp.estado}
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 border-y border-slate-50 py-4 my-2">
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Compensación</p>
+                    <p className="text-sm font-black text-slate-900">{formatCurrency(emp.salarioBaseUSD || 0)}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Comisión</p>
+                    <p className="text-sm font-black text-rose-500 italic">{emp.porcentajeComision || 0}%</p>
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center pt-2">
+                   <div className="flex items-center gap-2">
+                     <Calendar size={12} className="text-slate-300" />
+                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">{emp.frecuenciaPago || 'Mensual'}</span>
+                   </div>
+                   <div className="flex items-center gap-2">
+                     <Wallet size={12} className="text-slate-300" />
+                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">USD Real</span>
+                   </div>
+                </div>
+              </Card>
+            ))}
+          </div>
         </CardContent>
       </Card>
     </div>

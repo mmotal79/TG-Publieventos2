@@ -332,88 +332,88 @@ const Production: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-3xl font-black tracking-tighter text-slate-900 uppercase">Gestión de Producción</h2>
-        <p className="text-muted-foreground font-medium">Seguimiento operativo de órdenes y procesos textiles en tiempo real.</p>
+    <div className="space-y-6 md:space-y-8">
+      <div className="px-1 md:px-0">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter text-slate-900 uppercase leading-none">Gestión de Producción</h2>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-1 sm:mt-2 font-medium">Seguimiento operativo de órdenes y procesos textiles en tiempo real.</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="bg-blue-50 border-blue-100 shadow-sm overflow-hidden relative">
-          <div className="absolute top-0 right-0 p-3 text-blue-200">
-             <Play size={40} />
+      <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="bg-blue-50 border-none shadow-xl shadow-blue-100/50 rounded-[1.5rem] p-1 overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-3 text-blue-200/50">
+             <Play size={60} />
           </div>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-black text-blue-800 uppercase tracking-widest">Cola Activa</CardTitle>
+            <CardTitle className="text-[9px] sm:text-[10px] font-black text-blue-800 uppercase tracking-widest">Cola Activa</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black text-blue-900">{activeOrdersCount} Ordenes</div>
+            <div className="text-xl sm:text-3xl font-black text-blue-900 uppercase tracking-tight">{activeOrdersCount} Ordenes</div>
           </CardContent>
         </Card>
-        <Card className="bg-amber-50 border-amber-100 shadow-sm overflow-hidden relative">
-          <div className="absolute top-0 right-0 p-3 text-amber-200">
-             <AlertCircle size={40} />
+        <Card className="bg-amber-50 border-none shadow-xl shadow-amber-100/50 rounded-[1.5rem] p-1 overflow-hidden relative">
+          <div className="absolute top-0 right-0 p-3 text-amber-200/50">
+             <AlertCircle size={60} />
           </div>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-black text-amber-800 uppercase tracking-widest">Por Iniciar</CardTitle>
+            <CardTitle className="text-[9px] sm:text-[10px] font-black text-amber-800 uppercase tracking-widest">Por Iniciar</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black text-amber-900">{waitingOrdersCount} Pendientes</div>
+            <div className="text-xl sm:text-3xl font-black text-amber-900 uppercase tracking-tight">{waitingOrdersCount} Pendientes</div>
           </CardContent>
         </Card>
-        <Card className="bg-green-50 border-green-100 shadow-sm overflow-hidden relative">
-           <div className="absolute top-0 right-0 p-3 text-green-200">
-             <CheckCircle size={40} />
+        <Card className="bg-green-50 border-none shadow-xl shadow-green-100/50 rounded-[1.5rem] p-1 overflow-hidden relative">
+           <div className="absolute top-0 right-0 p-3 text-green-200/50">
+             <CheckCircle size={60} />
           </div>
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-black text-green-800 uppercase tracking-widest">Para Entrega</CardTitle>
+            <CardTitle className="text-[9px] sm:text-[10px] font-black text-green-800 uppercase tracking-widest">Para Entrega</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-black text-green-900">{readyOrdersCount} Listas</div>
+            <div className="text-xl sm:text-3xl font-black text-green-900 uppercase tracking-tight">{readyOrdersCount} Listas</div>
           </CardContent>
         </Card>
       </div>
 
-      <Card className="border-slate-200 overflow-hidden">
+      <Card className="border-none shadow-xl shadow-slate-200/50 rounded-[2rem] bg-white overflow-hidden">
         <Tabs defaultValue="work" className="w-full">
-          <CardHeader className="p-0 border-b bg-slate-50/30">
-            <TabsList className="h-14 w-full justify-start rounded-none bg-transparent p-1 gap-1">
+          <CardHeader className="p-0 border-b bg-slate-50/50">
+            <TabsList className="h-14 sm:h-16 w-full justify-start rounded-none bg-transparent p-1 sm:p-2 gap-1 overflow-x-auto">
               <TabsTrigger 
                 value="work" 
-                className="h-10 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 gap-2 font-black text-[10px] uppercase tracking-widest"
+                className="h-full data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-blue-600 gap-2 font-black text-[9px] sm:text-[10px] uppercase tracking-widest px-3 sm:px-6"
               >
-                <ListTodo size={14} /> Cola de Trabajo
+                <ListTodo size={14} /> <span className="hidden xs:inline">Cola Trabajo</span>
                 <Badge variant="secondary" className="ml-1 px-1.5 h-4 text-[9px] font-bold">{workQueue.length}</Badge>
               </TabsTrigger>
               <TabsTrigger 
                 value="completed" 
-                className="h-10 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-600 gap-2 font-black text-[10px] uppercase tracking-widest"
+                className="h-full data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-green-600 gap-2 font-black text-[9px] sm:text-[10px] uppercase tracking-widest px-3 sm:px-6"
               >
-                <CheckSquare size={14} /> Culminados
+                <CheckSquare size={14} /> <span className="hidden xs:inline">Culminados</span>
                 <Badge variant="outline" className="ml-1 px-1.5 h-4 text-[9px] font-bold text-green-600 border-green-100">{completedQueue.length}</Badge>
               </TabsTrigger>
               <TabsTrigger 
                 value="cancelled" 
-                className="h-10 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-rose-600 gap-2 font-black text-[10px] uppercase tracking-widest"
+                className="h-full data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-rose-600 gap-2 font-black text-[9px] sm:text-[10px] uppercase tracking-widest px-3 sm:px-6"
               >
-                <XCircle size={14} /> Anulados
+                <XCircle size={14} /> <span className="hidden xs:inline">Anulados</span>
                 <Badge variant="outline" className="ml-1 px-1.5 h-4 text-[9px] font-bold text-rose-500 border-rose-100">{cancelledQueue.length}</Badge>
               </TabsTrigger>
             </TabsList>
           </CardHeader>
           
-          <CardContent className="p-4 sm:p-6">
+          <CardContent className="p-4 sm:p-6 sm:px-8">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center p-12 gap-4">
-                <Loader2 className="h-10 w-10 animate-spin text-blue-500" />
-                <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">Cargando Operaciones...</span>
+              <div className="flex flex-col items-center justify-center p-12 sm:p-24 gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest animate-pulse">Sincronizando operaciones...</span>
               </div>
             ) : (
               <>
                 <TabsContent value="work" className="mt-0 outline-none">
                   <div className="mb-6 flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">En Proceso Productivo</h3>
+                    <div className="h-2 w-2 rounded-full bg-primary animate-ping" />
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Cola de Producción Activa</h3>
                   </div>
                   {renderBudgetList(workQueue, "No hay órdenes activas en producción.")}
                 </TabsContent>
@@ -421,7 +421,7 @@ const Production: React.FC = () => {
                 <TabsContent value="completed" className="mt-0 outline-none">
                   <div className="mb-6 flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-green-500" />
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Historial de Culminados</h3>
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Historial de Culminados</h3>
                   </div>
                   {renderBudgetList(completedQueue, "No hay órdenes registradas como culminadas recientemente.")}
                 </TabsContent>
@@ -429,7 +429,7 @@ const Production: React.FC = () => {
                 <TabsContent value="cancelled" className="mt-0 outline-none">
                   <div className="mb-6 flex items-center gap-2">
                     <div className="h-2 w-2 rounded-full bg-rose-500" />
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">Órdenes Anuladas o Rechazadas</h3>
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Órdenes Anuladas o Rechazadas</h3>
                   </div>
                   {renderBudgetList(cancelledQueue, "No hay órdenes anuladas en este periodo.")}
                 </TabsContent>

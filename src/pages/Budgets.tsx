@@ -124,28 +124,30 @@ const Budgets: React.FC = () => {
   };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Presupuestos</h2>
-        <p className="text-muted-foreground">Gestione y cree presupuestos técnicos para sus clientes.</p>
+    <div className="space-y-6 md:space-y-8">
+      <div className="px-1 md:px-0">
+        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter uppercase leading-none">Presupuestos</h2>
+        <p className="text-muted-foreground text-xs sm:text-sm mt-1 sm:mt-2 font-medium">Gestione y cree presupuestos técnicos para sus clientes.</p>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="list">Lista de Presupuestos</TabsTrigger>
-          <TabsTrigger value="new">{editingBudget ? 'Editar Presupuesto' : 'Nuevo Presupuesto'}</TabsTrigger>
+        <TabsList className="bg-slate-100/50 p-1 rounded-xl h-auto flex-wrap">
+          <TabsTrigger value="list" className="px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-tight">Lista de Presupuestos</TabsTrigger>
+          <TabsTrigger value="new" className="px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-tight">
+            {editingBudget ? 'Editar Presupuesto' : 'Nuevo Presupuesto'}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="list" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                <CardTitle>Historial de Presupuestos</CardTitle>
-                <div className="relative w-full md:w-64">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Card className="border-none shadow-none bg-transparent md:bg-white md:border md:shadow-sm">
+            <CardHeader className="px-1 md:px-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <CardTitle className="text-xl font-black uppercase tracking-tight italic">Historial</CardTitle>
+                <div className="relative w-full sm:w-72">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input 
                     placeholder="Buscar presupuesto..." 
-                    className="pl-8" 
+                    className="pl-10 h-11 bg-white border-slate-200 rounded-xl font-medium shadow-sm" 
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -154,119 +156,56 @@ const Budgets: React.FC = () => {
             </CardHeader>
             <CardContent className="p-0">
               {isLoading ? (
-                <div className="p-12 flex justify-center items-center flex-col gap-3 text-slate-400">
-                  <Loader2 className="animate-spin" size={32} />
-                  <p className="text-sm font-medium animate-pulse">Cargando historial...</p>
+                <div className="p-20 flex justify-center items-center flex-col gap-3 text-slate-400">
+                  <Loader2 className="animate-spin" size={40} />
+                  <p className="text-xs font-black uppercase tracking-widest animate-pulse">Sincronizando datos...</p>
                 </div>
               ) : filteredBudgets.length === 0 ? (
-                <div className="p-20 text-center text-slate-400 border-2 border-dashed m-6 rounded-2xl">
-                  <Search size={48} className="mx-auto mb-4 opacity-20" />
-                  <p className="font-medium text-lg italic">No se encontraron presupuestos</p>
-                  <p className="text-sm mt-1">Intenta con otros términos de búsqueda.</p>
+                <div className="p-16 text-center text-slate-400 border-2 border-dashed mx-4 md:mx-6 rounded-[2rem] bg-white md:bg-slate-50/30">
+                  <Search size={56} className="mx-auto mb-6 opacity-10" />
+                  <p className="font-black text-xl uppercase tracking-tighter text-slate-300">Sin resultados</p>
+                  <p className="text-xs mt-2 font-medium opacity-60">Intenta con otros términos de búsqueda.</p>
                 </div>
               ) : (
                 <>
                   {/* Desktop Table View */}
                   <div className="hidden md:block overflow-x-auto text-sm">
                     <Table>
-                      <TableHeader className="bg-slate-50">
+                      <TableHeader className="bg-slate-50 border-y border-slate-100">
                         <TableRow>
-                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Fecha</TableHead>
-                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Cliente</TableHead>
-                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Descripción</TableHead>
-                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4 text-right">Total ($)</TableHead>
-                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4 text-right">Pagado ($)</TableHead>
-                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4 text-right">Deuda ($)</TableHead>
-                          <TableHead className="font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4 pl-4">Estado</TableHead>
-                          <TableHead className="text-right font-bold uppercase text-[10px] tracking-widest text-slate-500 py-4">Acciones</TableHead>
+                          <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Fecha</TableHead>
+                          <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Cliente</TableHead>
+                          <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Descripción</TableHead>
+                          <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5 text-right">Total ($)</TableHead>
+                          <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5 text-right pl-4">Estado</TableHead>
+                          <TableHead className="text-right font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Acciones</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {filteredBudgets.map((b) => (
                           <TableRow key={b._id} className="hover:bg-slate-50/80 transition-colors border-slate-100 group">
-                            <TableCell className="font-medium text-slate-600">
+                            <TableCell className="font-bold text-slate-500">
                               {new Date(b.fecha || b.createdAt).toLocaleDateString('es-VE')}
                             </TableCell>
                             <TableCell>
-                              <div className="font-bold text-slate-900 group-hover:text-primary transition-colors">
+                              <div className="font-black text-slate-900 group-hover:text-primary transition-colors leading-tight uppercase tabular-nums">
                                 {b.clientId?.razonSocial || 'Desconocido'}
                               </div>
-                              <div className="text-[10px] text-slate-400 font-medium uppercase">RIF: {b.clientId?.rif || '-'}</div>
+                              <div className="text-[9px] text-slate-400 font-black uppercase tracking-tighter">RIF: {b.clientId?.rif || '-'}</div>
                             </TableCell>
-                            <TableCell className="max-w-[200px] truncate">
-                              <span className="text-zinc-600 font-medium">"{b.description}"</span>
+                            <TableCell className="max-w-[250px] truncate">
+                              <span className="text-slate-500 font-bold italic">"{b.description}"</span>
                             </TableCell>
-                            <TableCell className="font-black text-rose-600 text-right">
+                            <TableCell className="font-black text-slate-900 text-right text-base">
                               {formatCurrency(b.totalCost)}
-                            </TableCell>
-                            <TableCell className="font-bold text-blue-600 text-right">
-                              {formatCurrency(b.montoAbonado || 0)}
-                            </TableCell>
-                            <TableCell className="font-black text-slate-800 text-right">
-                              {formatCurrency(Math.max(0, b.totalCost - (b.montoAbonado || 0)))}
                             </TableCell>
                             <TableCell className="pl-4">{getStatusBadge(b.status)}</TableCell>
                             <TableCell className="text-right">
-                              <div className="flex justify-end gap-1 opacity-60 group-hover:opacity-100 transition-opacity">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-primary hover:bg-primary/10"
-                                  onClick={() => setPreviewingBudget(b)}
-                                  title="Ver/Imprimir"
-                                >
-                                  <Printer size={15} />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-emerald-600 hover:bg-emerald-50"
-                                  onClick={() => setPayEditingBudget(b)}
-                                  title="Registrar Pago"
-                                >
-                                  <CircleDollarSign size={15} />
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-indigo-500 hover:bg-indigo-50"
-                                  onClick={() => setStatusEditingBudget(b)}
-                                  title="Modificar Estatus"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-right-left"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
-                                </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  className="h-8 w-8 text-blue-500 hover:bg-blue-50"
-                                  onClick={() => {
-                                    const empresa = config?.nombreComercial || 'GEOS';
-                                    const contacto = b.clientId?.contacto || b.clientId?.personaContacto || 'Estimado Cliente';
-                                    const razonSocial = b.clientId?.razonSocial || 'Cliente';
-                                    const numeral = b._id?.toString().slice(-6).toUpperCase();
-                                    const fecha = new Date(b.fecha || b.createdAt).toLocaleDateString('es-VE');
-                                    const whatsappLink = `https://wa.me/${config?.telefonoCorporativo?.replace(/\D/g, '') || ''}`;
-                                    const asesor = config?.nombreAsesor || 'Asesor de Ventas';
-                                    
-                                    const subject = encodeURIComponent(`Presupuesto #${numeral} - ${fecha} - ${b.description}`);
-                                    const body = encodeURIComponent(
-                                      `Estimado(a) ${contacto} (${razonSocial}),\n\n` +
-                                      `Es un gusto saludarle. Adjunto enviamos el presupuesto solicitado para *${b.description}*.\n\n` +
-                                      `En ${empresa} estamos listos para comenzar su proyecto con la mejor calidad. Puede contactarnos por WhatsApp aquí: ${whatsappLink}\n\n` +
-                                      `Atentamente,\n*${asesor}*\n${empresa}`
-                                    );
-                                    window.location.href = `mailto:${b.clientId?.email || ''}?subject=${subject}&body=${body}`;
-                                  }}
-                                  title="Enviar Email"
-                                >
-                                  <Mail size={15} />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={() => handleEdit(b)}>
-                                  <Pencil size={15} />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50" onClick={() => handleDelete(b._id)}>
-                                  <Trash2 size={15} />
-                                </Button>
+                              <div className="flex justify-end gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-900" onClick={() => setPreviewingBudget(b)}><Printer size={16} /></Button>
+                                <Button variant="ghost" size="icon" className="h-9 w-9 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => setPayEditingBudget(b)}><CircleDollarSign size={16} /></Button>
+                                <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5" onClick={() => handleEdit(b)}><Pencil size={16} /></Button>
+                                <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50" onClick={() => handleDelete(b._id)}><Trash2 size={16} /></Button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -275,143 +214,84 @@ const Budgets: React.FC = () => {
                     </Table>
                   </div>
 
-                  {/* Mobile Card View */}
-                  <div className="md:hidden p-4 space-y-4 bg-slate-50/50">
+                  {/* Mobile "Ficha" View */}
+                  <div className="md:hidden space-y-4 px-1 pb-10">
                     {filteredBudgets.map((b) => (
-                      <Card key={b._id} className="border-slate-200 overflow-hidden hover:shadow-md transition-shadow active:scale-[0.98]">
-                        <div className="p-4 space-y-3">
+                      <Card key={b._id} className="border-none shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden bg-white active:scale-[0.98] transition-transform">
+                        <div className="p-6 space-y-5">
                           <div className="flex justify-between items-start">
-                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded">
-                              {new Date(b.fecha || b.createdAt).toLocaleDateString('es-VE')}
-                            </span>
+                            <div className="space-y-1">
+                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-3 py-1 rounded-full">
+                                {new Date(b.fecha || b.createdAt).toLocaleDateString('es-VE')}
+                              </span>
+                              <div className="text-[9px] font-black text-primary uppercase ml-1">#{b._id?.toString().slice(-6).toUpperCase()}</div>
+                            </div>
                             {getStatusBadge(b.status)}
                           </div>
                           
-                          <div>
-                            <h3 className="font-black text-slate-900 leading-tight uppercase tracking-tight text-sm">
+                          <div className="space-y-2">
+                            <h3 className="font-black text-slate-900 leading-[1.1] uppercase tracking-tighter text-lg">
                               {b.clientId?.razonSocial || 'Desconocido'}
                             </h3>
-                            <div className="flex flex-col mt-1">
-                              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                            <div className="flex flex-col">
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                                 {b.clientId?.contacto || b.clientId?.personaContacto || 'Sin contacto'}
                               </p>
-                              <p className="text-[10px] font-medium text-slate-400">
+                              <p className="text-[11px] font-bold text-slate-900 mt-0.5">
                                 {b.clientId?.celular || b.clientId?.telefono || '-'}
                               </p>
                             </div>
-                            <p className="text-xs italic text-slate-500 mt-2">"{b.description}"</p>
+                            <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 mt-2">
+                               <p className="text-xs font-semibold italic text-slate-600">"{b.description}"</p>
+                            </div>
                           </div>
 
-                          <div className="flex flex-col gap-2 pt-3 border-t border-slate-100">
-                            <div className="flex justify-between items-center text-xs">
-                              <span className="font-bold text-slate-400 uppercase tracking-widest text-[9px]">Total</span>
-                              <span className="font-black text-rose-600 text-sm">{formatCurrency(b.totalCost)}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-xs">
-                              <span className="font-bold text-slate-400 uppercase tracking-widest text-[9px]">Pagado</span>
-                              <span className="font-black text-blue-600">{formatCurrency(b.montoAbonado || 0)}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-xs pb-1 mb-1 border-b border-dashed border-slate-200">
-                              <span className="font-bold text-slate-500 uppercase tracking-widest text-[9px]">Deuda</span>
-                              <span className="font-black text-slate-800">{formatCurrency(Math.max(0, b.totalCost - (b.montoAbonado || 0)))}</span>
+                          <div className="pt-2">
+                            <div className="flex flex-col gap-3">
+                              <div className="flex justify-between items-end bg-rose-50/50 p-4 rounded-2xl border border-rose-100">
+                                <span className="font-black text-slate-400 uppercase tracking-widest text-[9px] mb-1">Inversión Total</span>
+                                <span className="font-black text-rose-600 text-2xl tracking-tighter leading-none">{formatCurrency(b.totalCost)}</span>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="bg-blue-50/50 p-3 rounded-2xl border border-blue-100">
+                                  <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Abonado</div>
+                                  <div className="font-black text-blue-600 text-sm">{formatCurrency(b.montoAbonado || 0)}</div>
+                                </div>
+                                <div className="bg-slate-900 p-3 rounded-2xl shadow-lg">
+                                  <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Por Pagar</div>
+                                  <div className="font-black text-white text-sm">{formatCurrency(Math.max(0, b.totalCost - (b.montoAbonado || 0)))}</div>
+                                </div>
+                              </div>
                             </div>
                             
-                            <div className="flex flex-wrap gap-1.5 justify-end mt-1">
+                            <div className="flex flex-wrap gap-2 justify-center mt-6 pt-6 border-t border-slate-100">
                               <Button 
                                 variant="outline" 
-                                size="icon" 
-                                className="h-8 w-8 border-slate-200 text-slate-600 shadow-sm"
+                                size="lg" 
+                                className="flex-1 h-12 rounded-xl border-slate-200 text-slate-900 font-black uppercase text-[10px] tracking-widest shadow-sm"
                                 onClick={() => setPreviewingBudget(b)}
-                                title="Ver/Imprimir Presupuesto"
                               >
-                                <Printer size={14} />
+                                <Printer size={14} className="mr-2" />
+                                PDF
                               </Button>
                               <Button 
                                 variant="outline" 
-                                size="icon" 
-                                className="h-8 w-8 border-emerald-200 text-emerald-600 shadow-sm"
+                                size="lg" 
+                                className="flex-1 h-12 rounded-xl border-emerald-200 text-emerald-600 font-black uppercase text-[10px] tracking-widest shadow-sm"
                                 onClick={() => setPayEditingBudget(b)}
-                                title="Registrar Pago"
                               >
-                                <CircleDollarSign size={14} />
+                                <CircleDollarSign size={14} className="mr-2" />
+                                Pago
                               </Button>
                               <Button 
-                                variant="outline" 
-                                size="icon" 
-                                className="h-8 w-8 border-indigo-200 text-indigo-600 shadow-sm"
-                                onClick={() => setStatusEditingBudget(b)}
-                                title="Modificar Estatus"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-arrow-right-left"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></svg>
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="icon" 
-                                className="h-8 w-8 border-green-200 text-green-600 shadow-sm"
-                                onClick={() => {
-                                  const empresa = config?.nombreComercial || 'GEOS';
-                                  const contacto = b.clientId?.contacto || b.clientId?.personaContacto || 'Estimado Cliente';
-                                  const razonSocial = b.clientId?.razonSocial || '';
-                                  const asesor = config?.nombreAsesor || 'Asesor de Ventas';
-                                  
-                                  const texto = `*¡Hola! Es un gusto saludarle, ${contacto}* (${razonSocial}) 🌟%0A%0A` +
-                                    `Espero que se encuentre excelente. En respuesta a su amable solicitud, le envío el *Presupuesto #${b._id?.toString().slice(-6).toUpperCase()}* detallado por *${b.description}*.%0A%0A` +
-                                    `*Monto Total:* ${formatCurrency(b.totalCost)}%0A%0A` +
-                                    `En ${empresa}, nos apasiona materializar sus ideas con la más alta calidad. Estamos convencidos de que este proyecto superará sus expectativas.%0A%0A` +
-                                    `_Agradecería mucho si pudiera confirmarme la recepción del mismo. Quedo atento a cualquier duda._%0A%0A` +
-                                    `*¡Más fácil es hacerlo bien!*%0A%0A` +
-                                    `Atentamente,%0A*${asesor}*%0A${empresa}`;
-                                  
-                                  window.open(`https://wa.me/${b.clientId?.celular?.replace(/\D/g, '') || ''}?text=${texto}`, '_blank');
-                                }}
-                                title="Enviar por WhatsApp"
-                              >
-                                <MessageSquare size={14} />
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="icon" 
-                                className="h-8 w-8 border-blue-200 text-blue-600 shadow-sm"
-                                onClick={() => {
-                                  const empresa = config?.nombreComercial || 'GEOS';
-                                  const contacto = b.clientId?.contacto || b.clientId?.personaContacto || 'Estimado Cliente';
-                                  const razonSocial = b.clientId?.razonSocial || '';
-                                  const numeral = b._id?.toString().slice(-6).toUpperCase();
-                                  const fecha = new Date(b.fecha || b.createdAt).toLocaleDateString('es-VE');
-                                  const whatsappLink = `https://wa.me/${config?.telefonoCorporativo?.replace(/\D/g, '') || ''}`;
-                                  const asesor = config?.nombreAsesor || 'Asesor de Ventas';
-                                  
-                                  const subject = encodeURIComponent(`Presupuesto #${numeral} - ${fecha} - ${b.description}`);
-                                  const body = encodeURIComponent(
-                                    `Estimado(a) ${contacto} (${razonSocial}),\n\n` +
-                                    `Es un gusto saludarle. Adjunto enviamos el presupuesto solicitado para *${b.description}*.\n\n` +
-                                    `Monto Total: ${formatCurrency(b.totalCost)}\n\n` +
-                                    `Quedamos atentos a sus comentarios. Puede escribirnos directamente aquí: ${whatsappLink}\n\n` +
-                                    `Atentamente,\n*${asesor}*\n${empresa}`
-                                  );
-                                  window.location.href = `mailto:${b.clientId?.email || ''}?subject=${subject}&body=${body}`;
-                                }}
-                                title="Enviar por Correo"
-                              >
-                                <Mail size={14} />
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="icon" 
-                                className="h-8 w-8 border-blue-200 text-blue-600 shadow-sm"
+                                variant="secondary" 
+                                size="lg" 
+                                className="w-full h-14 rounded-2xl bg-primary text-white font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-primary/20"
                                 onClick={() => handleEdit(b)}
-                                title="Editar Presupuesto"
                               >
-                                <Pencil size={14} />
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                size="icon" 
-                                className="h-8 w-8 border-rose-200 text-rose-600 shadow-sm"
-                                onClick={() => handleDelete(b._id)}
-                                title="Eliminar Presupuesto"
-                              >
-                                <Trash2 size={14} />
+                                <Pencil size={14} className="mr-3" />
+                                Editar Proyecto
                               </Button>
                             </div>
                           </div>

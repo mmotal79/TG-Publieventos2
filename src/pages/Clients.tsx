@@ -108,86 +108,87 @@ const Clients: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-6 md:space-y-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 px-1 md:px-0">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Clientes</h2>
-          <p className="text-muted-foreground">Gestione su cartera de clientes y prospectos.</p>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black tracking-tighter uppercase leading-none">Clientes</h2>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-1 sm:mt-2 font-medium">Gestione su cartera de clientes y prospectos.</p>
         </div>
-        <Button onClick={() => handleOpenModal()} className="gap-2 w-full md:w-auto">
+        <Button onClick={() => handleOpenModal()} className="gap-2 w-full md:w-auto h-12 rounded-xl shadow-lg shadow-primary/20 font-black uppercase text-[10px] tracking-widest">
           <UserPlus size={18} />
           Nuevo Cliente
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+      <Card className="border-none shadow-none bg-transparent md:bg-white md:border md:shadow-xl md:shadow-slate-200/50 md:rounded-[2rem] overflow-hidden">
+        <CardHeader className="px-1 md:px-8 md:pt-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
-              <CardTitle>Directorio de Clientes</CardTitle>
-              <CardDescription>Ordenado alfabéticamente por Razón Social</CardDescription>
+              <CardTitle className="text-xl font-black uppercase tracking-tight italic">Directorio</CardTitle>
+              <CardDescription className="text-[10px] font-black uppercase tracking-widest text-slate-400">Orden Alfabético</CardDescription>
             </div>
-            <div className="relative w-full md:w-64">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input 
-                placeholder="Buscar por nombre, RIF o celular..." 
-                className="pl-8" 
+                placeholder="Nombre, RIF o Cel..." 
+                className="pl-10 h-12 bg-white border-slate-200 rounded-2xl font-bold text-sm shadow-sm" 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-0 md:p-6">
+        <CardContent className="p-0 md:p-8">
           {/* Desktop Table View */}
           <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50">
-                  <TableHead className="font-bold uppercase text-[10px] tracking-widest p-4">Razón Social / Empresa</TableHead>
-                  <TableHead className="font-bold uppercase text-[10px] tracking-widest p-4">Identificación (Celular/RIF)</TableHead>
-                  <TableHead className="font-bold uppercase text-[10px] tracking-widest p-4">Contacto</TableHead>
-                  <TableHead className="font-bold uppercase text-[10px] tracking-widest p-4">Dirección</TableHead>
-                  <TableHead className="text-right font-bold uppercase text-[10px] tracking-widest p-4">Acciones</TableHead>
+                <TableRow className="border-y border-slate-100 bg-slate-50/50">
+                  <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Razón Social / Empresa</TableHead>
+                  <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Identificación</TableHead>
+                  <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Contacto</TableHead>
+                  <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Dirección</TableHead>
+                  <TableHead className="text-right font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Acciones</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-20">
-                      <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-                      <p className="text-muted-foreground mt-2">Cargando clientes...</p>
+                    <TableCell colSpan={5} className="text-center py-24">
+                      <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-4 animate-pulse">Sincronizando directorio...</p>
                     </TableCell>
                   </TableRow>
                 ) : filteredClients.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-20 text-muted-foreground">
-                      No se encontraron clientes.
+                    <TableCell colSpan={5} className="text-center py-24 border-2 border-dashed border-slate-100 rounded-[2rem] m-4">
+                      <Search size={48} className="mx-auto mb-4 opacity-10" />
+                      <p className="font-black text-xl uppercase tracking-tighter text-slate-300">Sin resultados</p>
                     </TableCell>
                   </TableRow>
                 ) : filteredClients.map((client) => (
-                  <TableRow key={client._id} className="hover:bg-slate-50 border-slate-100 transition-colors">
+                  <TableRow key={client._id} className="hover:bg-slate-50/50 border-slate-100 transition-colors group">
                     <TableCell>
-                      <div className="font-black text-slate-800 uppercase tracking-tight">{client.razonSocial}</div>
-                      <div className="text-xs text-slate-400 font-medium italic">{client.email}</div>
+                      <div className="font-black text-slate-900 uppercase tracking-tighter text-lg leading-none group-hover:text-primary transition-colors">{client.razonSocial}</div>
+                      <div className="text-[10px] text-slate-400 font-bold italic mt-1">{client.email}</div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm font-bold text-slate-700">Cel: {client.celular}</div>
-                      <div className="text-[10px] text-slate-400 font-black uppercase">RIF: {client.rif}</div>
+                      <div className="text-sm font-black text-slate-700 tracking-tight">CEL: {client.celular}</div>
+                      <div className="text-[9px] text-slate-400 font-black uppercase tracking-widest">RIF: {client.rif}</div>
                     </TableCell>
                     <TableCell>
-                      <div className="text-sm font-bold text-rose-600 italic tracking-tight">{client.contacto}</div>
+                      <div className="text-sm font-black text-rose-600 italic tracking-tight">{client.contacto}</div>
                     </TableCell>
-                    <TableCell className="text-xs text-slate-500 max-w-[200px] truncate italic font-medium">
-                      {client.direccion || 'N/A'}
+                    <TableCell className="max-w-[200px] truncate">
+                      <span className="text-xs text-slate-500 italic font-medium">{client.direccion || 'N/A'}</span>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-primary hover:bg-primary/10" onClick={() => handleOpenModal(client)}>
-                          <Pencil size={15} />
+                      <div className="flex justify-end gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5 rounded-xl" onClick={() => handleOpenModal(client)}>
+                          <Pencil size={16} />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-rose-600 hover:bg-rose-50" onClick={() => handleDelete(client._id!)}>
-                          <Trash2 size={15} />
+                        <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-600 hover:bg-rose-50 rounded-xl" onClick={() => handleDelete(client._id!)}>
+                          <Trash2 size={16} />
                         </Button>
                       </div>
                     </TableCell>
@@ -198,52 +199,60 @@ const Clients: React.FC = () => {
           </div>
 
           {/* Mobile Card View */}
-          <div className="md:hidden p-4 space-y-4 bg-slate-50/50">
+          <div className="md:hidden space-y-4 px-1 pb-10">
             {loading ? (
-              <div className="py-20 flex flex-col items-center gap-3">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm font-medium text-slate-400">Cargando clientes...</p>
+              <div className="py-24 flex flex-col items-center gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cargando directorio...</p>
               </div>
             ) : filteredClients.length === 0 ? (
-              <div className="py-20 text-center text-slate-400 border-2 border-dashed rounded-xl">
-                No se encontraron clientes.
+              <div className="py-20 text-center text-slate-300 border-2 border-dashed border-slate-200 rounded-[2rem] bg-white">
+                <Search size={40} className="mx-auto mb-3 opacity-10" />
+                <p className="text-[10px] font-black uppercase tracking-widest">Sin coincidencias</p>
               </div>
             ) : (
               filteredClients.map((client) => (
-                <Card key={client._id} className="border-slate-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  <div className="p-4 space-y-4">
-                    <div className="flex justify-between items-start border-b border-slate-100 pb-3">
+                <Card key={client._id} className="border-none shadow-xl shadow-slate-200/50 rounded-[2rem] overflow-hidden bg-white active:scale-[0.98] transition-transform">
+                  <div className="p-6 space-y-5">
+                    <div className="flex justify-between items-start border-b border-slate-50 pb-4">
                       <div>
-                        <h4 className="font-black text-slate-900 uppercase tracking-tighter leading-tight text-base mb-1">
+                        <h4 className="font-black text-slate-900 uppercase tracking-tighter leading-none text-lg mb-2">
                           {client.razonSocial}
                         </h4>
-                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest italic">{client.rif}</p>
+                        <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] bg-slate-100 px-3 py-1 rounded-full">
+                          RIF: {client.rif}
+                        </span>
                       </div>
                       <div className="flex gap-2">
-                        <Button variant="outline" size="icon" className="h-9 w-9 border-slate-200 text-primary shadow-sm" onClick={() => handleOpenModal(client)}>
+                        <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl border-slate-200 text-primary shadow-sm" onClick={() => handleOpenModal(client)}>
                           <Pencil size={16} />
                         </Button>
-                        <Button variant="outline" size="icon" className="h-9 w-9 border-rose-200 text-rose-600 shadow-sm" onClick={() => handleDelete(client._id!)}>
+                        <Button variant="outline" size="icon" className="h-10 w-10 rounded-xl border-rose-100 text-rose-600 shadow-sm" onClick={() => handleDelete(client._id!)}>
                           <Trash2 size={16} />
                         </Button>
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-4 bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
                       <div className="space-y-1">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Persona de Contacto</p>
-                        <p className="text-xs font-bold text-rose-600 italic">{client.contacto}</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Responsable</p>
+                        <p className="text-xs font-black text-rose-600 italic truncate">{client.contacto}</p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Número Celular</p>
-                        <p className="text-xs font-bold text-slate-700">{client.celular}</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Conexión</p>
+                        <p className="text-xs font-black text-slate-700">{client.celular}</p>
                       </div>
                     </div>
 
-                    <div className="space-y-1 pt-2">
-                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Email y Ubicación</p>
-                      <p className="text-xs font-medium text-slate-500 italic truncate mb-1">{client.email}</p>
-                      <p className="text-xs font-medium text-slate-500 italic leading-relaxed">{client.direccion || 'Sin dirección registrada'}</p>
+                    <div className="space-y-2 pt-1">
+                      <div className="flex items-center gap-2">
+                         <div className="h-1.5 w-1.5 rounded-full bg-slate-300" />
+                         <p className="text-[10px] font-bold text-slate-500 italic truncate">{client.email}</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                         <div className="h-1.5 w-1.5 rounded-full bg-slate-300 mt-1.5" />
+                         <p className="text-[10px] font-bold text-slate-500 italic leading-relaxed">{client.direccion || 'Sin dirección registrada'}</p>
+                      </div>
                     </div>
                   </div>
                 </Card>
