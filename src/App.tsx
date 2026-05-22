@@ -29,6 +29,7 @@ import LandingImagesCatalog from './pages/catalogs/LandingImagesCatalog';
 import FooterConfigPage from './pages/catalogs/FooterConfig';
 import NotificationsPage from './pages/NotificationsPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading, profile } = useAuth();
@@ -99,9 +100,11 @@ const AppContent = () => {
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <NotificationProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </NotificationProvider>
     </AuthProvider>
   );
 }

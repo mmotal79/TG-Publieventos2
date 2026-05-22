@@ -48,9 +48,11 @@ router.post("/contact", async (req, res) => {
 // Admin/Notification: Get all contacts
 router.get("/contact", async (req, res) => {
   try {
+    console.log("[API] Obteniendo todas las solicitudes de contacto");
     const contacts = await ContactRequestModel.find().sort({ createdAt: -1 });
     res.json(contacts);
   } catch (error: any) {
+    console.error("Error fetching contacts:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -58,14 +60,20 @@ router.get("/contact", async (req, res) => {
 // Mark contact as read (leido: true)
 router.patch("/contact/:id/read", async (req, res) => {
   try {
+    const { id } = req.params;
+    console.log(`[API] Marcando solicitud como leída: ${id}`);
     const contact = await ContactRequestModel.findByIdAndUpdate(
-      req.params.id, 
+      id, 
       { leido: true, status: 'leido' }, 
       { new: true }
     );
-    if (!contact) return res.status(404).json({ error: "Solicitud no encontrada" });
+    if (!contact) {
+      console.warn(`[NOT_FOUND] Solicitud no encontrada para marcar lectura: ${id}`);
+      return res.status(404).json({ error: "Solicitud no encontrada" });
+    }
     res.json(contact);
   } catch (error: any) {
+    console.error("Error marking contact as read:", error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -73,11 +81,39 @@ router.patch("/contact/:id/read", async (req, res) => {
 // Delete contact request
 router.delete("/contact/:id", async (req, res) => {
   try {
-    const contact = await ContactRequestModel.findByIdAndDelete(req.params.id);
-    if (!contact) return res.status(404).json({ error: "Solicitud no encontrada" });
-    res.json({ message: "Solicitud eliminada correctamente" });
+    const { id } = req.params;
+    console.log(`[API_DELETE] Iniciando eliminación de solicitud: ${id}`);
+    
+    if (!id || id === 'undefined' || id === 'null') {
+      console.warn("[API_DELETE] ID recibido no es válido");
+      return res.status(400).json({ error: "El ID de la solicitud es requerido" });
+    }
+
+    // Validar formato de ObjectId de MongoDB
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      console.warn(`[API_DELETE] Formato de ID inválido: ${id}`);
+      return res.status(400).json({ error: "El formato del ID no es válido" });
+    }
+
+    const contact = await ContactRequestModel.findByIdAndDelete(id);
+    
+    if (!contact) {
+      console.warn(`[API_DELETE] No se encontró el documento con ID: ${id}`);
+      return res.status(404).json({ error: "No se encontró la solicitud para eliminar" });
+    }
+    
+    console.log(`[API_DELETE] Eliminación exitosa: ${id}`);
+    return res.status(200).json({ 
+      success: true,
+      message: "La solicitud de contacto ha sido eliminada permanentemente.",
+      deletedId: id
+    });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(`[API_DELETE_FATAL] Error al eliminar contacto ${req.params.id}:`, error);
+    return res.status(500).json({ 
+      error: "Error interno del servidor al procesar la eliminación",
+      details: error.message 
+    });
   }
 });
 

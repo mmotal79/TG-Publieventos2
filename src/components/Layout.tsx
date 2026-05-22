@@ -31,6 +31,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/contexts/NotificationContext';
 import {
   Accordion,
   AccordionContent,
@@ -49,7 +50,7 @@ const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   const [logo, setLogo] = React.useState<string | null>(null);
   const [companyName, setCompanyName] = React.useState('TG-Textiles');
   const [showPayroll, setShowPayroll] = React.useState(true);
-  const [unreadCount, setUnreadCount] = React.useState(0);
+  const { unreadCount } = useNotifications();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -62,28 +63,6 @@ const AppLayout: React.FC<LayoutProps> = ({ children }) => {
         setShowPayroll(config.showPayroll !== false);
       })
       .catch(console.error);
-
-    // Initial notifications fetch
-    fetch('/api/landing/contact')
-      .then(res => res.json())
-      .then(data => {
-        const unread = data.filter((s: any) => !s.leido).length;
-        setUnreadCount(unread);
-      })
-      .catch(console.error);
-
-    // Auto-refresh notifications every 3 minutes
-    const interval = setInterval(() => {
-      fetch('/api/landing/contact')
-        .then(res => res.json())
-        .then(data => {
-          const unread = data.filter((s: any) => !s.leido).length;
-          setUnreadCount(unread);
-        })
-        .catch(console.error);
-    }, 180000);
-
-    return () => clearInterval(interval);
   }, []);
 
   const currentRole = profile?.role ?? 4;

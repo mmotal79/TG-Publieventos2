@@ -43,16 +43,20 @@ import {
 import { Label } from '@/components/ui/label';
 import { ISolicitudContacto, UserRole } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/contexts/NotificationContext';
 import { Navigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 export const NotificationsPage: React.FC = () => {
   const { profile } = useAuth();
+  const { decrementUnreadCount, refreshUnreadCount } = useNotifications();
   const [solicitudes, setSolicitudes] = useState<ISolicitudContacto[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
   const [selectedSolicitud, setSelectedSolicitud] = useState<ISolicitudContacto | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [idToDelete, setIdToDelete] = useState<string | null>(null);
 
   // RBAC Check
   if (profile?.role !== UserRole.ADMIN && profile?.role !== UserRole.MANAGER) {
@@ -65,6 +69,7 @@ export const NotificationsPage: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setSolicitudes(data);
+        refreshUnreadCount();
       }
     } catch (error) {
       console.error("Error fetching notifications:", error);
@@ -82,6 +87,7 @@ export const NotificationsPage: React.FC = () => {
       const res = await fetch(`/api/landing/contact/${id}/read`, { method: 'PATCH' });
       if (res.ok) {
         setSolicitudes(prev => prev.map(s => s._id === id ? { ...s, leido: true } : s));
+        decrementUnreadCount();
         if (selectedSolicitud?._id === id) {
           setSelectedSolicitud(prev => prev ? { ...prev, leido: true } : null);
         }
@@ -91,16 +97,57 @@ export const NotificationsPage: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Está seguro de eliminar esta solicitud?')) return;
+  const handleDelete = async (id: string | undefined) => {
+    if (!id) return;
+    
+    // Abrir confirmación personalizada en lugar de window.confirm
+    setIdToDelete(id);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!idToDelete) return;
+    
     try {
-      const res = await fetch(`/api/landing/contact/${id}`, { method: 'DELETE' });
+      console.log(`[DELETE] Iniciando eliminación: ${idToDelete}`);
+      const res = await fetch(`/api/landing/contact/${idToDelete}`, { 
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const data = await res.json();
+
       if (res.ok) {
-        setSolicitudes(prev => prev.filter(s => s._id !== id));
-        if (selectedSolicitud?._id === id) setSelectedSolicitud(null);
+        // Encontrar si era no leída ANTES de filtrar para bajar el contador
+        const itemToDelete = solicitudes.find(s => s._id === idToDelete);
+        const wasUnread = itemToDelete?.leido === false;
+        
+        // Actualizar estado local eliminando el registro
+        setSolicitudes(prev => prev.filter(s => s._id !== idToDelete));
+        
+        // Actualizar contadores si era no leída
+        if (wasUnread) {
+          decrementUnreadCount();
+        }
+        
+        // Cerrar modal de detalle si el elemento borrado era el seleccionado
+        if (selectedSolicitud?._id === idToDelete) {
+          setSelectedSolicitud(null);
+        }
+        
+        console.log("[DELETE] Registro eliminado con éxito");
+      } else {
+        console.error("[DELETE] Error de servidor:", data.error);
+        alert(data.error || "Ocurrió un error al intentar eliminar el registro.");
       }
     } catch (error) {
-      console.error("Error deleting notification:", error);
+      console.error("[DELETE] Error de red:", error);
+      alert("Error de conexión al intentar eliminar el registro.");
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setIdToDelete(null);
     }
   };
 
@@ -373,6 +420,43 @@ export const NotificationsPage: React.FC = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Confirmación de Borrado */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="max-w-md rounded-3xl p-0 overflow-hidden border-none shadow-2xl">
+          <div className="bg-red-600 p-6 text-white flex items-center gap-4">
+            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+              <Trash2 size={24} />
+            </div>
+            <div>
+              <DialogTitle className="text-xl font-black uppercase italic tracking-tight">Confirmar Eliminación</DialogTitle>
+              <DialogDescription className="text-red-100 text-xs font-bold uppercase tracking-widest">Esta acción es irreversible</DialogDescription>
+            </div>
+          </div>
+          <CardContent className="p-8 bg-white">
+            <p className="text-slate-600 font-semibold mb-6">
+              ¿Está seguro que desea eliminar permanentemente este registro de notificación? 
+              Se borrará toda la información asociada a este cliente potencial.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <Button 
+                variant="outline" 
+                className="rounded-xl h-12 px-6 font-black uppercase tracking-widest text-[10px]"
+                onClick={() => setIsDeleteDialogOpen(false)}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                variant="destructive" 
+                className="rounded-xl h-12 px-6 font-black uppercase tracking-widest text-[10px] bg-red-600 hover:bg-red-700 text-white"
+                onClick={confirmDelete}
+              >
+                Eliminar Ahora
+              </Button>
+            </div>
+          </CardContent>
         </DialogContent>
       </Dialog>
     </div>
