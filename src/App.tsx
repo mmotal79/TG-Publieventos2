@@ -25,12 +25,25 @@ import CostStructureCatalog from './pages/catalogs/CostStructureCatalog';
 import PortafolioCatalog from './pages/catalogs/PortafolioCatalog';
 import CreacionesCatalog from './pages/catalogs/CreacionesCatalog';
 import GlobalConfigPage from './pages/catalogs/GlobalConfig';
+import LandingImagesCatalog from './pages/catalogs/LandingImagesCatalog';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, profile } = useAuth();
+  const location = useLocation();
+
   if (loading) return <div className="flex h-screen items-center justify-center">Cargando...</div>;
   if (!user) return <Navigate to="/login" />;
+
+  // General RBAC for special pages
+  const isDashboard = location.pathname === '/' || location.pathname === '/dashboard';
+  const currentRole = profile?.role ?? 4;
+  const isAdminOrManager = currentRole === 0 || currentRole === 1;
+
+  if (isDashboard && !isAdminOrManager) {
+    return <Navigate to="/clients" />; // Redirect lower roles to an allowed module
+  }
+
   return <>{children}</>;
 };
 
@@ -70,6 +83,7 @@ const AppContent = () => {
           <Route path="/catalogs/creaciones" element={<CreacionesCatalog />} />
           <Route path="/catalogs/usuarios" element={<UsuariosCatalog />} />
           <Route path="/catalogs/configuracion" element={<GlobalConfigPage />} />
+          <Route path="/catalogs/landing-images" element={<LandingImagesCatalog />} />
           
           <Route path="*" element={<Dashboard />} />
         </Routes>

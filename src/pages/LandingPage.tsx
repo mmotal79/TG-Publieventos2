@@ -27,6 +27,7 @@ import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { calculateBudgetPrice } from '@/services/budgetService';
+import { IImagenSeccion } from '@/types';
 
 // --- Data for Calculator Teaser ---
 const PRENDA_OPTIONS = [
@@ -79,18 +80,24 @@ const LandingPage: React.FC = () => {
   const [showCalculator, setShowCalculator] = useState(true);
   const [showPortfolio, setShowPortfolio] = useState(true);
   const [showCreations, setShowCreations] = useState(true);
+  const [heroImages, setHeroImages] = useState<IImagenSeccion[]>([]);
+  const [contactImages, setContactImages] = useState<IImagenSeccion[]>([]);
+  const [currentHeroIdx, setCurrentHeroIdx] = useState(0);
+  const [currentContactIdx, setCurrentContactIdx] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [configRes, modelosRes, telasRes, cortesRes, estructurasRes, portafolioRes, creacionesRes] = await Promise.all([
+        const [configRes, modelosRes, telasRes, cortesRes, estructurasRes, portafolioRes, creacionesRes, heroRes, contactRes] = await Promise.all([
           fetch('/api/config'),
           fetch('/api/catalogs/modelos'),
           fetch('/api/catalogs/telas'),
           fetch('/api/catalogs/cortes'),
           fetch('/api/catalogs/estructura-costos'),
           fetch('/api/catalogs/portafolio'),
-          fetch('/api/catalogs/creaciones')
+          fetch('/api/catalogs/creaciones'),
+          fetch('/api/landing/images/hero'),
+          fetch('/api/landing/images/contacto')
         ]);
 
         if (configRes.ok) {
@@ -108,6 +115,8 @@ const LandingPage: React.FC = () => {
         const eData = estructurasRes.ok ? await estructurasRes.json() : [];
         const pData = portafolioRes.ok ? await portafolioRes.json() : [];
         const crData = creacionesRes.ok ? await creacionesRes.json() : [];
+        const hData = heroRes.ok ? await heroRes.json() : [];
+        const conData = contactRes.ok ? await contactRes.json() : [];
 
         setModelos(mData.filter((i: any) => i.activo));
         setTelas(tData.filter((i: any) => i.activo));
@@ -115,6 +124,8 @@ const LandingPage: React.FC = () => {
         setEstructuras(eData.filter((i: any) => i.activo));
         setPortafolioItems(pData.filter((i: any) => i.activo));
         setCreaciones(crData.filter((i: any) => i.activo));
+        setHeroImages(hData);
+        setContactImages(conData);
 
         // Set defaults if data available
         if (mData.length > 0) setCalcModel(mData[0]._id);
@@ -131,6 +142,24 @@ const LandingPage: React.FC = () => {
 
     fetchData();
   }, []);
+
+  // Carousel logic for Hero
+  useEffect(() => {
+    if (heroImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentHeroIdx(prev => (prev + 1) % heroImages.length);
+    }, 5000); // 5 seconds default
+    return () => clearInterval(interval);
+  }, [heroImages]);
+
+  // Carousel logic for Contact
+  useEffect(() => {
+    if (contactImages.length <= 1) return;
+    const interval = setInterval(() => {
+      setCurrentContactIdx(prev => (prev + 1) % contactImages.length);
+    }, 4500); 
+    return () => clearInterval(interval);
+  }, [contactImages]);
 
   useEffect(() => {
     if (!calcModel || !calcTela || !calcCorte || !calcEstructura || !modelos.length || !telas.length) {
@@ -278,18 +307,18 @@ const LandingPage: React.FC = () => {
         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[60%] bg-primary/5 blur-[120px] rounded-full" />
         <div className="absolute top-1/4 left-1/4 w-px h-px bg-white shadow-[0_0_100px_40px_rgba(255,255,255,0.05)] rounded-full" />
 
-        <div className="container max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-1 gap-12 relative z-10">
+        <div className="container max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10 items-center h-full">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 1 }}
-            className="max-w-4xl"
+            className="max-w-4xl z-20"
           >
             <div className="inline-flex items-center gap-2 bg-primary/10 text-white border border-primary/20 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-10 backdrop-blur-md">
               <Sparkles size={14} className="text-primary" />
               <span>Sistema de gestión corporativo</span>
             </div>
-            <h1 className="text-7xl md:text-[100px] font-black text-white tracking-tighter leading-[0.82] uppercase mb-12">
+            <h1 className="text-6xl md:text-[90px] font-black text-white tracking-tighter leading-[0.82] uppercase mb-12">
               Creaciones <br /> <span className="text-primary italic text-[0.95em] drop-shadow-[0_0_30px_rgba(var(--primary),0.3)]">Textiles</span> <br /> y Publicidades <br /> de Alto Nivel.
             </h1>
             <p className="text-slate-400 text-xl font-medium max-w-2xl mb-12 leading-relaxed border-l-2 border-primary/30 pl-8">
@@ -309,6 +338,36 @@ const LandingPage: React.FC = () => {
                 Metodología
               </Button>
             </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, x: 50 }}
+            whileInView={{ opacity: 1, scale: 1, x: 0 }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+            className="hidden lg:flex items-center justify-center relative z-10 h-full py-10"
+          >
+            <AnimatePresence mode="wait">
+              {heroImages.length > 0 ? (
+                <motion.img 
+                  key={heroImages[currentHeroIdx]._id}
+                  initial={{ opacity: 0, scale: 0.9, x: 30 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 1.1, x: -30 }}
+                  transition={{ duration: 0.8 }}
+                  src={heroImages[currentHeroIdx].base64Data} 
+                  alt="Modelo Textil" 
+                  className="max-h-[85vh] w-auto object-contain drop-shadow-[0_35px_60px_rgba(0,0,0,0.6)] filter contrast-[1.05] brightness-[1.1]" 
+                />
+              ) : (
+                <motion.img 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  src="https://storage.googleapis.com/static-artifacts/1d5a6f97-c67d-4296-9ba0-8761b7bb228c/artifacts/aeb0f6e6-056a-4b95-a1c1-4096be277b0c.png" 
+                  alt="Modelo Textil Default" 
+                  className="max-h-[85vh] w-auto object-contain drop-shadow-[0_35px_60px_rgba(0,0,0,0.6)] filter contrast-[0.8] brightness-[0.5] grayscale" 
+                />
+              )}
+            </AnimatePresence>
           </motion.div>
         </div>
 
@@ -743,8 +802,28 @@ const LandingPage: React.FC = () => {
       )}>
         <div className="container max-w-7xl mx-auto px-6 relative z-10">
            <div className={cn("rounded-[4rem] border flex flex-col lg:flex-row shadow-2xl overflow-hidden min-h-[750px]", showCalculator ? "bg-slate-50 border-slate-100" : "bg-slate-900 border-white/5")}>
-              <div className="lg:w-1/2 p-16 md:p-24 flex flex-col justify-center bg-slate-900 text-white">
-                <h2 className="text-primary font-black uppercase tracking-[0.5em] text-[11px] mb-8">Nuestra Promesa</h2>
+              <div className="lg:w-1/2 p-16 md:p-24 flex flex-col justify-center bg-slate-900 text-white relative overflow-hidden">
+                <AnimatePresence mode="wait">
+                  {contactImages.length > 0 && (
+                    <motion.div
+                      key={contactImages[currentContactIdx]._id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 0.15 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 1.5 }}
+                      className="absolute inset-0 pointer-events-none"
+                    >
+                      <img 
+                        src={contactImages[currentContactIdx].base64Data} 
+                        className="w-full h-full object-cover" 
+                        alt="Background" 
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                
+                <div className="relative z-10">
+                  <h2 className="text-primary font-black uppercase tracking-[0.5em] text-[11px] mb-8">Nuestra Promesa</h2>
                 <h3 className="text-6xl md:text-7xl font-black text-white tracking-tighter leading-[0.85] uppercase mb-12">
                    Calidad <br /> de Diseño <br /> <span className="text-primary italic">Certificada.</span>
                 </h3>
@@ -763,9 +842,10 @@ const LandingPage: React.FC = () => {
                 </div>
               ))}
             </div>
+                </div>
               </div>
-              
-              <div className="lg:w-1/2 p-10 md:p-24 flex items-center justify-center relative bg-white">
+
+            <div className="lg:w-1/2 p-10 md:p-24 flex items-center justify-center relative bg-white">
                 <div className="absolute inset-0 bg-primary/5 blur-[120px] pointer-events-none" />
                 <div className="relative z-10 w-full max-w-lg">
                    <div className="text-center mb-10 lg:hidden">

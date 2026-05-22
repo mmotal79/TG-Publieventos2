@@ -3,6 +3,21 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export interface IImagenSeccion {
+  _id?: string;
+  sectionKey: string;     
+  base64Data: string;     
+  isVisible: boolean;     
+  order: number;
+  createdAt?: string;
+}
+
+export interface ISeccionConfig {
+  key: string;            
+  label: string;          
+  carouselInterval: number;
+}
+
 export enum UserRole {
   ADMIN = 0,
   MANAGER = 1,

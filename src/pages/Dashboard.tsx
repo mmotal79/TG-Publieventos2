@@ -24,6 +24,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const iconMap: Record<string, any> = {
   TrendingUp,
@@ -34,23 +35,37 @@ const iconMap: Record<string, any> = {
 };
 
 const Dashboard: React.FC = () => {
+  const { profile } = useAuth();
   const [data, setData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showPayrollConfig, setShowPayrollConfig] = useState(true);
+
+  const currentRole = profile?.role ?? 4;
+  const isAdmin = currentRole === 0;
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch('/api/dashboard/stats');
-        if (res.ok) {
-          setData(await res.json());
+        const [statsRes, configRes] = await Promise.all([
+          fetch('/api/dashboard/stats'),
+          fetch('/api/config')
+        ]);
+
+        if (statsRes.ok) {
+          setData(await statsRes.json());
+        }
+
+        if (configRes.ok) {
+          const config = await configRes.json();
+          setShowPayrollConfig(config.showPayroll !== false);
         }
       } catch (err) {
-        console.error("Error fetching dashboard stats:", err);
+        console.error("Error fetching dashboard data:", err);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchStats();
+    fetchData();
   }, []);
 
   if (isLoading) {
@@ -61,6 +76,18 @@ const Dashboard: React.FC = () => {
     );
   }
 
+  // Filter stats based on RBAC and Global Config
+  // "Carga de Nómina" should only be hidden if not admin AND config is disabled
+  const filteredStats = (data?.stats || []).filter((stat: any) => {
+    // If it's a payroll icon or title, apply the logic
+    const isPayrollCard = stat.icon === 'Wallet' || stat.title.toLowerCase().includes('nómina');
+    if (isPayrollCard) {
+      if (isAdmin) return true; // Superuser exception
+      return showPayrollConfig; // Otherwise follow global config
+    }
+    return true;
+  });
+
   return (
     <div className="space-y-6 md:space-y-8">
       <div className="px-1 md:px-0">
@@ -69,7 +96,7 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-        {(data?.stats || []).map((stat: any) => {
+        {filteredStats.map((stat: any) => {
           const Icon = iconMap[stat.icon] || TrendingUp;
           return (
             <Card key={stat.title} className="border-none shadow-xl shadow-slate-200/50 rounded-[1.5rem] bg-white overflow-hidden">

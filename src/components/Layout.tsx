@@ -70,13 +70,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const canSeePayroll = isAdmin || (isManager && showPayroll);
 
   const menuItems = [
-    { name: 'Dashboard', path: '/', icon: LayoutDashboard, show: true },
+    { name: 'Dashboard', path: '/', icon: LayoutDashboard, show: isAdminOrManager },
     { name: 'Clientes', path: '/clients', icon: Users, show: true },
     { name: 'Presupuestos', path: '/budgets', icon: FileText, show: true },
     { name: 'Transacciones', path: '/transactions', icon: CreditCard, show: true },
     { name: 'Producción', path: '/production', icon: Factory, show: true },
     { name: 'Nómina', path: '/payroll', icon: Wallet, show: canSeePayroll },
-    { name: 'Seguridad', path: '/security', icon: ShieldAlert, show: isAdmin },
+  ];
+
+  const adminItems = [
+    { name: 'Portafolio de Entregas', path: '/catalogs/portafolio', icon: Briefcase },
+    { name: 'Nuestras Creaciones', path: '/catalogs/creaciones', icon: Sparkles },
+    { name: 'Imágenes del Landing', path: '/catalogs/landing-images', icon: LayoutDashboard },
+    { name: 'Seguridad', path: '/security', icon: ShieldAlert },
+    { name: 'Usuarios', path: '/catalogs/usuarios', icon: Users },
+    { name: 'Configuración', path: '/catalogs/configuracion', icon: Settings },
   ];
 
   const catalogItems = [
@@ -87,10 +95,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Acabados', path: '/catalogs/acabados', icon: BookOpen, show: true },
     { name: 'Fases Producción', path: '/catalogs/fases-produccion', icon: Settings, show: true },
     { name: 'Estructura de Costos', path: '/catalogs/estructura-costos', icon: Calculator, show: isAdminOrManager },
-    { name: 'Portafolio de Entregas', path: '/catalogs/portafolio', icon: Briefcase, show: isAdminOrManager },
-    { name: 'Nuestras Creaciones', path: '/catalogs/creaciones', icon: Sparkles, show: isAdminOrManager },
-    { name: 'Usuarios', path: '/catalogs/usuarios', icon: Users, show: isAdminOrManager },
-    { name: 'Configuración', path: '/catalogs/configuracion', icon: Settings, show: isAdminOrManager },
   ];
 
   const handleLogout = () => {
@@ -177,6 +181,43 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium",
                             isActive 
                               ? "bg-primary/10 text-primary" 
+                              : "text-muted-foreground hover:bg-slate-100 hover:text-foreground"
+                          )}
+                        >
+                          <Icon size={16} />
+                          <span>{item.name}</span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          )}
+
+          {isAdmin && (
+            <Accordion type="single" collapsible className="w-full mt-1">
+              <AccordionItem value="admin" className="border-b-0">
+                <AccordionTrigger className="px-3 py-2 text-muted-foreground hover:text-foreground hover:no-underline rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium">
+                  <div className="flex items-center gap-3">
+                    <Settings size={20} />
+                    <span>Administración</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pt-1 pb-0">
+                  <div className="flex flex-col space-y-1 pl-9 pr-2">
+                    {adminItems.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = location.pathname === item.path;
+                      return (
+                        <Link
+                          key={item.path}
+                          to={item.path}
+                          onClick={() => setIsSidebarOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm font-medium",
+                            isActive 
+                              ? "bg-rose-50 text-rose-600" 
                               : "text-muted-foreground hover:bg-slate-100 hover:text-foreground"
                           )}
                         >
