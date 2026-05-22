@@ -10,6 +10,7 @@ import { fileURLToPath } from "url";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
+import { sanitizeMongo } from "./src/lib/security.js";
 
 // Importación de Rutas
 import userRoutes from "./src/routes/userRoutes.js";
@@ -38,6 +39,7 @@ async function startServer() {
   // 1. MIDDLEWARES (Prioridad Alta)
   // ==========================================
   app.use(cors());
+  app.use(sanitizeMongo); // Prevenir Inyección NoSQL (SQLi en MongoDB)
   app.use(express.json({ limit: '10mb' })); // Permitir payloads de imagen
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 

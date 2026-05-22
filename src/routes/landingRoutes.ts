@@ -1,9 +1,74 @@
 import { Router } from "express";
+import { z } from "zod";
 import { SectionImageModel } from "../models/SectionImage.model.js";
 import { SectionConfigModel } from "../models/SectionConfig.model.js";
 import { FooterElementModel } from "../models/FooterElement.model.js";
+import { ContactRequestModel } from "../models/ContactRequest.model.js";
 
 const router = Router();
+
+// --- Contact Requests (Landing Page notifications) ---
+
+const contactSchema = z.object({
+  nombre: z.string().min(2, "Nombre muy corto").max(100).trim(),
+  empresa: z.string().max(100).trim().optional(),
+  telefono: z.string().min(7, "Teléfono inválido").max(20).trim(),
+  email: z.string().email("Email inválido").trim().lowercase(),
+  mensaje: z.string().min(10, "Mensaje muy corto").max(2000).trim(),
+});
+
+// Public endpoint to receive contact requests
+router.post("/contact", async (req, res) => {
+  try {
+    // 1. Validation & Sanitization with Zod (Prevents Injection)
+    const validatedData = contactSchema.parse(req.body);
+
+    // 2. Persistence
+    const newRequest = new ContactRequestModel(validatedData);
+    await newRequest.save();
+
+    console.log(`[Notification] Nueva solicitud de contacto recibida de ${validatedData.nombre}`);
+    
+    res.status(201).json({ 
+      message: "Solicitud recibida correctamente",
+      id: newRequest._id 
+    });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ 
+        error: "Datos inválidos", 
+        details: error.issues.map(e => ({ path: e.path, message: e.message })) 
+      });
+    }
+    console.error("Error saving contact request:", error);
+    res.status(500).json({ error: "Error interno al procesar la solicitud" });
+  }
+});
+
+// Admin endpoint to view contact requests
+router.get("/admin/contacts", async (req, res) => {
+  try {
+    const contacts = await ContactRequestModel.find().sort({ createdAt: -1 });
+    res.json(contacts);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: Mark contact as read/revisado
+router.patch("/admin/contacts/:id", async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!['pendiente', 'revisado', 'contactado', 'leido'].includes(status)) {
+      return res.status(400).json({ error: "Estado inválido" });
+    }
+    const contact = await ContactRequestModel.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    if (!contact) return res.status(404).json({ error: "Solicitud no encontrada" });
+    res.json(contact);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
 // --- Footer Elements ---
 
