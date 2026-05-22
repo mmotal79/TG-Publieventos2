@@ -307,33 +307,33 @@ const LandingPage: React.FC = () => {
         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[60%] bg-primary/5 blur-[120px] rounded-full" />
         <div className="absolute top-1/4 left-1/4 w-px h-px bg-white shadow-[0_0_100px_40px_rgba(255,255,255,0.05)] rounded-full" />
 
-        <div className="container max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 relative z-10 items-center h-full">
+        <div className="container max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 relative z-10 items-center py-12 lg:py-0 min-h-[auto] lg:h-full">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 1 }}
-            className="max-w-4xl z-20"
+            className="max-w-4xl z-20 text-center lg:text-left"
           >
-            <div className="inline-flex items-center gap-2 bg-primary/10 text-white border border-primary/20 px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-[0.2em] mb-10 backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 bg-primary/10 text-white border border-primary/20 px-4 py-1.5 lg:px-5 lg:py-2 rounded-full text-[9px] lg:text-[10px] font-black uppercase tracking-[0.2em] mb-8 lg:mb-10 backdrop-blur-md">
               <Sparkles size={14} className="text-primary" />
               <span>Sistema de gestión corporativo</span>
             </div>
-            <h1 className="text-6xl md:text-[90px] font-black text-white tracking-tighter leading-[0.82] uppercase mb-12">
-              Creaciones <br /> <span className="text-primary italic text-[0.95em] drop-shadow-[0_0_30px_rgba(var(--primary),0.3)]">Textiles</span> <br /> y Publicidades <br /> de Alto Nivel.
+            <h1 className="text-4xl md:text-6xl lg:text-[90px] font-black text-white tracking-tighter leading-[0.9] lg:leading-[0.82] uppercase mb-8 lg:mb-12">
+              Creaciones <br /> <span className="text-primary italic text-[0.95em] drop-shadow-[0_0_30px_rgba(var(--primary),0.3)]">Textiles</span> <br className="hidden lg:block" /> y Publicidades <br className="hidden lg:block" /> de Alto Nivel.
             </h1>
-            <p className="text-slate-400 text-xl font-medium max-w-2xl mb-12 leading-relaxed border-l-2 border-primary/30 pl-8">
+            <p className="text-slate-400 text-base lg:text-xl font-medium max-w-2xl mb-8 lg:mb-12 leading-relaxed border-l-2 border-primary/30 pl-6 lg:pl-8 mx-auto lg:mx-0">
               Transformamos conceptos en realidades tangibles con la precisión técnica y el diseño vanguardista que su marca merece. Calidad premium garantizada.
             </p>
-            <div className="flex flex-col sm:flex-row gap-6">
+            <div className="flex flex-col sm:flex-row gap-4 lg:gap-6 justify-center lg:justify-start">
               <Button 
                 onClick={() => scrollToSection('estimador')}
-                className="rounded-2xl h-16 px-12 font-black uppercase tracking-widest text-xs shadow-[0_20px_50px_rgba(var(--primary),0.3)] bg-primary hover:bg-primary/90 text-white transition-all hover:scale-105 active:scale-95"
+                className="rounded-2xl h-14 lg:h-16 px-8 lg:px-12 font-black uppercase tracking-widest text-[10px] lg:text-xs shadow-[0_20px_50px_rgba(var(--primary),0.3)] bg-primary hover:bg-primary/90 text-white transition-all hover:scale-105 active:scale-95"
               >
                 Planificar Orden
               </Button>
               <Button 
                 onClick={() => scrollToSection('proceso')}
-                className="rounded-2xl h-16 px-12 border-2 border-white/10 font-black uppercase tracking-widest text-xs hover:bg-white/10 text-white bg-transparent transition-all backdrop-blur-sm"
+                className="rounded-2xl h-14 lg:h-16 px-8 lg:px-12 border-2 border-white/10 font-black uppercase tracking-widest text-[10px] lg:text-xs hover:bg-white/10 text-white bg-transparent transition-all backdrop-blur-sm"
               >
                 Metodología
               </Button>
@@ -344,7 +344,7 @@ const LandingPage: React.FC = () => {
             initial={{ opacity: 0, scale: 0.9, x: 50 }}
             whileInView={{ opacity: 1, scale: 1, x: 0 }}
             transition={{ duration: 1.2, ease: "easeOut" }}
-            className="hidden lg:flex items-center justify-center relative z-10 h-full py-10"
+            className="flex items-center justify-center relative z-10 w-full py-8 lg:py-10"
           >
             <AnimatePresence mode="wait">
               {heroImages.length > 0 ? (
@@ -356,7 +356,7 @@ const LandingPage: React.FC = () => {
                   transition={{ duration: 0.8 }}
                   src={heroImages[currentHeroIdx].base64Data} 
                   alt="Modelo Textil" 
-                  className="max-h-[85vh] w-auto object-contain drop-shadow-[0_35px_60px_rgba(0,0,0,0.6)] filter contrast-[1.05] brightness-[1.1]" 
+                  className="max-h-[50vh] lg:max-h-[85vh] w-auto object-contain drop-shadow-[0_35px_60px_rgba(0,0,0,0.6)] filter contrast-[1.05] brightness-[1.1]" 
                 />
               ) : (
                 <motion.img 
@@ -364,7 +364,7 @@ const LandingPage: React.FC = () => {
                   animate={{ opacity: 1 }}
                   src="https://storage.googleapis.com/static-artifacts/1d5a6f97-c67d-4296-9ba0-8761b7bb228c/artifacts/aeb0f6e6-056a-4b95-a1c1-4096be277b0c.png" 
                   alt="Modelo Textil Default" 
-                  className="max-h-[85vh] w-auto object-contain drop-shadow-[0_35px_60px_rgba(0,0,0,0.6)] filter contrast-[0.8] brightness-[0.5] grayscale" 
+                  className="max-h-[50vh] lg:max-h-[85vh] w-auto object-contain drop-shadow-[0_35px_60px_rgba(0,0,0,0.6)] filter contrast-[0.8] brightness-[0.5] grayscale" 
                 />
               )}
             </AnimatePresence>
