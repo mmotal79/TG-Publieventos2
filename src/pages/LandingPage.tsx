@@ -370,13 +370,13 @@ const LandingPage: React.FC = () => {
       </AnimatePresence>
 
       {/* --- Hero Section --- */}
-      <section id="home" className="relative h-screen flex items-center pt-20 overflow-hidden bg-slate-950">
+      <section id="home" className="relative min-h-screen flex items-center pt-20 overflow-hidden bg-slate-950">
         {/* Abstract Background Decoration */}
         <div className="absolute top-[-10%] right-[-10%] w-[60%] h-[80%] bg-primary/10 blur-[120px] rounded-full animate-pulse" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[60%] bg-primary/5 blur-[120px] rounded-full" />
         <div className="absolute top-1/4 left-1/4 w-px h-px bg-white shadow-[0_0_100px_40px_rgba(255,255,255,0.05)] rounded-full" />
 
-        <div className="container max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 relative z-10 items-center py-12 lg:py-0 min-h-[auto] lg:h-full">
+        <div className="container max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 relative z-10 items-center py-12 lg:py-20 min-h-[auto] lg:min-h-screen">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -425,7 +425,7 @@ const LandingPage: React.FC = () => {
                   transition={{ duration: 0.8 }}
                   src={heroImages[currentHeroIdx].base64Data} 
                   alt="Modelo Textil" 
-                  className="max-h-[50vh] lg:max-h-[85vh] w-auto object-contain drop-shadow-[0_35px_60px_rgba(0,0,0,0.6)] filter contrast-[1.05] brightness-[1.1]" 
+                  className="max-h-[50vh] lg:max-h-[85vh] w-full max-w-[320px] sm:max-w-md lg:max-w-none object-contain drop-shadow-[0_35px_60px_rgba(0,0,0,0.6)] filter contrast-[1.05] brightness-[1.1]" 
                 />
               ) : (
                 <motion.img 
@@ -433,7 +433,7 @@ const LandingPage: React.FC = () => {
                   animate={{ opacity: 1 }}
                   src="https://storage.googleapis.com/static-artifacts/1d5a6f97-c67d-4296-9ba0-8761b7bb228c/artifacts/aeb0f6e6-056a-4b95-a1c1-4096be277b0c.png" 
                   alt="Modelo Textil Default" 
-                  className="max-h-[50vh] lg:max-h-[85vh] w-auto object-contain drop-shadow-[0_35px_60px_rgba(0,0,0,0.6)] filter contrast-[0.8] brightness-[0.5] grayscale" 
+                  className="max-h-[50vh] lg:max-h-[85vh] w-full max-w-[320px] sm:max-w-md lg:max-w-none object-contain drop-shadow-[0_35px_60px_rgba(0,0,0,0.6)] filter contrast-[0.8] brightness-[0.5] grayscale" 
                 />
               )}
             </AnimatePresence>
@@ -540,12 +540,12 @@ const LandingPage: React.FC = () => {
                       initial={{ opacity: 0, x: 20 }}
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
-                      className="relative aspect-[4/5] md:aspect-video rounded-[3rem] overflow-hidden border border-slate-100 shadow-2xl bg-white"
+                      className="relative aspect-[4/5] sm:aspect-square md:aspect-video rounded-[2.5rem] md:rounded-[3rem] overflow-hidden border border-slate-100 shadow-2xl bg-white"
                     >
                       <img 
                         src={creaciones[currentShowcaseIdx].imagen} 
                         alt={creaciones[currentShowcaseIdx].titulo} 
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover sm:object-contain md:object-cover bg-slate-50"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent opacity-40" />
                     </motion.div>
@@ -808,11 +808,11 @@ const LandingPage: React.FC = () => {
                     className="min-w-[300px] md:min-w-[450px] snap-center"
                   >
                     <div className={cn("rounded-[2.5rem] overflow-hidden border shadow-xl group", showCalculator ? "bg-slate-50 border-slate-100" : "bg-slate-900 border-white/5")}>
-                      <div className="relative aspect-[4/3] overflow-hidden">
+                      <div className="relative aspect-[4/3] sm:aspect-video lg:aspect-[4/3] overflow-hidden">
                         <img 
                           src={item.imagen} 
                           alt={item.nombreCliente} 
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" 
+                          className="w-full h-full object-cover sm:object-contain lg:object-cover transition-transform duration-700 group-hover:scale-110 bg-slate-800" 
                         />
                         <div className="absolute top-6 left-6 bg-white/90 backdrop-blur px-5 py-2 rounded-full shadow-lg">
                            <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest">{item.nombreCliente}</span>

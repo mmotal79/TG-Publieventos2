@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import Layout from './components/Layout';
+import AppLayout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Budgets from './pages/Budgets';
 import Payroll from './pages/Payroll';
@@ -63,7 +63,7 @@ const AppContent = () => {
 
   return (
     <ProtectedRoute>
-      <Layout>
+      <AppLayout>
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/clients" element={<Clients />} />
@@ -91,7 +91,7 @@ const AppContent = () => {
           
           <Route path="*" element={<Dashboard />} />
         </Routes>
-      </Layout>
+      </AppLayout>
     </ProtectedRoute>
   );
 };

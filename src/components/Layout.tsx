@@ -43,7 +43,7 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   const { profile } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
   const [logo, setLogo] = React.useState<string | null>(null);
@@ -108,7 +108,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Portafolio de Entregas', path: '/catalogs/portafolio', icon: Briefcase },
     { name: 'Nuestras Creaciones', path: '/catalogs/creaciones', icon: Sparkles },
     { name: 'Imágenes del Landing', path: '/catalogs/landing-images', icon: LayoutDashboard },
-    { name: 'Gestión Pie de Página', path: '/catalogs/footer', icon: LayoutIcon },
+    { name: 'Gestión Pie de Página', path: '/catalogs/footer', icon: FileText },
     { name: 'Seguridad', path: '/security', icon: ShieldAlert },
     { name: 'Usuarios', path: '/catalogs/usuarios', icon: Users },
     { name: 'Configuración', path: '/catalogs/configuracion', icon: Settings },
@@ -327,4 +327,4 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   );
 };
 
-export default Layout;
+export default AppLayout;
