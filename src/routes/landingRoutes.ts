@@ -11,7 +11,7 @@ const router = Router();
 
 const contactSchema = z.object({
   nombre: z.string().min(2, "Nombre muy corto").max(100).trim(),
-  empresa: z.string().max(100).trim().optional(),
+  empresa: z.string().max(100).trim().default(''),
   telefono: z.string().min(7, "Teléfono inválido").max(20).trim(),
   email: z.string().email("Email inválido").trim().lowercase(),
   mensaje: z.string().min(10, "Mensaje muy corto").max(2000).trim(),
@@ -45,8 +45,8 @@ router.post("/contact", async (req, res) => {
   }
 });
 
-// Admin endpoint to view contact requests
-router.get("/admin/contacts", async (req, res) => {
+// Admin/Notification: Get all contacts
+router.get("/contact", async (req, res) => {
   try {
     const contacts = await ContactRequestModel.find().sort({ createdAt: -1 });
     res.json(contacts);
@@ -55,18 +55,29 @@ router.get("/admin/contacts", async (req, res) => {
   }
 });
 
-// Admin: Mark contact as read/revisado
-router.patch("/admin/contacts/:id", async (req, res) => {
+// Mark contact as read (leido: true)
+router.patch("/contact/:id/read", async (req, res) => {
   try {
-    const { status } = req.body;
-    if (!['pendiente', 'revisado', 'contactado', 'leido'].includes(status)) {
-      return res.status(400).json({ error: "Estado inválido" });
-    }
-    const contact = await ContactRequestModel.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    const contact = await ContactRequestModel.findByIdAndUpdate(
+      req.params.id, 
+      { leido: true, status: 'leido' }, 
+      { new: true }
+    );
     if (!contact) return res.status(404).json({ error: "Solicitud no encontrada" });
     res.json(contact);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+// Delete contact request
+router.delete("/contact/:id", async (req, res) => {
+  try {
+    const contact = await ContactRequestModel.findByIdAndDelete(req.params.id);
+    if (!contact) return res.status(404).json({ error: "Solicitud no encontrada" });
+    res.json({ message: "Solicitud eliminada correctamente" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 

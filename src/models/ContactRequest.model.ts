@@ -2,17 +2,18 @@ import mongoose from "mongoose";
 
 export interface IContactRequest extends mongoose.Document {
   nombre: string;
-  empresa?: string;
+  empresa: string;
   telefono: string;
   email: string;
   mensaje: string;
+  leido: boolean;
   status: 'pendiente' | 'revisado' | 'contactado' | 'leido';
   createdAt: Date;
 }
 
 const ContactRequestSchema = new mongoose.Schema({
   nombre: { type: String, required: true, trim: true },
-  empresa: { type: String, trim: true },
+  empresa: { type: String, trim: true, default: '' },
   telefono: { type: String, required: true, trim: true },
   email: { 
     type: String, 
@@ -22,6 +23,7 @@ const ContactRequestSchema = new mongoose.Schema({
     match: [/^\S+@\S+\.\S+$/, 'Por favor use un email válido']
   },
   mensaje: { type: String, required: true, trim: true },
+  leido: { type: Boolean, default: false },
   status: { 
     type: String, 
     enum: ['pendiente', 'revisado', 'contactado', 'leido'], 
