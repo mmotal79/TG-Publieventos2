@@ -42,6 +42,10 @@ export interface GlobalConfig {
   razonSocial: string;
   rif: string;
   telefonoCorporativo: string;
+  emailCorporativo?: string;
+  urlInstagram?: string;
+  urlFacebook?: string;
+  urlTiktok?: string;
   nombreAsesor: string; // Dynamic advisor name
   informacionPago: string;
   logoBase64: string;
@@ -50,6 +54,17 @@ export interface GlobalConfig {
   showCreations: boolean;
   showPayroll: boolean;
   updatedAt?: string;
+}
+
+export interface ISolicitudContacto {
+  _id?: string;
+  nombre: string;
+  empresa: string;
+  telefono: string;
+  email: string;
+  mensaje: string;
+  leido: boolean;
+  createdAt?: string;
 }
 
 export interface Client {
@@ -66,7 +81,12 @@ export interface Client {
 export interface Tela {
   _id: string;
   nombre: string;
+  composicion: string;
+  gramaje: number;
   costoPorMetro: number;
+  color: string;
+  stockMetros: number;
+  activo: boolean;
 }
 
 export interface Modelo {
@@ -187,6 +207,15 @@ export interface CreacionItem {
   precioBase: number;
   activo: boolean;
   createdAt?: string;
+}
+
+export interface IElementoFooter {
+  _id?: string;
+  nombreElemento: string;
+  tituloTexto: string;
+  cuerpoTexto: string;
+  isVisible: boolean;
+  order: number;
 }
 
 export type WorkerStatus = 'activo' | 'inactivo' | 'retirado';

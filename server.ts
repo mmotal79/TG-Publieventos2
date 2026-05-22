@@ -23,7 +23,7 @@ import exchangeRateRoutes from "./src/routes/exchangeRateRoutes.js";
 import productionPhaseRoutes from "./src/routes/productionPhaseRoutes.js";
 import dashboardRoutes from "./src/routes/dashboardRoutes.js";
 import landingRoutes from "./src/routes/landingRoutes.js";
-import { initializeAdmin } from "./src/lib/dbInit.js";
+import { initializeAdmin, initializeFooterElements } from "./src/lib/dbInit.js";
 
 dotenv.config();
 
@@ -63,6 +63,7 @@ async function startServer() {
     
     // Inicialización de administrador por defecto
     await initializeAdmin();
+    await initializeFooterElements();
     
   } catch (error) {
     console.error("[DB] Error crítico de conexión:", error);

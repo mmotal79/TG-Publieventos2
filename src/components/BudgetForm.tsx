@@ -329,11 +329,11 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                 {selectedClient && (
                   <div className="text-[10px] bg-slate-50 p-2 rounded border mt-2 flex flex-wrap gap-x-4">
                     <span><strong>Email:</strong> {selectedClient.email}</span>
-                    <span><strong>Tel:</strong> {selectedClient.telefono}</span>
-                    <span><strong>NIT:</strong> {selectedClient.nit}</span>
+                    <span><strong>Tel:</strong> {selectedClient.celular}</span>
+                    <span><strong>RIF:</strong> {selectedClient.rif}</span>
                   </div>
                 )}
-                {errors.clientId && <p className="text-xs text-destructive">{errors.clientId.message}</p>}
+                {errors.clientId && <p className="text-xs text-destructive">{errors.clientId.message?.toString()}</p>}
               </div>
 
               <div className="space-y-2">
@@ -364,7 +364,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                     Margen: {selectedEstructura.margenGanancia}% | IVA: {selectedEstructura.iva}%
                   </div>
                 )}
-                {errors.estructuraCostosId && <p className="text-xs text-destructive">{errors.estructuraCostosId.message}</p>}
+                {errors.estructuraCostosId && <p className="text-xs text-destructive">{errors.estructuraCostosId.message?.toString()}</p>}
               </div>
             </div>
 
@@ -372,7 +372,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
               <div className="space-y-2">
                 <Label>Descripción del Proyecto</Label>
                 <Input {...register("description")} placeholder="Ej: Uniformes Corporativos para Evento Anual" />
-                {errors.description && <p className="text-xs text-destructive">{errors.description.message}</p>}
+                {errors.description && <p className="text-xs text-destructive">{errors.description.message?.toString()}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Notas de la Solicitud (Comentarios del cliente)</Label>
@@ -844,7 +844,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
               {formatCurrency(grandTotal)}
             </div>
           </div>
-          {errors.items && <p className="text-xs text-destructive mt-2 px-6">{errors.items.message}</p>}
+          {errors.items && <p className="text-xs text-destructive mt-2 px-6">{errors.items.message?.toString()}</p>}
         </CardContent>
       </Card>
 

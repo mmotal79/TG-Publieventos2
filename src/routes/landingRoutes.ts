@@ -1,10 +1,66 @@
 import { Router } from "express";
 import { SectionImageModel } from "../models/SectionImage.model.js";
 import { SectionConfigModel } from "../models/SectionConfig.model.js";
+import { FooterElementModel } from "../models/FooterElement.model.js";
 
 const router = Router();
 
-// Get all images for a section
+// --- Footer Elements ---
+
+// Get all active footer elements (public)
+router.get("/footer-elements", async (req, res) => {
+  try {
+    const elements = await FooterElementModel.find({ isVisible: true }).sort({ order: 1 });
+    res.json(elements);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Admin: Get all footer elements
+router.get("/admin/footer-elements", async (req, res) => {
+  try {
+    const elements = await FooterElementModel.find().sort({ order: 1 });
+    res.json(elements);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create Footer Element
+router.post("/footer-elements", async (req, res) => {
+  try {
+    const newElement = new FooterElementModel(req.body);
+    await newElement.save();
+    res.status(201).json(newElement);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Update Footer Element
+router.patch("/footer-elements/:id", async (req, res) => {
+  try {
+    const element = await FooterElementModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    if (!element) return res.status(404).json({ error: "Elemento no encontrado" });
+    res.json(element);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Delete Footer Element
+router.delete("/footer-elements/:id", async (req, res) => {
+  try {
+    const element = await FooterElementModel.findByIdAndDelete(req.params.id);
+    if (!element) return res.status(404).json({ error: "Elemento no encontrado" });
+    res.json({ message: "Elemento eliminado correctamente" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- Images ---
 router.get("/images/:sectionKey", async (req, res) => {
   try {
     const images = await SectionImageModel.find({ 

@@ -239,12 +239,37 @@ export default function GlobalConfigPage() {
                 </div>
               </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="telefonoCorporativo" className="flex items-center gap-2">
-                <Phone size={14} /> WhatsApp / Teléfono Corporativo
-              </Label>
-              <Input id="telefonoCorporativo" {...register('telefonoCorporativo')} placeholder="+58 414..." />
-              <p className="text-[10px] text-muted-foreground">Formato internacional requerido para integración con mensajes automáticos.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="telefonoCorporativo" className="flex items-center gap-2">
+                  <Phone size={14} /> WhatsApp / Teléfono Corporativo
+                </Label>
+                <Input id="telefonoCorporativo" {...register('telefonoCorporativo')} placeholder="+58 414..." />
+                <p className="text-[10px] text-muted-foreground">Formato internacional requerido para integración con mensajes automáticos.</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="emailCorporativo" className="flex items-center gap-2">
+                  <AlertCircle size={14} /> Correo Electrónico Institucional
+                </Label>
+                <Input id="emailCorporativo" type="email" {...register('emailCorporativo')} placeholder="contacto@empresa.com" />
+              </div>
+            </div>
+
+            <Separator className="my-4" />
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="urlInstagram">Instagram (URL)</Label>
+                <Input id="urlInstagram" {...register('urlInstagram')} placeholder="https://instagram.com/tu_cuenta" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="urlFacebook">Facebook (URL)</Label>
+                <Input id="urlFacebook" {...register('urlFacebook')} placeholder="https://facebook.com/tu_pagina" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="urlTiktok">TikTok (URL)</Label>
+                <Input id="urlTiktok" {...register('urlTiktok')} placeholder="https://tiktok.com/@tu_usuario" />
+              </div>
             </div>
 
             <Separator className="my-4" />

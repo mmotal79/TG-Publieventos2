@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { GenericTable } from '@/components/GenericTable';
-import { Tela } from '@/interfaces';
+import { Tela } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,12 +26,6 @@ const telaSchema = z.object({
 });
 
 type TelaFormValues = z.infer<typeof telaSchema>;
-
-// Mock data
-const initialData: Tela[] = [
-  { id: '1', nombre: 'Algodón Pima', composicion: '100% Algodón', gramaje: 180, costoPorMetro: 5.50, color: 'Blanco', stockMetros: 500, activo: true },
-  { id: '2', nombre: 'Gabardina', composicion: '65% Poliéster, 35% Algodón', gramaje: 240, costoPorMetro: 4.20, color: 'Azul Marino', stockMetros: 300, activo: true },
-];
 
 const TelasCatalog: React.FC = () => {
   const [data, setData] = useState<Tela[]>([]);

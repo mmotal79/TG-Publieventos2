@@ -16,7 +16,16 @@ import {
   ArrowRight,
   Sparkles,
   Factory,
-  CheckCircle2
+  CheckCircle2,
+  ShieldAlert,
+  Lock,
+  Globe,
+  Database,
+  Eye,
+  ScrollText,
+  Instagram,
+  Facebook,
+  Share2
 } from 'lucide-react';
 import { LoginForm } from '@/components/LoginForm';
 import { Button } from '@/components/ui/button';
@@ -25,9 +34,17 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogDescription 
+} from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { calculateBudgetPrice } from '@/services/budgetService';
-import { IImagenSeccion } from '@/types';
+import { IImagenSeccion, IElementoFooter } from '@/types';
+import ReactMarkdown from 'react-markdown';
 
 // --- Data for Calculator Teaser ---
 const PRENDA_OPTIONS = [
@@ -85,10 +102,26 @@ const LandingPage: React.FC = () => {
   const [currentHeroIdx, setCurrentHeroIdx] = useState(0);
   const [currentContactIdx, setCurrentContactIdx] = useState(0);
 
+  // Social & Contact Info
+  const [socialConfig, setSocialConfig] = useState<any>({});
+  const [contactForm, setContactForm] = useState({
+    nombre: '',
+    empresa: '',
+    telefono: '',
+    email: '',
+    mensaje: ''
+  });
+  const [sendingContact, setSendingContact] = useState(false);
+  const [contactSuccess, setContactSuccess] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showDataProtection, setShowDataProtection] = useState(false);
+  const [footerElements, setFooterElements] = useState<IElementoFooter[]>([]);
+  const [selectedFooterEl, setSelectedFooterEl] = useState<IElementoFooter | null>(null);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [configRes, modelosRes, telasRes, cortesRes, estructurasRes, portafolioRes, creacionesRes, heroRes, contactRes] = await Promise.all([
+        const [configRes, modelosRes, telasRes, cortesRes, estructurasRes, portafolioRes, creacionesRes, heroRes, contactRes, footerRes] = await Promise.all([
           fetch('/api/config'),
           fetch('/api/catalogs/modelos'),
           fetch('/api/catalogs/telas'),
@@ -97,7 +130,8 @@ const LandingPage: React.FC = () => {
           fetch('/api/catalogs/portafolio'),
           fetch('/api/catalogs/creaciones'),
           fetch('/api/landing/images/hero'),
-          fetch('/api/landing/images/contacto')
+          fetch('/api/landing/images/contacto'),
+          fetch('/api/landing/footer-elements')
         ]);
 
         if (configRes.ok) {
@@ -107,6 +141,12 @@ const LandingPage: React.FC = () => {
           setShowCalculator(config.mostrarConfiguradorLanding !== false);
           setShowPortfolio(config.showPortfolio !== false);
           setShowCreations(config.showCreations !== false);
+          setSocialConfig({
+            emailCorporativo: config.emailCorporativo,
+            urlInstagram: config.urlInstagram,
+            urlFacebook: config.urlFacebook,
+            urlTiktok: config.urlTiktok
+          });
         }
 
         const mData = modelosRes.ok ? await modelosRes.json() : [];
@@ -117,6 +157,7 @@ const LandingPage: React.FC = () => {
         const crData = creacionesRes.ok ? await creacionesRes.json() : [];
         const hData = heroRes.ok ? await heroRes.json() : [];
         const conData = contactRes.ok ? await contactRes.json() : [];
+        const fData = footerRes.ok ? await footerRes.json() : [];
 
         setModelos(mData.filter((i: any) => i.activo));
         setTelas(tData.filter((i: any) => i.activo));
@@ -126,6 +167,7 @@ const LandingPage: React.FC = () => {
         setCreaciones(crData.filter((i: any) => i.activo));
         setHeroImages(hData);
         setContactImages(conData);
+        setFooterElements(fData);
 
         // Set defaults if data available
         if (mData.length > 0) setCalcModel(mData[0]._id);
@@ -197,6 +239,31 @@ const LandingPage: React.FC = () => {
     setIsMenuOpen(false);
   };
 
+  const handleContactSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSendingContact(true);
+    setContactSuccess(false);
+
+    try {
+      const res = await fetch('/api/landing/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contactForm)
+      });
+
+      if (res.ok) {
+        setContactSuccess(true);
+        setShowSuccessModal(true);
+        setContactForm({ nombre: '', empresa: '', telefono: '', email: '', mensaje: '' });
+        setTimeout(() => setContactSuccess(false), 5000);
+      }
+    } catch (error) {
+      console.error("Error sending contact request:", error);
+    } finally {
+      setSendingContact(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 font-sans selection:bg-primary selection:text-white overflow-x-hidden text-white">
       {/* Loading Overlay for Data Fetching */}
@@ -236,6 +303,7 @@ const LandingPage: React.FC = () => {
               showCalculator ? 'Presupuesto' : null, 
               showPortfolio ? 'Portafolio' : null, 
               'Ventajas', 
+              'Contacto',
               'Acceso'
             ]
               .filter(Boolean)
@@ -282,6 +350,7 @@ const LandingPage: React.FC = () => {
               showCalculator ? 'Estimador' : null, 
               showPortfolio ? 'Portafolio' : null,
               'Ventajas', 
+              'Contacto',
               'Acceso'
             ].filter(Boolean).map((item) => (
               <button 
@@ -795,6 +864,133 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
+      {/* --- Contact Section --- */}
+      <section id="contacto" className="py-32 bg-slate-950 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[50%] h-[50%] bg-primary/5 blur-[120px] rounded-full" />
+        <div className="container max-w-7xl mx-auto px-6 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
+            <div className="space-y-12">
+              <div>
+                <h2 className="text-primary font-black uppercase tracking-[0.5em] text-[11px] mb-6">Contáctenos</h2>
+                <h3 className="text-6xl md:text-7xl font-black text-white tracking-tighter uppercase leading-none italic mb-8">
+                  Hablemos de su <br /> <span className="text-primary">Proyecto.</span>
+                </h3>
+                <p className="text-slate-400 text-xl font-medium max-w-lg leading-relaxed">
+                  Estamos listos para llevar su visión al siguiente nivel con precisión técnica y calidad garantizada.
+                </p>
+              </div>
+
+              <div className="space-y-8">
+                <div className="flex items-center gap-8 pt-6 border-t border-white/5">
+                  <h4 className="text-slate-500 font-black uppercase tracking-[0.3em] text-[10px]">Redes Sociales</h4>
+                  <div className="flex items-center gap-4">
+                    {socialConfig.urlInstagram && (
+                      <a href={socialConfig.urlInstagram} target="_blank" rel="noreferrer" className="w-12 h-12 bg-white/5 hover:bg-primary hover:text-white border border-white/10 rounded-2xl flex items-center justify-center transition-all text-slate-400">
+                        <Instagram size={20} />
+                      </a>
+                    )}
+                    {socialConfig.urlFacebook && (
+                      <a href={socialConfig.urlFacebook} target="_blank" rel="noreferrer" className="w-12 h-12 bg-white/5 hover:bg-primary hover:text-white border border-white/10 rounded-2xl flex items-center justify-center transition-all text-slate-400">
+                        <Facebook size={20} />
+                      </a>
+                    )}
+                    {socialConfig.urlTiktok && (
+                      <a href={socialConfig.urlTiktok} target="_blank" rel="noreferrer" className="w-12 h-12 bg-white/5 hover:bg-primary hover:text-white border border-white/10 rounded-2xl flex items-center justify-center transition-all text-slate-400">
+                        <Share2 size={20} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-[3rem] p-10 md:p-16 shadow-2xl relative border border-slate-100">
+              <div className="absolute -top-6 -right-6 bg-primary text-white w-20 h-20 rounded-[2rem] flex items-center justify-center shadow-xl shadow-primary/30 z-20">
+                <Sparkles size={32} />
+              </div>
+              
+              <form onSubmit={handleContactSubmit} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nombre Completo</Label>
+                    <Input 
+                      required
+                      placeholder="Ej: Juan Pérez"
+                      className="h-14 bg-slate-50 border-slate-100 rounded-2xl text-slate-900 font-bold px-6 focus:ring-primary"
+                      value={contactForm.nombre}
+                      onChange={e => setContactForm({ ...contactForm, nombre: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Empresa</Label>
+                    <Input 
+                      required
+                      placeholder="Nombre de su negocio"
+                      className="h-14 bg-slate-50 border-slate-100 rounded-2xl text-slate-900 font-bold px-6 focus:ring-primary"
+                      value={contactForm.empresa}
+                      onChange={e => setContactForm({ ...contactForm, empresa: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Teléfono</Label>
+                    <Input 
+                      required
+                      placeholder="+58 412..."
+                      className="h-14 bg-slate-50 border-slate-100 rounded-2xl text-slate-900 font-bold px-6 focus:ring-primary"
+                      value={contactForm.telefono}
+                      onChange={e => setContactForm({ ...contactForm, telefono: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Email</Label>
+                    <Input 
+                      required
+                      type="email"
+                      placeholder="correo@ejemplo.com"
+                      className="h-14 bg-slate-50 border-slate-100 rounded-2xl text-slate-900 font-bold px-6 focus:ring-primary"
+                      value={contactForm.email}
+                      onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Mensaje o Petición</Label>
+                  <textarea 
+                    required
+                    placeholder="Cuéntenos sobre su requerimiento..."
+                    className="w-full min-h-[150px] bg-slate-50 border border-slate-100 rounded-3xl p-6 text-slate-900 font-medium focus:ring-primary outline-none transition-all"
+                    value={contactForm.mensaje}
+                    onChange={e => setContactForm({ ...contactForm, mensaje: e.target.value })}
+                  />
+                </div>
+
+                <Button 
+                  type="submit"
+                  disabled={sendingContact}
+                  className="w-full h-16 rounded-[2rem] bg-slate-900 text-white font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
+                >
+                  {sendingContact ? 'Enviando...' : (contactSuccess ? '¡Mensaje Enviado!' : 'Solicitar Información')}
+                </Button>
+
+                {contactSuccess && (
+                  <motion.p 
+                    initial={{ opacity: 0, y: 10 }} 
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center text-xs font-bold text-primary uppercase tracking-widest"
+                  >
+                    Gracias por contactarnos. Le responderemos a la brevedad.
+                  </motion.p>
+                )}
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* --- Acceso / Login Section (Dynamic Background) --- */}
       <section id="acceso" className={cn(
         "py-32 relative transition-colors duration-500", 
@@ -873,10 +1069,19 @@ const LandingPage: React.FC = () => {
               <span className="text-xl font-black tracking-tighter text-white uppercase">{companyName}</span>
             </div>
             
-            <div className="flex gap-10 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
-              <span className="hover:text-white cursor-pointer transition-colors">Protección de Datos</span>
-              <span className="hover:text-white cursor-pointer transition-colors">Garantía de Calidad</span>
-              <span className="hover:text-white cursor-pointer transition-colors">Soporte TI</span>
+            <div className="flex flex-wrap justify-center md:justify-start gap-x-10 gap-y-4 text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">
+              {footerElements.map((el) => (
+                <span 
+                  key={el._id}
+                  className="hover:text-white cursor-pointer transition-colors"
+                  onClick={() => {
+                    setSelectedFooterEl(el);
+                    setShowDataProtection(true);
+                  }}
+                >
+                  {el.nombreElemento}
+                </span>
+              ))}
             </div>
           </div>
 
@@ -896,6 +1101,68 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* --- Dynamic Information Modal --- */}
+      <Dialog open={showDataProtection} onOpenChange={setShowDataProtection}>
+        <DialogContent className="max-w-4xl p-0 overflow-hidden border-none bg-white rounded-[3rem] shadow-2xl">
+          <div className="flex flex-col max-h-[90vh]">
+            <div className="p-8 md:p-10 bg-slate-900 relative shrink-0">
+               <div className="absolute top-0 right-0 p-10 opacity-5">
+                  <ShieldAlert size={150} />
+               </div>
+               <Badge className="bg-primary/20 text-primary border-primary/30 mb-4 uppercase tracking-[0.3em] font-black text-[9px] px-3 py-0.5">
+                  Seguridad Institucional
+               </Badge>
+               <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight uppercase italic leading-tight">
+                  {selectedFooterEl?.tituloTexto || 'Información Institucional'}
+               </h2>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-8 md:p-12 bg-white prose prose-slate max-w-none prose-sm lg:prose-base prose-p:text-slate-600 prose-headings:text-slate-900 prose-headings:font-black prose-headings:uppercase prose-headings:italic prose-p:leading-relaxed prose-li:text-slate-600 prose-strong:text-slate-900">
+               <ReactMarkdown>
+                  {selectedFooterEl?.cuerpoTexto || ''}
+               </ReactMarkdown>
+            </div>
+
+            <div className="p-8 bg-slate-50 flex justify-end shrink-0 border-t border-slate-100">
+               <Button 
+                onClick={() => setShowDataProtection(false)}
+                className="rounded-2xl h-12 px-10 font-black uppercase tracking-widest text-[10px] bg-slate-900 text-white hover:bg-slate-800"
+               >
+                 Entendido y Aceptar
+               </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* --- Contact Success Message Popup --- */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="max-w-md p-0 overflow-hidden border-none bg-white rounded-[3rem] shadow-2xl">
+          <div className="p-12 flex flex-col items-center text-center space-y-6">
+            <div className="w-24 h-24 bg-primary/10 text-primary rounded-[2rem] flex items-center justify-center shadow-lg shadow-primary/20">
+               <CheckCircle2 size={48} />
+            </div>
+            <div className="space-y-2">
+               <Badge className="bg-primary/10 text-primary border-none uppercase tracking-[0.3em] font-black text-[9px] px-3 py-1">
+                  Enviado con Éxito
+               </Badge>
+               <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase italic leading-none">
+                  ¡Mensaje <br /> Registrado!
+               </h2>
+            </div>
+            <p className="text-slate-500 font-medium text-sm leading-relaxed">
+              Su solicitud de información ha sido recibida correctamente. Uno de nuestros asesores corporativos se pondrá en contacto con usted a la brevedad.
+            </p>
+            <Button 
+              onClick={() => setShowSuccessModal(false)}
+              className="w-full h-14 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-widest text-[10px] hover:bg-slate-800 transition-all shadow-xl"
+            >
+              Entendido
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

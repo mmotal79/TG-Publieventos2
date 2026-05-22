@@ -26,6 +26,8 @@ import PortafolioCatalog from './pages/catalogs/PortafolioCatalog';
 import CreacionesCatalog from './pages/catalogs/CreacionesCatalog';
 import GlobalConfigPage from './pages/catalogs/GlobalConfig';
 import LandingImagesCatalog from './pages/catalogs/LandingImagesCatalog';
+import FooterConfigPage from './pages/catalogs/FooterConfig';
+import NotificationsPage from './pages/NotificationsPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -84,6 +86,8 @@ const AppContent = () => {
           <Route path="/catalogs/usuarios" element={<UsuariosCatalog />} />
           <Route path="/catalogs/configuracion" element={<GlobalConfigPage />} />
           <Route path="/catalogs/landing-images" element={<LandingImagesCatalog />} />
+          <Route path="/catalogs/footer" element={<FooterConfigPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
           
           <Route path="*" element={<Dashboard />} />
         </Routes>

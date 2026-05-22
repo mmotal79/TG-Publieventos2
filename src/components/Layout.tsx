@@ -24,7 +24,9 @@ import {
   Calculator,
   ShieldAlert,
   Briefcase,
-  Sparkles
+  Sparkles,
+  Bell,
+  Layout as LayoutIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -47,6 +49,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [logo, setLogo] = React.useState<string | null>(null);
   const [companyName, setCompanyName] = React.useState('TG-Textiles');
   const [showPayroll, setShowPayroll] = React.useState(true);
+  const [unreadCount, setUnreadCount] = React.useState(0);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -59,6 +62,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         setShowPayroll(config.showPayroll !== false);
       })
       .catch(console.error);
+
+    // Initial notifications fetch
+    fetch('/api/landing/contact')
+      .then(res => res.json())
+      .then(data => {
+        const unread = data.filter((s: any) => !s.leido).length;
+        setUnreadCount(unread);
+      })
+      .catch(console.error);
+
+    // Auto-refresh notifications every 3 minutes
+    const interval = setInterval(() => {
+      fetch('/api/landing/contact')
+        .then(res => res.json())
+        .then(data => {
+          const unread = data.filter((s: any) => !s.leido).length;
+          setUnreadCount(unread);
+        })
+        .catch(console.error);
+    }, 180000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const currentRole = profile?.role ?? 4;
@@ -75,6 +100,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Presupuestos', path: '/budgets', icon: FileText, show: true },
     { name: 'Transacciones', path: '/transactions', icon: CreditCard, show: true },
     { name: 'Producción', path: '/production', icon: Factory, show: true },
+    { name: 'Notificaciones', path: '/notifications', icon: Bell, show: isAdminOrManager, badge: unreadCount > 0 ? unreadCount : undefined },
     { name: 'Nómina', path: '/payroll', icon: Wallet, show: canSeePayroll },
   ];
 
@@ -82,6 +108,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Portafolio de Entregas', path: '/catalogs/portafolio', icon: Briefcase },
     { name: 'Nuestras Creaciones', path: '/catalogs/creaciones', icon: Sparkles },
     { name: 'Imágenes del Landing', path: '/catalogs/landing-images', icon: LayoutDashboard },
+    { name: 'Gestión Pie de Página', path: '/catalogs/footer', icon: LayoutIcon },
     { name: 'Seguridad', path: '/security', icon: ShieldAlert },
     { name: 'Usuarios', path: '/catalogs/usuarios', icon: Users },
     { name: 'Configuración', path: '/catalogs/configuracion', icon: Settings },
@@ -151,7 +178,14 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       : "text-muted-foreground hover:bg-slate-100 hover:text-foreground"
                   )}
                 >
-                  <Icon size={20} />
+                  <div className="relative">
+                    <Icon size={20} />
+                    {item.badge && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[8px] font-black text-white p-0.5">
+                        {item.badge}
+                      </span>
+                    )}
+                  </div>
                   <span>{item.name}</span>
                 </Link>
               );
@@ -159,7 +193,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </nav>
 
           {isAdminOrManager && (
-            <Accordion type="single" collapsible className="w-full mt-2">
+            <Accordion className="w-full mt-2">
               <AccordionItem value="catalogos" className="border-b-0">
                 <AccordionTrigger className="px-3 py-2 text-muted-foreground hover:text-foreground hover:no-underline rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium">
                   <div className="flex items-center gap-3">
@@ -196,7 +230,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           )}
 
           {isAdmin && (
-            <Accordion type="single" collapsible className="w-full mt-1">
+            <Accordion className="w-full mt-1">
               <AccordionItem value="admin" className="border-b-0">
                 <AccordionTrigger className="px-3 py-2 text-muted-foreground hover:text-foreground hover:no-underline rounded-lg hover:bg-slate-100 transition-colors text-sm font-medium">
                   <div className="flex items-center gap-3">
@@ -255,6 +289,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
       {/* Main Content */}
       <main className="flex-1 p-4 md:p-8 overflow-auto flex flex-col">
+        <div className="max-w-7xl mx-auto flex justify-end mb-4 px-2 hidden md:flex">
+          {isAdminOrManager && (
+            <Link to="/notifications" className="relative group p-2 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-100 hover:shadow-sm">
+              <Bell className="text-slate-400 group-hover:text-primary transition-colors" size={22} />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-rose-500 text-[8px] font-black text-white animate-bounce">
+                  {unreadCount}
+                </span>
+              )}
+            </Link>
+          )}
+        </div>
         <div className="max-w-7xl mx-auto flex-1 w-full">
           {children}
         </div>

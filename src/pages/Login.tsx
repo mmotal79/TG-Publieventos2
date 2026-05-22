@@ -20,18 +20,17 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [steps, setSteps] = useState<string[]>([]);
+  const [progress, setProgress] = useState(0);
   const [showSecurityAlert, setShowSecurityAlert] = useState(false);
 
-  const addStep = (msg: string) => {
-    setSteps(prev => [...prev, `${new Date().toLocaleTimeString()} - ${msg}`]);
-    console.log(`[MONITOR] ${msg}`);
+  const updateProgress = (percentage: number) => {
+    setProgress(percentage);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setSteps([]);
+    setProgress(0);
     
     if (!email) {
       setError('Por favor ingrese su correo electrónico.');
@@ -42,43 +41,37 @@ const Login: React.FC = () => {
     setIsLoading(true);
     
     try {
-      addStep(`INICIO: Consultando cuenta ${cleanEmail}`);
-      addStep("ENVIANDO: Petición a /api/users/email/...");
+      updateProgress(10); // Inicio
       
       const res = await fetch(`/api/users/email/${cleanEmail}`);
-      addStep(`RECIBIDO: Estatus HTTP ${res.status}`);
+      updateProgress(40); // Petición enviada
       
       if (res.ok) {
         const contentType = res.headers.get("content-type");
         const responseText = await res.text();
+        updateProgress(60); // Respuesta recibida
         
-        // 1. VALIDACIÓN TÉCNICA DEL SERVIDOR: ¿Estamos recibiendo datos o la web principal?
+        // 1. VALIDACIÓN TÉCNICA
         if (!contentType || !contentType.includes("application/json") || responseText.toLowerCase().startsWith('<!doctype html')) {
-          addStep("!! ERROR DE INFRAESTRUCTURA: El servidor devolvió HTML en una ruta de datos.");
-          throw new Error("ERROR_CONFIGURACION_SERVIDOR: El servidor en Render está mal configurado y devolvió el index.html en lugar de JSON. Detener proceso.");
+          throw new Error("ERROR_CONFIGURACION_SERVIDOR");
         }
 
         let data;
         try {
-          addStep("PROCESANDO: Parseando respuesta JSON...");
           data = JSON.parse(responseText);
-          addStep("ÉXITO: Perfil de usuario cargado.");
+          updateProgress(80); // Datos procesados
         } catch (jsonErr) {
-          addStep("!! ERROR DE SERIALIZACIÓN: Los datos no son un JSON válido.");
-          throw new Error("ERROR_DATOS_CORRUPTOS: La respuesta del servidor no tiene un formato válido para procesar el acceso.");
+          throw new Error("ERROR_DATOS_CORRUPTOS");
         }
 
         if (data.estado === 'Activo') {
-          addStep(`VALIDADO: Usuario '${data.nombre}' está activo.`);
-          addStep("GOOGLE AUTH: Abriendo ventana emergente de identidad...");
           try {
             await loginWithGoogle(cleanEmail);
-            addStep("AUTENTICADO: Identidad verificada. Preparando entrada...");
+            updateProgress(100); // Finalizado
             navigate('/');
           } catch (loginErr: any) {
-            addStep(`!! FALLA GOOGLE: ${loginErr.code || loginErr.message}`);
             if (loginErr.code === 'auth/popup-blocked') {
-              setError('⚠️ VENTANA BLOQUEADA: Tu navegador bloqueó la ventana de autenticación de Google. Por favor, habilite las ventanas emergentes en la configuración de su navegador para este sitio e intente de nuevo.');
+              setError('⚠️ VENTANA BLOQUEADA: Tu navegador bloqueó la ventana de autenticación de Google. Por favor, habilite las ventanas emergentes.');
             } else if (loginErr.code === 'auth/popup-closed-by-user') {
               setError('El inicio de sesión fue cancelado al cerrar la ventana de Google.');
             } else {
@@ -86,56 +79,42 @@ const Login: React.FC = () => {
             }
           }
         } else {
-          addStep(`!! BLOQUEADO: Estado de cuenta: ${data.estado}`);
           setError(`Acceso restringido: Su cuenta está '${data.estado}'. Contacte a Soporte.`);
         }
       } else {
-        addStep(`!! FALLA API: Estatus ${res.status}`);
-        const errorText = await res.text();
-        
-        if (errorText.toLowerCase().includes('<!doctype html')) {
-          setError('❌ ERROR DE ENRUTAMIENTO: El servidor no detectó la API y devolvió la página web principal. Verifique la configuración del backend.');
-        } else {
-          const detectDevice = () => {
-            const ua = navigator.userAgent;
-            if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) return "tablet";
-            if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) return "mobile";
-            return "desktop";
-          };
+        const detectDevice = () => {
+          const ua = navigator.userAgent;
+          if (/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i.test(ua)) return "tablet";
+          if (/Mobile|Android|iP(hone|od)|IEMobile|BlackBerry|Kindle|Silk-Accelerated|(hpw|web)OS|Opera M(obi|ini)/.test(ua)) return "mobile";
+          return "desktop";
+        };
 
-          const logSecurityAlert = async () => {
-            try {
-              const forensicData = {
-                email: email,
-                userAgent: navigator.userAgent,
-                deviceType: detectDevice(),
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                resolution: `${window.screen.width}x${window.screen.height}`,
-                language: navigator.language,
-                attemptDate: new Date().toISOString()
-              };
-              await fetch('/api/security', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(forensicData)
-              });
-            } catch (e) {
-              console.error("Failed to log security event:", e);
-            }
-          };
+        const logSecurityAlert = async () => {
+          try {
+            const forensicData = {
+              email: email,
+              userAgent: navigator.userAgent,
+              deviceType: detectDevice(),
+              timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              resolution: `${window.screen.width}x${window.screen.height}`,
+              language: navigator.language,
+              attemptDate: new Date().toISOString()
+            };
+            await fetch('/api/security', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(forensicData)
+            });
+          } catch (e) {}
+        };
 
-          logSecurityAlert();
-          setError('El correo institucional no está registrado en el sistema de Publieventos.');
-          setShowSecurityAlert(true);
-        }
+        logSecurityAlert();
+        setError('El correo institucional no está registrado en el sistema.');
+        setShowSecurityAlert(true);
       }
     } catch (err: any) {
-      addStep(`!! INTERRUPCIÓN CRÍTICA: ${err.message}`);
-      
       if (err.message.includes('ERROR_CONFIGURACION_SERVIDOR') || err.message.includes('Unexpected token') || err.message.includes('<!doctype')) {
-        setError('❌ FALLA DE SISTEMA: El servidor devolvió HTML en una ruta de datos. Esto indica que el proceso en Render no está ruteando las peticiones a la API correctamente.');
-      } else if (err.message.includes('POPUP_BLOQUEADO')) {
-        setError(err.message);
+        setError('❌ FALLA DE SISTEMA: El servidor no está ruteando correctamente.');
       } else {
         setError(`Error crítico: ${err.message || 'El servicio no responde'}`);
       }
@@ -168,16 +147,18 @@ const Login: React.FC = () => {
                 id="email" 
                 type="email" 
                 placeholder="ejemplo@gmail.com" 
-                className="h-12 border-slate-200 focus:border-primary transition-all"
+                className="h-12 border-slate-200 focus:border-primary transition-all text-base md:text-sm"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required 
                 disabled={isLoading}
+                autoComplete="email"
+                inputMode="email"
               />
             </div>
             
             {error && (
-              <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-lg text-sm font-medium">
+              <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-lg text-sm font-medium animate-in fade-in slide-in-from-top-1">
                 <div className="flex items-start">
                   <span className="mr-2">⚠️</span>
                   <span>{error}</span>
@@ -185,17 +166,18 @@ const Login: React.FC = () => {
               </div>
             )}
 
-            {steps.length > 0 && (
-              <div className="p-3 bg-slate-900 text-emerald-400 rounded-lg text-[10px] font-mono shadow-inner border border-slate-800 overflow-hidden">
-                <div className="mb-2 border-b border-slate-700 pb-1 flex justify-between">
-                  <span>SYSTEM_MONITOR</span>
-                  <span className="animate-pulse">● LIVE</span>
+            {isLoading && (
+              <div className="space-y-2 py-2">
+                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-primary">
+                  <span>Validando acceso...</span>
+                  <span>{progress}%</span>
                 </div>
-                {steps.map((step, idx) => (
-                  <div key={idx} className={`${step.includes('!!') ? 'text-red-400' : ''}`}>
-                    {">"} {step}
-                  </div>
-                ))}
+                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-primary transition-all duration-500 ease-out shadow-[0_0_10px_rgba(var(--primary),0.5)]"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
               </div>
             )}
 
