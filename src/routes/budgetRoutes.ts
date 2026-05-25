@@ -5,14 +5,26 @@
 
 import { Router } from "express";
 import mongoose from "mongoose";
-import { BudgetModel } from "../models/Budget.model.js";
+import { BudgetModel, BudgetVendedorModel } from "../models/Budget.model.js";
 
 const router = Router();
 
 // List all budgets
 router.get("/", async (req, res) => {
   try {
-    const budgets = await BudgetModel.find()
+    const { creatorEmail, role } = req.query;
+    let filter: any = {};
+    if (role === '2' && creatorEmail) {
+      filter.$or = [
+        { creatorEmail },
+        { creatorEmail: { $exists: false } },
+        { creatorEmail: null },
+        { creatorEmail: '' }
+      ];
+    } else if (role === '1') {
+      filter.creatorRole = { $ne: 0 };
+    }
+    const budgets = await BudgetModel.find(filter)
       .populate('clientId')
       .populate('items.modeloId')
       .populate('items.telaId')
@@ -192,9 +204,50 @@ router.delete("/:id/payments/:paymentId", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     await BudgetModel.findByIdAndDelete(req.params.id);
+    // Also delete any associated mirror budget
+    await BudgetVendedorModel.deleteMany({ id_presupuesto_sistema: req.params.id });
     res.json({ message: "Presupuesto eliminado" });
   } catch (error) {
     res.status(500).json({ error: "Error al eliminar presupuesto" });
+  }
+});
+
+// Save or update vendedor budget mirror
+router.post("/vendedor", async (req, res) => {
+  try {
+    const { id_presupuesto_sistema, items_modificados, subtotal_vendedor, monto_total_vendedor, creado_por } = req.body;
+    
+    let existing = await BudgetVendedorModel.findOne({ id_presupuesto_sistema });
+    if (existing) {
+      existing.items_modificados = items_modificados;
+      existing.subtotal_vendedor = subtotal_vendedor;
+      existing.monto_total_vendedor = monto_total_vendedor;
+      existing.creado_por = creado_por;
+      await existing.save();
+      return res.status(200).json(existing);
+    } else {
+      const newMirror = new BudgetVendedorModel({
+        id_presupuesto_sistema,
+        items_modificados,
+        subtotal_vendedor,
+        monto_total_vendedor,
+        creado_por
+      });
+      await newMirror.save();
+      return res.status(201).json(newMirror);
+    }
+  } catch (error: any) {
+    res.status(400).json({ error: "Error al registrar presupuesto de vendedor", message: error.message });
+  }
+});
+
+// Get seller mirror by budget ID
+router.get("/vendedor/:id_sistema", async (req, res) => {
+  try {
+    const mirror = await BudgetVendedorModel.findOne({ id_presupuesto_sistema: req.params.id_sistema });
+    res.json(mirror || null);
+  } catch (error: any) {
+    res.status(500).json({ error: "Error al buscar espejo de vendedor", message: error.message });
   }
 });
 

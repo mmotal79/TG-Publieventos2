@@ -12,8 +12,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Label } from '@/components/ui/label';
 import { Search, UserPlus, Pencil, Trash2, Loader2 } from 'lucide-react';
 import { Client } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Clients: React.FC = () => {
+  const { profile } = useAuth();
+  const isSales = profile?.role === 2;
+  const userEmail = profile?.email;
+
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,7 +37,11 @@ const Clients: React.FC = () => {
   const fetchClients = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/clients');
+      const emailQuery = userEmail ? `creatorEmail=${encodeURIComponent(userEmail)}` : '';
+      const roleQuery = profile?.role !== undefined ? `role=${profile.role}` : '';
+      const queryParams = [emailQuery, roleQuery].filter(Boolean).join('&');
+      const url = queryParams ? `/api/clients?${queryParams}` : '/api/clients';
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setClients(data);
@@ -45,8 +54,10 @@ const Clients: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchClients();
-  }, []);
+    if (profile) {
+      fetchClients();
+    }
+  }, [profile]);
 
   const handleOpenModal = (client?: Client) => {
     if (client) {
@@ -72,10 +83,16 @@ const Clients: React.FC = () => {
     try {
       const method = editingClient ? 'PUT' : 'POST';
       const url = editingClient ? `/api/clients/${editingClient._id}` : '/api/clients';
+      
+      const payload = {
+        ...formData,
+        ...(!editingClient ? { creado_por: userEmail || 'unknown' } : {})
+      };
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         setIsModalOpen(false);
@@ -101,11 +118,25 @@ const Clients: React.FC = () => {
     }
   };
 
-  const filteredClients = clients.filter(c => 
-    c.razonSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.celular.includes(searchTerm) ||
-    c.rif.includes(searchTerm)
-  );
+  const filteredClients = clients
+    .filter(c => {
+      const currentRole = profile?.role !== undefined ? Number(profile.role) : 2;
+      const uEmail = (profile?.email || '').trim().toLowerCase();
+      const cCreator = (c.creado_por || '').trim().toLowerCase();
+      
+      if (currentRole === 2) {
+        return cCreator === uEmail || cCreator === '';
+      }
+      if (currentRole === 1) {
+        return c.creatorRole !== 0;
+      }
+      return true; // Admin (0) and others see everything
+    })
+    .filter(c => 
+      c.razonSocial.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.celular.includes(searchTerm) ||
+      c.rif.includes(searchTerm)
+    );
 
   return (
     <div className="space-y-6 md:space-y-8">

@@ -27,6 +27,7 @@ export enum UserRole {
 }
 
 export interface UserProfile {
+  _id?: string; // MongoDB user ID
   uid: string;
   email: string;
   displayName: string;
@@ -75,6 +76,9 @@ export interface Client {
   rif: string;
   email: string;
   direccion?: string;
+  creado_por?: string; // Vendedor creator email
+  creatorId?: string;
+  creatorRole?: number;
   createdAt?: string;
 }
 
@@ -128,6 +132,25 @@ export interface Budget {
   tallasValidadasConMuestra?: boolean;
   frozenVolumeData?: any;
   tasaBCV?: number;
+  creatorEmail?: string;
+  creatorRole?: number;
+  creatorId?: string;
+  createdAt?: string;
+}
+
+export interface IVendedorItem {
+  itemId: string; // ID of the item in the base budget's items array
+  precioUnitario: number;
+  totalItem: number;
+}
+
+export interface IPresupuestoVendedor {
+  _id?: string;
+  id_presupuesto_sistema: string;
+  items_modificados: IVendedorItem[];
+  subtotal_vendedor: number;
+  monto_total_vendedor: number;
+  creado_por: string;
   createdAt?: string;
 }
 

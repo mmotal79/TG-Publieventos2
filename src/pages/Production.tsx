@@ -14,8 +14,13 @@ import { useToast } from '@/components/ui/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BudgetStatusModal from '@/components/BudgetStatusModal';
 import ProductionUnitsModal from '@/components/ProductionUnitsModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Production: React.FC = () => {
+  const { profile } = useAuth();
+  const isSales = profile?.role === 2;
+  const userEmail = profile?.email;
+
   const [budgets, setBudgets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusEditingBudget, setStatusEditingBudget] = useState<any>(null);
@@ -24,9 +29,11 @@ const Production: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchPhases();
-    fetchBudgets();
-  }, []);
+    if (profile) {
+      fetchPhases();
+      fetchBudgets();
+    }
+  }, [profile]);
 
   const fetchPhases = async () => {
     try {
@@ -43,7 +50,8 @@ const Production: React.FC = () => {
   const fetchBudgets = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/budgets');
+      const emailQuery = userEmail ? `?creatorEmail=${encodeURIComponent(userEmail)}&role=${profile?.role}` : '';
+      const res = await fetch(`/api/budgets${emailQuery}`);
       if (res.ok) {
         const data = await res.json();
         
@@ -317,9 +325,11 @@ const Production: React.FC = () => {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                      <Button size="sm" variant="ghost" className="gap-1 text-xs h-8 text-slate-600 hover:text-slate-900" onClick={() => setStatusEditingBudget(job)}>
-                        <Settings size={14} className="sm:mr-1" /> <span className="hidden sm:inline-block">Estado</span>
-                      </Button>
+                      {!isSales && (
+                        <Button size="sm" variant="ghost" className="gap-1 text-xs h-8 text-slate-600 hover:text-slate-900" onClick={() => setStatusEditingBudget(job)}>
+                          <Settings size={14} className="sm:mr-1" /> <span className="hidden sm:inline-block">Estado</span>
+                        </Button>
+                      )}
                   </TableCell>
                 </TableRow>
               )})}
@@ -452,6 +462,7 @@ const Production: React.FC = () => {
         isOpen={!!unitsEditingBudget}
         onClose={() => setUnitsEditingBudget(null)}
         budget={unitsEditingBudget}
+        readOnly={isSales}
         onUpdate={() => {
           setUnitsEditingBudget(null);
           fetchBudgets();

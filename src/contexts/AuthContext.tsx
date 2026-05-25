@@ -57,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             if (isMounted) {
               setProfile({
+                _id: data._id,
                 uid: user.uid,
                 email: data.email,
                 displayName: data.nombre,

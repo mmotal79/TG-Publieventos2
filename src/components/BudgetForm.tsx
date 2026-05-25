@@ -44,10 +44,11 @@ type BudgetFormValues = z.infer<typeof budgetSchema>;
 
 interface BudgetFormProps {
   initialData?: any;
+  isMirrorEdit?: boolean;
   onCancel?: () => void;
 }
 
-const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
+const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, isMirrorEdit = false, onCancel }) => {
   const { profile } = useAuth();
   const [isMobile, setIsMobile] = useState(false);
 
@@ -67,6 +68,54 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  // Vendedor dynamic calculator states
+  const [vendorOverriddenPrices, setVendorOverriddenPrices] = useState<Record<number, number>>({});
+  const [isPriceOverridden, setIsPriceOverridden] = useState<Record<number, boolean>>({});
+  const [hasVendorMirror, setHasVendorMirror] = useState(false);
+
+  const isEditingExistingBudget = !!initialData?._id;
+  const isMirrorEditActive = !!initialData?._id && isMirrorEdit;
+
+  const showVendorPriceModifier = useMemo(() => {
+    if (!initialData?._id) return false;
+    if (!profile) return false;
+    const roleNum = profile.role !== undefined ? Number(profile.role) : 2;
+    // Admins (0) and Managers/Gerentes (1) can always modify prices
+    if (roleNum === 0 || roleNum === 1) return true;
+    // Sellers/vendedores (2) can modify prices if they are the creator/owner of the budget
+    if (roleNum === 2) {
+      const bCreator = (initialData.creatorEmail || '').trim().toLowerCase();
+      const pEmail = (profile.email || '').trim().toLowerCase();
+      return bCreator === pEmail || bCreator === '';
+    }
+    return false;
+  }, [initialData, profile]);
+
+  useEffect(() => {
+    if (initialData?._id) {
+      fetch(`/api/budgets/vendedor/${initialData._id}`)
+        .then(res => res.json())
+        .then(mirror => {
+          if (mirror && mirror.items_modificados) {
+            setHasVendorMirror(true);
+            const prices: Record<number, number> = {};
+            const overrides: Record<number, boolean> = {};
+            initialData.items.forEach((item: any, idx: number) => {
+              const baseId = item._id || item.id;
+              const match = mirror.items_modificados.find((m: any) => m.itemId === baseId);
+              if (match) {
+                prices[idx] = match.precioUnitario;
+                overrides[idx] = true;
+              }
+            });
+            setVendorOverriddenPrices(prices);
+            setIsPriceOverridden(overrides);
+          }
+        })
+        .catch(err => console.error("Error loading vendor budget mirror:", err));
+    }
+  }, [initialData]);
 
   const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm<any>({
     resolver: zodResolver(budgetSchema),
@@ -228,27 +277,59 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
     };
   }, [watchedItems, selectedEstructura, watchedUrgencia, modelos, telas, cortes]);
 
+  const finalItemCalculations = useMemo(() => {
+    return itemCalculations.map((calc, index) => {
+      if (showVendorPriceModifier && isPriceOverridden[index]) {
+        const customPrice = vendorOverriddenPrices[index] !== undefined ? vendorOverriddenPrices[index] : calc.unit;
+        const cantidad = watchedItems[index]?.cantidad || 1;
+        return {
+          unit: customPrice,
+          total: customPrice * cantidad,
+          baseUnit: calc.baseUnit,
+          isOverridden: true
+        };
+      }
+      return {
+        ...calc,
+        isOverridden: false
+      };
+    });
+  }, [itemCalculations, vendorOverriddenPrices, isPriceOverridden, watchedItems, showVendorPriceModifier]);
+
+  const hasFloorError = useMemo(() => {
+    if (!showVendorPriceModifier) return false;
+    return finalItemCalculations.some((calc, idx) => {
+      if (isPriceOverridden[idx]) {
+        const systemPrice = itemCalculations[idx]?.unit || 0;
+        return calc.unit < systemPrice;
+      }
+      return false;
+    });
+  }, [finalItemCalculations, itemCalculations, isPriceOverridden, showVendorPriceModifier]);
+
   const grandTotal = useMemo(() => 
-    itemCalculations.reduce((acc, curr) => acc + curr.total, 0),
-    [itemCalculations]
+    finalItemCalculations.reduce((acc, curr) => acc + curr.total, 0),
+    [finalItemCalculations]
   );
 
   const onSubmit = async (data: any) => {
     setIsLoading(true);
     // Inject calculated values
+    const shouldOmitVolumeDiscount = profile?.role === 2 || Object.values(isPriceOverridden).some(v => v);
     const finalBudget = {
       ...data,
       creatorEmail: profile?.email || 'unknown',
       creatorRole: profile?.role ?? 2,
+      creatorId: profile?._id || 'unknown',
       items: data.items.map((item: any, idx: number) => ({
         ...item,
-        precioUnitario: itemCalculations[idx].unit,
-        totalItem: itemCalculations[idx].total
+        precioUnitario: finalItemCalculations[idx].unit,
+        totalItem: finalItemCalculations[idx].total
       })),
       totalCost: grandTotal,
-      volumeDiscountAmount: volumeDiscountInfo.amount,
-      volumeDiscountPercent: volumeDiscountInfo.percent,
-      status: 'pending',
+      volumeDiscountAmount: shouldOmitVolumeDiscount ? 0 : volumeDiscountInfo.amount,
+      volumeDiscountPercent: shouldOmitVolumeDiscount ? 0 : volumeDiscountInfo.percent,
+      status: 'pendiente', // Normalize status to match standard options
       tasaBCV: exchangeRate,
       fecha: new Date().toISOString()
     };
@@ -264,6 +345,29 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
       });
       
       if (res.ok) {
+        const savedBudget = await res.json();
+        
+        // Save vendor budget override mirror
+        if (showVendorPriceModifier) {
+          const itemsModificados = finalItemCalculations.map((calc, idx) => ({
+            itemId: savedBudget.items[idx]?._id || savedBudget.items[idx]?.id || `item_${idx}`,
+            precioUnitario: calc.unit,
+            totalItem: calc.total
+          }));
+
+          await fetch('/api/budgets/vendedor', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id_presupuesto_sistema: savedBudget._id,
+              items_modificados: itemsModificados,
+              subtotal_vendedor: grandTotal,
+              monto_total_vendedor: grandTotal,
+              creado_por: profile?.email || 'unknown'
+            })
+          });
+        }
+
         alert(initialData?._id ? "Presupuesto actualizado exitosamente" : "Presupuesto guardado exitosamente");
         if (onCancel) onCancel();
         else window.location.reload();
@@ -287,6 +391,23 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {isMirrorEditActive && (
+        <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-l-4 border-amber-500 p-5 rounded-2xl text-amber-900 shadow-sm border border-amber-200/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className="text-2xl animate-bounce">⚠️</span>
+            <div>
+              <p className="font-black uppercase tracking-wider text-amber-900 text-xs">Modo de Edición Espejo Activo</p>
+              <p className="text-amber-800 text-xs font-semibold mt-1">
+                La información de identidad del cliente y los parámetros estructurales del pedido (<span className="underline font-bold">Tipo de Tela, Diseño, Modelo, Corte y Cantidad</span>) se encuentran estrictamente bloqueados. Solo tiene autorización para modificar el <span className="font-extrabold underline text-amber-950">Precio Unitario</span>.
+              </p>
+            </div>
+          </div>
+          <span className="text-[10px] bg-amber-200 text-amber-950 px-3.5 py-2 rounded-full font-black uppercase tracking-wider whitespace-nowrap self-start md:self-auto shadow-sm select-none border border-amber-300">
+            RBAC VENDEDOR PROPIETARIO
+          </span>
+        </div>
+      )}
+
       {/* Top Section: General Info & Totalizer */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2">
@@ -308,6 +429,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                       <Select 
                         value={field.value || ""} 
                         onValueChange={field.onChange}
+                        disabled={isMirrorEditActive}
                       >
                         <SelectTrigger id="budgets-client-select" className="flex-1">
                           <SelectValue placeholder="Seleccionar cliente...">
@@ -322,7 +444,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                       </Select>
                     )}
                   />
-                  <Button type="button" size="icon" variant="outline" onClick={() => setIsClientModalOpen(true)}>
+                  <Button type="button" size="icon" variant="outline" onClick={() => setIsClientModalOpen(true)} disabled={isMirrorEditActive}>
                     <UserPlus size={18} />
                   </Button>
                 </div>
@@ -345,6 +467,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                     <Select 
                       value={field.value || ""} 
                       onValueChange={field.onChange}
+                      disabled={isMirrorEditActive}
                     >
                       <SelectTrigger id="budgets-structure-select">
                         <SelectValue placeholder="Seleccione lógica de cálculo...">
@@ -371,12 +494,12 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Descripción del Proyecto</Label>
-                <Input {...register("description")} placeholder="Ej: Uniformes Corporativos para Evento Anual" />
+                <Input {...register("description")} disabled={isMirrorEditActive} placeholder="Ej: Uniformes Corporativos para Evento Anual" />
                 {errors.description && <p className="text-xs text-destructive">{errors.description.message?.toString()}</p>}
               </div>
               <div className="space-y-2">
                 <Label>Notas de la Solicitud (Comentarios del cliente)</Label>
-                <Input {...register("observations")} placeholder="Ej: Reclamo por entrega anterior, requiere bordado extra..." />
+                <Input {...register("observations")} disabled={isMirrorEditActive} placeholder="Ej: Reclamo por entrega anterior, requiere bordado extra..." />
               </div>
             </div>
           </CardContent>
@@ -414,6 +537,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                       <Select 
                         value={field.value || ""} 
                         onValueChange={field.onChange}
+                        disabled={isMirrorEditActive}
                       >
                         <SelectTrigger className="bg-slate-800 border-slate-700 text-white h-9 transition-all hover:bg-slate-700">
                           <SelectValue>
@@ -467,10 +591,15 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                   >
                     Cancelar
                   </Button>
-                  <Button type="submit" className="flex-1 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-white font-bold">
+                  <Button type="submit" disabled={hasFloorError || isLoading} className="flex-1 shadow-lg shadow-primary/20 bg-primary hover:bg-primary/90 text-white font-bold">
                     {initialData?._id ? 'Actualizar' : 'Guardar'}
                   </Button>
                 </div>
+                {hasFloorError && (
+                  <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wider text-center w-full mt-1">
+                    Error: Precio por debajo del costo base
+                  </p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -484,15 +613,17 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
             <CardTitle className="text-lg">Detalle del Pedido</CardTitle>
             <p className="text-xs text-muted-foreground">Especifique modelos, materiales y cantidades.</p>
           </div>
-          <Button 
-            type="button" 
-            variant="outline" 
-            size="sm" 
-            className="gap-2 border-primary text-primary hover:bg-primary/10 transition-all font-bold"
-            onClick={() => append({ id: crypto.randomUUID(), modeloId: '', telaId: '', corteId: '', personalizacion: 0, acabados: 0, cantidad: 1 })}
-          >
-            <Plus size={16} /> <span className="hidden sm:inline">Nuevo artículo</span><span className="sm:hidden">Añadir</span>
-          </Button>
+          {!isMirrorEditActive && (
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              className="gap-2 border-primary text-primary hover:bg-primary/10 transition-all font-bold"
+              onClick={() => append({ id: crypto.randomUUID(), modeloId: '', telaId: '', corteId: '', personalizacion: 0, acabados: 0, cantidad: 1 })}
+            >
+              <Plus size={16} /> <span className="hidden sm:inline">Nuevo artículo</span><span className="sm:hidden">Añadir</span>
+            </Button>
+          )}
         </CardHeader>
         <CardContent className="p-0 sm:p-6">
           {!isMobile ? (
@@ -517,7 +648,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                         control={control}
                         name={`items.${index}.modeloId`}
                         render={({ field }) => (
-                          <Select value={field.value || ""} onValueChange={field.onChange}>
+                          <Select value={field.value || ""} onValueChange={field.onChange} disabled={isMirrorEditActive}>
                             <SelectTrigger className="h-8 text-xs border-transparent hover:border-slate-200 transition-all">
                               <SelectValue placeholder="Modelo...">
                                 {modelos.find(m => m._id === field.value)?.tipoPrenda}
@@ -537,7 +668,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                         control={control}
                         name={`items.${index}.telaId`}
                         render={({ field }) => (
-                          <Select value={field.value || ""} onValueChange={field.onChange}>
+                          <Select value={field.value || ""} onValueChange={field.onChange} disabled={isMirrorEditActive}>
                             <SelectTrigger className="h-8 text-xs border-transparent hover:border-slate-200 transition-all">
                               <SelectValue placeholder="Tela...">
                                 {telas.find(t => t._id === field.value)?.nombre}
@@ -557,7 +688,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                         control={control}
                         name={`items.${index}.corteId`}
                         render={({ field }) => (
-                          <Select value={field.value || ""} onValueChange={field.onChange}>
+                          <Select value={field.value || ""} onValueChange={field.onChange} disabled={isMirrorEditActive}>
                             <SelectTrigger className="h-8 text-xs border-transparent hover:border-slate-200 transition-all">
                               <SelectValue placeholder="Corte...">
                                 {cortes.find(c => c._id === field.value)?.nombre}
@@ -579,10 +710,11 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                           variant="outline" 
                           size="icon" 
                           className="h-8 w-8 text-slate-500 shrink-0"
+                          disabled={isMirrorEditActive}
                           onClick={() => {
                             const currentVal = watch(`items.${index}.cantidad`) || 1;
                             if (currentVal > 1) {
-                              setValue(`items.${index}.cantidad`, currentVal - 1);
+                               setValue(`items.${index}.cantidad`, currentVal - 1);
                             }
                           }}
                         >
@@ -592,6 +724,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                           type="number" 
                           min="1"
                           step="1"
+                          disabled={isMirrorEditActive}
                           className="h-8 text-xs w-14 text-center font-bold [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
                           {...register(`items.${index}.cantidad`, { 
                             valueAsNumber: true,
@@ -620,6 +753,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                           variant="outline" 
                           size="icon" 
                           className="h-8 w-8 text-slate-500 shrink-0"
+                          disabled={isMirrorEditActive}
                           onClick={() => {
                             const currentVal = watch(`items.${index}.cantidad`) || 1;
                             setValue(`items.${index}.cantidad`, currentVal + 1);
@@ -629,18 +763,75 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                         </Button>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-right font-mono text-xs text-muted-foreground">
-                      {formatCurrency(itemCalculations[index]?.unit || 0)}
+                    <td className="px-4 py-3 text-right">
+                      {showVendorPriceModifier ? (
+                        <div className="flex flex-col items-end gap-1">
+                          {isPriceOverridden[index] ? (
+                            <div className="flex flex-col items-end gap-1 select-none">
+                              <Input 
+                                type="number"
+                                step="0.01"
+                                className={`w-28 h-8 text-right font-bold text-xs ${
+                                  (vendorOverriddenPrices[index] !== undefined ? vendorOverriddenPrices[index] : (itemCalculations[index]?.unit || 0)) < (itemCalculations[index]?.unit || 0)
+                                    ? "border-rose-500 focus-visible:ring-rose-500 bg-rose-50 text-rose-900 font-bold"
+                                    : "border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-50 text-emerald-900 font-bold"
+                                }`}
+                                value={vendorOverriddenPrices[index] !== undefined ? vendorOverriddenPrices[index] : (itemCalculations[index]?.unit || 0)}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value) || 0;
+                                  setVendorOverriddenPrices(prev => ({ ...prev, [index]: val }));
+                                }}
+                              />
+                              {(vendorOverriddenPrices[index] !== undefined ? vendorOverriddenPrices[index] : (itemCalculations[index]?.unit || 0)) < (itemCalculations[index]?.unit || 0) && (
+                                <span className="text-[9px] font-bold uppercase text-rose-600">Error: Menor al costo base ({formatCurrency(itemCalculations[index]?.unit || 0)})</span>
+                              )}
+                              <Button
+                                type="button"
+                                variant="link"
+                                className="h-4 p-0 text-[10px] text-blue-600 font-bold hover:text-blue-800"
+                                onClick={() => {
+                                  setIsPriceOverridden(prev => ({ ...prev, [index]: false }));
+                                  setVendorOverriddenPrices(prev => {
+                                    const next = { ...prev };
+                                    delete next[index];
+                                    return next;
+                                  });
+                                }}
+                              >
+                                Restablecer
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-end gap-1">
+                              <span className="font-mono text-xs text-muted-foreground">{formatCurrency(itemCalculations[index]?.unit || 0)}</span>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-6 px-2 text-[9px] font-black uppercase text-blue-600 border-blue-200 hover:bg-blue-50 whitespace-nowrap"
+                                onClick={() => {
+                                  setIsPriceOverridden(prev => ({ ...prev, [index]: true }));
+                                  setVendorOverriddenPrices(prev => ({ ...prev, [index]: itemCalculations[index]?.unit || 0 }));
+                                }}
+                              >
+                                Modificar Precio Vendedor
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="font-mono text-xs text-muted-foreground">{formatCurrency(itemCalculations[index]?.unit || 0)}</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right font-bold text-primary">
-                      {formatCurrency(itemCalculations[index]?.total || 0)}
+                      {formatCurrency(finalItemCalculations[index]?.total || 0)}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <Button 
                         type="button" variant="ghost" size="icon" 
                         className="h-6 w-6 text-destructive opacity-50 hover:opacity-100"
                         onClick={() => remove(index)}
-                        disabled={fields.length === 1}
+                        disabled={isMirrorEditActive || fields.length === 1}
                       >
                         <Trash2 size={14} />
                       </Button>
@@ -665,8 +856,9 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                         size="sm" 
                         className="h-7 px-2 text-rose-500 hover:bg-rose-50 font-bold text-[10px]"
                         onClick={() => remove(index)}
+                        disabled={isMirrorEditActive}
                       >
-                        <Trash2 size={14} className="mr-1" /> ELIMINAR
+                        <Trash2 size={14} className="mr-1" /> {isMirrorEditActive ? 'BLOQUEADO' : 'ELIMINAR'}
                       </Button>
                     )}
                   </div>
@@ -678,7 +870,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                           control={control}
                           name={`items.${index}.modeloId`}
                           render={({ field }) => (
-                            <Select value={field.value || ""} onValueChange={field.onChange}>
+                            <Select value={field.value || ""} onValueChange={field.onChange} disabled={isMirrorEditActive}>
                               <SelectTrigger className="h-11 border-2 border-slate-50 rounded-xl font-bold uppercase italic text-sm">
                                 <SelectValue placeholder="Modelo...">
                                   {modelos.find(m => m._id === field.value)?.tipoPrenda}
@@ -700,7 +892,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                           control={control}
                           name={`items.${index}.telaId`}
                           render={({ field }) => (
-                            <Select value={field.value || ""} onValueChange={field.onChange}>
+                            <Select value={field.value || ""} onValueChange={field.onChange} disabled={isMirrorEditActive}>
                               <SelectTrigger className="h-11 border-2 border-slate-50 rounded-xl font-bold uppercase italic text-sm">
                                 <SelectValue placeholder="Tela...">
                                   {telas.find(t => t._id === field.value)?.nombre}
@@ -721,7 +913,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                           control={control}
                           name={`items.${index}.corteId`}
                           render={({ field }) => (
-                            <Select value={field.value || ""} onValueChange={field.onChange}>
+                            <Select value={field.value || ""} onValueChange={field.onChange} disabled={isMirrorEditActive}>
                               <SelectTrigger className="h-11 border-2 border-slate-50 rounded-xl font-bold uppercase italic text-sm">
                                 <SelectValue placeholder="Corte...">
                                   {cortes.find(c => c._id === field.value)?.nombre}
@@ -747,6 +939,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                             variant="outline" 
                             size="icon" 
                             className="h-10 w-9 border-2 border-slate-50 rounded-l-xl rounded-r-none shrink-0"
+                            disabled={isMirrorEditActive}
                             onClick={() => {
                               const currentVal = watch(`items.${index}.cantidad`) || 1;
                               if (currentVal > 1) {
@@ -760,6 +953,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                             type="number" 
                             min="1"
                             step="1"
+                            disabled={isMirrorEditActive}
                             className="h-10 flex-1 min-w-[40px] font-black text-center border-y-2 border-x-0 border-slate-50 rounded-none text-base p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
                             {...register(`items.${index}.cantidad`, { 
                               valueAsNumber: true,
@@ -788,6 +982,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                             variant="outline" 
                             size="icon" 
                             className="h-10 w-9 border-2 border-slate-50 rounded-r-xl rounded-l-none shrink-0"
+                            disabled={isMirrorEditActive}
                             onClick={() => {
                               const currentVal = watch(`items.${index}.cantidad`) || 1;
                               setValue(`items.${index}.cantidad`, currentVal + 1);
@@ -802,6 +997,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                         <Input 
                           type="number" 
                           step="0.01"
+                          disabled={isMirrorEditActive}
                           className="h-11 font-black text-center border-2 border-slate-50 rounded-xl" 
                           {...register(`items.${index}.personalizacion`, { valueAsNumber: true })} 
                         />
@@ -811,24 +1007,81 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, onCancel }) => {
                         <Input 
                           type="number" 
                           step="0.01"
+                          disabled={isMirrorEditActive}
                           className="h-11 font-black text-center border-2 border-slate-50 rounded-xl" 
                           {...register(`items.${index}.acabados`, { valueAsNumber: true })} 
                         />
                       </div>
                     </div>
 
-                    <div className="mt-4 bg-slate-900 rounded-2xl p-4 flex justify-between items-center shadow-lg">
-                      <div className="text-left">
-                        <p className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1 italic">Precio Unitario</p>
-                        <p className="text-sm font-black text-white/80 italic tracking-tighter">
-                          {formatCurrency(calc.unit || 0)}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1 italic">Total Item</p>
-                        <p className="text-xl font-black text-rose-500 italic tracking-tighter drop-shadow-sm">
-                          {formatCurrency(calc.total || 0)}
-                        </p>
+                    <div className="mt-4 bg-slate-900 rounded-2xl p-4 flex flex-col gap-3 shadow-lg select-none">
+                      <div className="flex justify-between items-start w-full">
+                        <div className="text-left">
+                          <p className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1 italic">Precio Unitario</p>
+                          {showVendorPriceModifier ? (
+                            isPriceOverridden[index] ? (
+                              <div className="flex flex-col gap-1">
+                                <Input 
+                                  type="number"
+                                  step="0.01"
+                                  className={`w-28 h-8 text-right font-bold text-xs bg-slate-850 text-white border-2 ${
+                                    (vendorOverriddenPrices[index] !== undefined ? vendorOverriddenPrices[index] : (calc.unit || 0)) < (calc.unit || 0)
+                                      ? "border-rose-500 focus-visible:ring-rose-500 bg-rose-950 text-rose-100"
+                                      : "border-emerald-500 focus-visible:ring-emerald-500 bg-emerald-950 text-emerald-100"
+                                  }`}
+                                  value={vendorOverriddenPrices[index] !== undefined ? vendorOverriddenPrices[index] : (calc.unit || 0)}
+                                  onChange={(e) => {
+                                    const val = parseFloat(e.target.value) || 0;
+                                    setVendorOverriddenPrices(prev => ({ ...prev, [index]: val }));
+                                  }}
+                                />
+                                {(vendorOverriddenPrices[index] !== undefined ? vendorOverriddenPrices[index] : (calc.unit || 0)) < (calc.unit || 0) && (
+                                  <span className="text-[9px] font-bold text-rose-450 uppercase">Error: Menor al costo base ({formatCurrency(calc.unit || 0)})</span>
+                                )}
+                                <Button
+                                  type="button"
+                                  className="h-4 p-0 text-[10px] text-red-400 font-bold self-start bg-transparent hover:bg-transparent"
+                                  onClick={() => {
+                                    setIsPriceOverridden(prev => ({ ...prev, [index]: false }));
+                                    setVendorOverriddenPrices(prev => {
+                                      const next = { ...prev };
+                                      delete next[index];
+                                      return next;
+                                    });
+                                  }}
+                                >
+                                  Restablecer
+                                </Button>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-black text-white/80 italic tracking-tighter">
+                                  {formatCurrency(calc.unit || 0)}
+                                </span>
+                                <Button
+                                  type="button"
+                                  className="h-5 px-1.5 text-[8px] font-black uppercase text-blue-400 bg-white/10 border border-white/20 hover:bg-white/20"
+                                  onClick={() => {
+                                    setIsPriceOverridden(prev => ({ ...prev, [index]: true }));
+                                    setVendorOverriddenPrices(prev => ({ ...prev, [index]: calc.unit || 0 }));
+                                  }}
+                                >
+                                  Modificar Precio Vendedor
+                                </Button>
+                              </div>
+                            )
+                          ) : (
+                            <p className="text-sm font-black text-white/80 italic tracking-tighter">
+                              {formatCurrency(calc.unit || 0)}
+                            </p>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1 italic">Total Item</p>
+                          <p className="text-xl font-black text-rose-500 italic tracking-tighter drop-shadow-sm">
+                            {formatCurrency(finalItemCalculations[index]?.total || 0)}
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>

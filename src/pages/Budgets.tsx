@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Pencil, Trash2, Search, Loader2, Printer, Eye, MessageSquare, Mail, Settings } from 'lucide-react';
+import { Pencil, SquarePen, Trash2, Search, Loader2, Printer, Eye, MessageSquare, Mail, Settings } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { formatCurrency } from '@/services/budgetService';
 import BudgetPreviewDialog from '@/components/BudgetPreviewDialog';
@@ -20,7 +20,7 @@ import { CircleDollarSign } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Budgets: React.FC = () => {
-  const { profile } = useAuth();
+  const { profile, isAdmin, isManager, isSales } = useAuth();
   const [budgets, setBudgets] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,6 +28,22 @@ const Budgets: React.FC = () => {
   const [statusEditingBudget, setStatusEditingBudget] = useState<any | null>(null);
   const [payEditingBudget, setPayEditingBudget] = useState<any | null>(null);
   const [config, setConfig] = useState<any>(null);
+
+  const canEditBudget = (b: any) => {
+    if (!profile) return false;
+    const roleNum = profile.role !== undefined ? Number(profile.role) : 2;
+    // Admins (0) and Managers (1) can edit any budget
+    if (roleNum === 0 || roleNum === 1 || isAdmin || isManager) {
+      return true;
+    }
+    // Sellers/vendedores (2) can only edit budgets they created
+    if (roleNum === 2 || isSales) {
+      const bCreator = (b.creatorEmail || '').trim().toLowerCase();
+      const pEmail = (profile.email || '').trim().toLowerCase();
+      return bCreator === pEmail || bCreator === '';
+    }
+    return false;
+  };
 
   useEffect(() => {
     fetchBudgets();
@@ -48,7 +64,12 @@ const Budgets: React.FC = () => {
 
   const fetchBudgets = async () => {
     try {
-      const res = await fetch('/api/budgets');
+      const emailQuery = profile?.email ? `creatorEmail=${encodeURIComponent(profile.email)}` : '';
+      const roleQuery = profile?.role !== undefined ? `role=${profile.role}` : '';
+      const queryParams = [emailQuery, roleQuery].filter(Boolean).join('&');
+      const url = queryParams ? `/api/budgets?${queryParams}` : '/api/budgets';
+
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setBudgets(data);
@@ -78,13 +99,14 @@ const Budgets: React.FC = () => {
 
   const filteredBudgets = budgets
     .filter(b => {
-      const currentRole = profile?.role ?? 2;
-      const userEmail = profile?.email;
+      const currentRole = profile?.role !== undefined ? Number(profile.role) : 2;
+      const userEmail = (profile?.email || '').trim().toLowerCase();
+      const creatorEmail = (b.creatorEmail || '').trim().toLowerCase();
       
       // RBAC Filtering rules:
-      // 1. Sellers (Role 2) see only their own budgets
+      // 1. Sellers (Role 2) see only their own budgets, or legacy unowned budgets
       if (currentRole === 2) {
-        return b.creatorEmail === userEmail;
+        return creatorEmail === userEmail || creatorEmail === '';
       }
       // 2. Managers (Role 1) see all except Admin (Role 0) budgets
       if (currentRole === 1) {
@@ -115,9 +137,17 @@ const Budgets: React.FC = () => {
   };
 
   const [editingBudget, setEditingBudget] = useState<any | null>(null);
+  const [isMirrorEdit, setIsMirrorEdit] = useState(false);
   const [activeTab, setActiveTab] = useState('list');
 
   const handleEdit = (budget: any) => {
+    setIsMirrorEdit(false);
+    setEditingBudget(budget);
+    setActiveTab('new');
+  };
+
+  const handleMirrorEdit = (budget: any) => {
+    setIsMirrorEdit(true);
     setEditingBudget(budget);
     setActiveTab('new');
   };
@@ -204,7 +234,28 @@ const Budgets: React.FC = () => {
                                 <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-400 hover:text-slate-900" onClick={() => setPreviewingBudget(b)} title="Imprimir"><Printer size={16} /></Button>
                                 <Button variant="ghost" size="icon" className="h-9 w-9 text-amber-500 hover:text-amber-700 hover:bg-amber-50" onClick={() => setStatusEditingBudget(b)} title="Cambiar Estado"><Settings size={16} /></Button>
                                 <Button variant="ghost" size="icon" className="h-9 w-9 text-emerald-500 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => setPayEditingBudget(b)} title="Registrar Pago"><CircleDollarSign size={16} /></Button>
-                                <Button variant="ghost" size="icon" className="h-9 w-9 text-primary hover:bg-primary/5" onClick={() => handleEdit(b)} title="Editar"><Pencil size={16} /></Button>
+                                {canEditBudget(b) && (
+                                  <>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="h-9 w-9 text-slate-400 hover:text-slate-900" 
+                                      onClick={() => handleEdit(b)} 
+                                      title="Editar Presupuesto"
+                                    >
+                                      <Pencil size={16} />
+                                    </Button>
+                                    <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="h-9 w-9 text-blue-600 hover:text-blue-800 hover:bg-blue-50" 
+                                      onClick={() => handleMirrorEdit(b)} 
+                                      title="Modificar Precios Espejo (Vendedor)"
+                                    >
+                                      <SquarePen size={16} />
+                                    </Button>
+                                  </>
+                                )}
                                 <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50" onClick={() => handleDelete(b._id)} title="Eliminar"><Trash2 size={16} /></Button>
                               </div>
                             </TableCell>
@@ -298,15 +349,28 @@ const Budgets: React.FC = () => {
                               >
                                 <Trash2 size={16} />
                               </Button>
-                              <Button 
-                                variant="secondary" 
-                                size="lg" 
-                                className="w-full h-14 rounded-2xl bg-primary text-white font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-primary/20 mt-2"
-                                onClick={() => handleEdit(b)}
-                              >
-                                <Pencil size={14} className="mr-3" />
-                                Editar Proyecto
-                              </Button>
+                              {canEditBudget(b) && (
+                                <div className="space-y-2 w-full mt-2">
+                                  <Button 
+                                    variant="secondary" 
+                                    size="lg" 
+                                    className="w-full h-14 rounded-2xl bg-primary text-white font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-2"
+                                    onClick={() => handleEdit(b)}
+                                  >
+                                    <Pencil size={14} />
+                                    Editar Presupuesto Completo
+                                  </Button>
+                                  <Button 
+                                    variant="secondary" 
+                                    size="lg" 
+                                    className="w-full h-14 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black uppercase text-[11px] tracking-[0.2em] shadow-xl shadow-blue-500/20 transition-all flex items-center justify-center gap-2"
+                                    onClick={() => handleMirrorEdit(b)}
+                                  >
+                                    <SquarePen size={14} />
+                                    Modificar Precio Espejo
+                                  </Button>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -366,7 +430,7 @@ const Budgets: React.FC = () => {
               </div>
             </CardHeader>
             <CardContent className="pt-6">
-              <BudgetForm initialData={editingBudget} onCancel={() => {
+              <BudgetForm initialData={editingBudget} isMirrorEdit={isMirrorEdit} onCancel={() => {
                 setEditingBudget(null);
                 setActiveTab('list');
               }} />

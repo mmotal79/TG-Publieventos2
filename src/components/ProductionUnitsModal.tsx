@@ -13,6 +13,7 @@ interface ProductionUnitsModalProps {
   onClose: () => void;
   budget: any;
   onUpdate: () => void;
+  readOnly?: boolean;
 }
 
 const PHASES = [
@@ -24,7 +25,7 @@ const PHASES = [
   { key: 'entrega', label: 'Entrega' },
 ];
 
-export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate }: ProductionUnitsModalProps) {
+export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate, readOnly = false }: ProductionUnitsModalProps) {
   const { toast } = useToast();
   const [localItems, setLocalItems] = useState<any[]>([]);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({});
@@ -312,6 +313,7 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
                               <Input 
                                 type="number"
                                 value={item.productionStatus?.[phase.key] || 0}
+                                disabled={readOnly}
                                 onChange={(e) => {
                                   const val = parseInt(e.target.value, 10) || 0;
                                   const otherSum = dynamicPhases.filter(p => p.key !== phase.key)
@@ -346,10 +348,12 @@ export default function ProductionUnitsModal({ isOpen, onClose, budget, onUpdate
         
         <div className="fixed sm:static bottom-0 left-0 w-full bg-white p-4 border-t border-slate-100 flex flex-col sm:flex-row justify-end gap-2 z-20">
           <Button variant="outline" className="w-full sm:w-auto h-11 sm:h-10 text-xs font-bold" onClick={onClose} disabled={isSaving}>Cerrar</Button>
-          <Button className="w-full sm:w-auto h-11 sm:h-10 text-xs font-black shadow-lg shadow-blue-200" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-            Guardar Producción
-          </Button>
+          {!readOnly && (
+            <Button className="w-full sm:w-auto h-11 sm:h-10 text-xs font-black shadow-lg shadow-blue-200" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              Guardar Producción
+            </Button>
+          )}
         </div>
       </DialogContent>
 

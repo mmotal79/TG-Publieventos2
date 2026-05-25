@@ -13,9 +13,14 @@ import { Plus, Search, ChevronLeft, ChevronRight, Edit2, Trash2, Calendar, Credi
 import { formatCurrency } from '@/services/budgetService';
 import { useToast } from '@/components/ui/use-toast';
 import BudgetPaymentModal from '@/components/BudgetPaymentModal';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Transactions: React.FC = () => {
   const { toast } = useToast();
+  const { profile } = useAuth();
+  const isSales = profile?.role === 2;
+  const userEmail = profile?.email;
+
   const [budgets, setBudgets] = useState<any[]>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,12 +32,15 @@ const Transactions: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
-    fetchBudgets();
-  }, []);
+    if (profile) {
+      fetchBudgets();
+    }
+  }, [profile]);
 
   const fetchBudgets = async () => {
     try {
-      const res = await fetch('/api/budgets');
+      const emailQuery = userEmail ? `?creatorEmail=${encodeURIComponent(userEmail)}&role=${profile?.role}` : '';
+      const res = await fetch(`/api/budgets${emailQuery}`);
       if (res.ok) {
         const data = await res.json();
         setBudgets(data);

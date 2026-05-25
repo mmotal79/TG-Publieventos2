@@ -8,7 +8,14 @@ import Client from '../models/Client.model.js';
 
 export const getClients = async (req: Request, res: Response) => {
   try {
-    const clients = await Client.find().sort({ razonSocial: 1 });
+    const { creatorEmail, role } = req.query;
+    let query: any = {};
+    if (role === '2' && creatorEmail) {
+      query = {$or: [{ creado_por: creatorEmail }, { creado_por: { $exists: false } }, { creado_por: null }, { creado_por: '' }]}; // Salesperson sees their own clients or legacy/unowned clients
+    } else if (role === '1') {
+      query.creatorRole = { $ne: 0 };
+    }
+    const clients = await Client.find(query).sort({ razonSocial: 1 });
     res.json(clients);
   } catch (error) {
     res.status(500).json({ error });

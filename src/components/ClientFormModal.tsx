@@ -11,6 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { Client } from '@/types';
 
+import { useAuth } from '@/contexts/AuthContext';
+
 interface ClientFormModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -18,6 +20,7 @@ interface ClientFormModalProps {
 }
 
 export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  const { profile } = useAuth();
   const [formData, setFormData] = useState<Partial<Client>>({
     razonSocial: '',
     contacto: '',
@@ -35,7 +38,12 @@ export const ClientFormModal: React.FC<ClientFormModalProps> = ({ isOpen, onClos
       const res = await fetch('/api/clients', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          creado_por: profile?.email || 'unknown',
+          creatorId: profile?._id || 'unknown',
+          creatorRole: profile?.role !== undefined ? Number(profile.role) : 2
+        })
       });
       if (res.ok) {
         const newClient = await res.json();

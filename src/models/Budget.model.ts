@@ -52,7 +52,24 @@ const BudgetSchema = new Schema({
   montoAbonado: { type: Number, default: 0 },
   creatorEmail: { type: String, required: true },
   creatorRole: { type: Number, required: true },
+  creatorId: { type: String },
   fecha: { type: Date, default: Date.now }
 }, { timestamps: true });
 
 export const BudgetModel = mongoose.model('Budget', BudgetSchema);
+
+const BudgetItemVendedorSchema = new Schema({
+  itemId: { type: String, required: true },
+  precioUnitario: { type: Number, required: true },
+  totalItem: { type: Number, required: true }
+});
+
+const BudgetVendedorSchema = new Schema({
+  id_presupuesto_sistema: { type: Schema.Types.ObjectId, ref: 'Budget', required: true },
+  items_modificados: [BudgetItemVendedorSchema],
+  subtotal_vendedor: { type: Number, required: true },
+  monto_total_vendedor: { type: Number, required: true },
+  creado_por: { type: String, required: true } // Vendedor email or user identifier
+}, { timestamps: true });
+
+export const BudgetVendedorModel = mongoose.model('BudgetVendedor', BudgetVendedorSchema);

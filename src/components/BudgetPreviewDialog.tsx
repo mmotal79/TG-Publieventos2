@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Printer, X, Mail, MessageSquare, Image as ImageIcon, Download, ZoomIn, ZoomOut, Maximize, Maximize2, Minimize } from 'lucide-react';
 import { formatCurrency } from '@/services/budgetService';
 import { toPng } from 'html-to-image';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BudgetPreviewDialogProps {
   budget: any;
@@ -16,6 +17,7 @@ interface BudgetPreviewDialogProps {
 }
 
 const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpen, onClose }) => {
+  const { profile } = useAuth();
   const [config, setConfig] = useState<any>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [zoom, setZoom] = useState(1);
@@ -49,6 +51,11 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
   }, [isOpen]);
 
   if (!budget) return null;
+
+  const isSellerView = budget.creatorRole === 2 || profile?.role === 2;
+  const representativeName = isSellerView 
+    ? (budget.creatorEmail ? budget.creatorEmail.split('@')[0].split('.').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Asesor de Ventas') 
+    : (config?.nombreAsesor || 'Ramón Torrealba');
 
   const handlePrint = () => {
     const printContent = printRef.current;
@@ -162,7 +169,7 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
     const razonSocial = budget.clientId?.razonSocial || 'Cliente';
     const numeral = budget._id?.toString().slice(-6).toUpperCase() || 'P';
 
-    const asesor = config?.nombreAsesor || 'Asesor de Ventas';
+    const asesor = representativeName;
 
     const texto = `*¡Hola! Es un gusto saludarle, ${contacto}* (${razonSocial}) 🌟%0A%0A` +
       `Espero que se encuentre excelente. En respuesta a su amable solicitud, le envío adjunto la *Cotización #${numeral}* detallada por *${budget.description}*.%0A%0A` +
@@ -185,7 +192,7 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
     const numeral = budget._id?.toString().slice(-6).toUpperCase() || 'P';
     const fecha = new Date(budget.fecha || budget.createdAt).toLocaleDateString('es-VE');
     const whatsappLink = `https://wa.me/${config?.telefonoCorporativo?.replace(/\D/g, '') || ''}`;
-    const asesor = config?.nombreAsesor || 'Su Asesor de Confianza';
+    const asesor = representativeName;
 
     const subject = encodeURIComponent(`Presupuesto #${numeral} - ${fecha} - ${budget.description}`);
     
@@ -356,7 +363,7 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
                         <tr key={idx} className={idx % 2 === 0 ? "bg-white" : "bg-slate-50/50"}>
                           <td className="py-3 px-6 text-left">
                             <div className="font-semibold text-sm text-slate-800 uppercase tracking-tight">
-                              {item.modeloId?.tipoPrenda || 'Producto'} <span className="text-rose-600 mx-1">|</span> <span className="font-medium text-slate-500 text-sm">{budget.estructuraCostosId?.nombre || ''}</span>
+                              {item.modeloId?.tipoPrenda || 'Producto'}{!isSellerView && budget.estructuraCostosId?.nombre && <><span className="text-rose-600 mx-1">|</span><span className="font-medium text-slate-500 text-sm">{budget.estructuraCostosId.nombre}</span></>}
                             </div>
                             <div className="text-[10px] text-slate-600 mt-1 flex flex-col gap-0.5 uppercase font-medium">
                               <span className="flex items-center gap-1.5"><div className="w-1 h-1 bg-rose-500 rounded-full"/> Modelo: <span className="text-slate-800">{item.modeloId?.tipoPrenda || '-'}</span></span>
@@ -364,7 +371,7 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
                               <span className="flex items-center gap-1.5"><div className="w-1 h-1 bg-slate-300 rounded-full"/> Corte: <span className="text-slate-800">{item.corteId?.nombre || '-'}</span></span>
                               {item.personalizacion > 0 && <span className="flex items-center gap-1.5 text-rose-500"><div className="w-1 h-1 bg-rose-500 rounded-full"/> Personalización: ${item.personalizacion}</span>}
                               {item.acabados > 0 && <span className="flex items-center gap-1.5 text-rose-500"><div className="w-1 h-1 bg-rose-500 rounded-full"/> Acabado Especial: ${item.acabados}</span>}
-                              {budget.volumeDiscountPercent > 0 && (
+                              {!isSellerView && budget.volumeDiscountPercent > 0 && (
                                 <span className="flex items-center gap-1.5 text-emerald-600">
                                   <div className="w-1 h-1 bg-emerald-500 rounded-full"/> 
                                   Descuento Vol. Aplicado: -{budget.volumeDiscountPercent}%
@@ -427,13 +434,15 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
                               {budget.urgencia}
                             </span>
                           </div>
-                          <div className="flex justify-between items-center text-[8.5px] border-b border-slate-200 pb-1">
-                            <span className="text-emerald-500 font-black uppercase tracking-tighter italic">Desc. x Volumen Promedio:</span>
-                            <span className="font-black text-emerald-600 text-[10px]">-{budget.volumeDiscountPercent || 0}%</span>
-                          </div>
-                          <div className="flex justify-between items-center text-[8.5px] pt-1">
+                          {!isSellerView && (
+                            <div className="flex justify-between items-center text-[8.5px] border-b border-slate-200 pb-1">
+                              <span className="text-emerald-500 font-black uppercase tracking-tighter italic">Desc. x Volumen Promedio:</span>
+                              <span className="font-black text-emerald-600 text-[10px]">-{budget.volumeDiscountPercent || 0}%</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between items-center text-[8.5px] pt-1 border-b border-slate-200 pb-1">
                             <span className="text-slate-400 font-bold uppercase tracking-widest italic text-[7.5px]">Representante Ventas:</span>
-                            <p className="font-black text-zinc-900 uppercase tracking-tighter italic">{config?.nombreAsesor || 'Ramón Torrealba'}</p>
+                            <p className="font-black text-zinc-900 uppercase tracking-tighter italic">{representativeName}</p>
                           </div>
                         </div>
                     </div>

@@ -12,6 +12,9 @@ export interface IClient extends Document {
   rif: string;
   email: string;
   direccion?: string;
+  creado_por?: string;
+  creatorId?: string;
+  creatorRole?: number;
   createdAt: Date;
 }
 
@@ -30,6 +33,9 @@ const ClientSchema: Schema = new Schema({
     match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Por favor ingrese un email válido']
   },
   direccion: { type: String },
+  creado_por: { type: String }, // Email of vendedor creator
+  creatorId: { type: String }, // User Object ID who created this
+  creatorRole: { type: Number }, // User role who created this
   createdAt: { type: Date, default: Date.now }
 });
 
