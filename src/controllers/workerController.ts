@@ -67,7 +67,7 @@ export const updateWorker = async (req: Request, res: Response) => {
       };
       
       const newStatus = userStatusMap[workerData.status] || 'Bloqueado';
-      await User.findByIdAndUpdate(worker.userId, { 
+      const updatePayload: any = { 
         estado: newStatus as any,
         nombre: workerData.nombre,
         email: workerData.email,
@@ -75,7 +75,13 @@ export const updateWorker = async (req: Request, res: Response) => {
         salarioBaseUSD: workerData.sueldoBase,
         porcentajeComision: workerData.comision,
         frecuenciaPago: workerData.frecuenciaPago
-      });
+      };
+
+      if (workerData.systemRole !== undefined) {
+        updatePayload.rol = workerData.systemRole;
+      }
+
+      await User.findByIdAndUpdate(worker.userId, updatePayload);
     } else if (workerData.hasSystemAccess && !worker.hasSystemAccess) {
         // Toggle system access ON
         const newUser = new User({

@@ -12,8 +12,13 @@ const router = Router();
 // List all budgets
 router.get("/", async (req, res) => {
   try {
-    const { creatorEmail, role } = req.query;
+    const { creatorEmail, role, deleted } = req.query;
     let filter: any = {};
+    if (deleted === 'true') {
+      filter.isDeleted = true;
+    } else {
+      filter.isDeleted = { $ne: true };
+    }
     if (role === '2' && creatorEmail) {
       filter.$or = [
         { creatorEmail },
@@ -30,8 +35,24 @@ router.get("/", async (req, res) => {
       .populate('items.telaId')
       .populate('items.corteId')
       .populate('estructuraCostosId')
-      .sort({ createdAt: -1 });
-    res.json(budgets);
+      .sort({ createdAt: -1 })
+      .lean();
+      
+    // Populate missing creatorNames based on user names
+    const User = mongoose.model('User');
+    const allUsers: any[] = await User.find({}, 'email nombre');
+    const userMap = new Map();
+    allUsers.forEach(u => userMap.set(u.email.toLowerCase(), u.nombre));
+
+    const enrichedBudgets = budgets.map((b: any) => {
+      const email = b.creatorEmail ? b.creatorEmail.toLowerCase() : '';
+      if (!b.creatorName || (b.creatorName === b.creatorEmail) || b.creatorName.includes('@')) {
+        b.creatorName = userMap.get(email) || b.creatorName;
+      }
+      return b;
+    });
+
+    res.json(enrichedBudgets);
   } catch (error) {
     res.status(500).json({ error: "Error al obtener presupuestos" });
   }
@@ -40,13 +61,25 @@ router.get("/", async (req, res) => {
 // Get individual budget
 router.get("/:id", async (req, res) => {
   try {
-    const budget = await BudgetModel.findById(req.params.id)
+    const budget: any = await BudgetModel.findById(req.params.id)
       .populate('clientId')
       .populate('items.modeloId')
       .populate('items.telaId')
       .populate('items.corteId')
-      .populate('estructuraCostosId');
+      .populate('estructuraCostosId')
+      .lean();
     if (!budget) return res.status(404).json({ error: "Presupuesto no encontrado" });
+
+    // Populate missing creatorName
+    const email = budget.creatorEmail ? budget.creatorEmail.toLowerCase() : '';
+    if (!budget.creatorName || (budget.creatorName === budget.creatorEmail) || budget.creatorName.includes('@')) {
+      const User = mongoose.model('User');
+      const user: any = await User.findOne({ email });
+      if (user) {
+        budget.creatorName = user.nombre;
+      }
+    }
+
     res.json(budget);
   } catch (error) {
     res.status(500).json({ error: "Error al obtener el presupuesto" });
@@ -200,12 +233,17 @@ router.delete("/:id/payments/:paymentId", async (req, res) => {
   }
 });
 
-// Delete budget
+// Delete budget (soft delete or hard delete)
 router.delete("/:id", async (req, res) => {
   try {
-    await BudgetModel.findByIdAndDelete(req.params.id);
-    // Also delete any associated mirror budget
-    await BudgetVendedorModel.deleteMany({ id_presupuesto_sistema: req.params.id });
+    const { force } = req.query;
+    if (force === 'true') {
+      await BudgetModel.findByIdAndDelete(req.params.id);
+      // Also delete any associated mirror budget
+      await BudgetVendedorModel.deleteMany({ id_presupuesto_sistema: req.params.id });
+    } else {
+      await BudgetModel.findByIdAndUpdate(req.params.id, { isDeleted: true });
+    }
     res.json({ message: "Presupuesto eliminado" });
   } catch (error) {
     res.status(500).json({ error: "Error al eliminar presupuesto" });

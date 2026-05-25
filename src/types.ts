@@ -135,6 +135,8 @@ export interface Budget {
   creatorEmail?: string;
   creatorRole?: number;
   creatorId?: string;
+  creatorName?: string;
+  isDeleted?: boolean;
   createdAt?: string;
 }
 
@@ -259,6 +261,7 @@ export interface Worker {
   codigoBIN: string;
   status: WorkerStatus;
   hasSystemAccess: boolean;
+  systemRole?: number;
   userId?: string; // Reference to User if system access is true
   createdAt?: string;
 }

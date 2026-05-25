@@ -65,7 +65,7 @@ export const updateUser = async (req: Request, res: Response) => {
     }
 
     // Bidirectional sync: User -> Worker
-    if (updates.estado || updates.nombre || updates.email || updates.identificacion) {
+    if (updates.estado || updates.nombre || updates.email || updates.identificacion || updates.rol !== undefined) {
       const workerStatusMap: Record<string, string> = {
         'Activo': 'activo',
         'Bloqueado': 'inactivo',
@@ -78,6 +78,7 @@ export const updateUser = async (req: Request, res: Response) => {
       if (updates.nombre) workerUpdates.nombre = updates.nombre;
       if (updates.email) workerUpdates.email = updates.email;
       if (updates.identificacion) workerUpdates.cedula = updates.identificacion;
+      if (updates.rol !== undefined) workerUpdates.systemRole = updates.rol;
 
       // Update by linked userId or by identificacion/cedula
       await Worker.findOneAndUpdate(

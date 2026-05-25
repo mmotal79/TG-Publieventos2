@@ -53,6 +53,8 @@ const BudgetSchema = new Schema({
   creatorEmail: { type: String, required: true },
   creatorRole: { type: Number, required: true },
   creatorId: { type: String },
+  creatorName: { type: String },
+  isDeleted: { type: Boolean, default: false },
   fecha: { type: Date, default: Date.now }
 }, { timestamps: true });
 

@@ -51,11 +51,13 @@ const BudgetPreviewDialog: React.FC<BudgetPreviewDialogProps> = ({ budget, isOpe
   }, [isOpen]);
 
   if (!budget) return null;
-
+  
   const isSellerView = budget.creatorRole === 2 || profile?.role === 2;
-  const representativeName = isSellerView 
-    ? (budget.creatorEmail ? budget.creatorEmail.split('@')[0].split('.').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Asesor de Ventas') 
-    : (config?.nombreAsesor || 'Ramón Torrealba');
+
+  const representativeName = budget.creatorName 
+    && !budget.creatorName.includes('@') 
+    ? budget.creatorName 
+    : (budget.creatorEmail ? budget.creatorEmail.split('@')[0].split('.').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : (config?.nombreAsesor || 'Asesor de Ventas'));
 
   const handlePrint = () => {
     const printContent = printRef.current;

@@ -19,6 +19,7 @@ export interface IWorker extends Document {
   codigoBIN: string;
   status: 'activo' | 'inactivo' | 'retirado';
   hasSystemAccess: boolean;
+  systemRole?: number;
   userId?: mongoose.Types.ObjectId;
   createdAt: Date;
 }
@@ -37,6 +38,7 @@ const WorkerSchema: Schema = new Schema({
   codigoBIN: { type: String, required: true, minlength: 4, maxlength: 4 },
   status: { type: String, enum: ['activo', 'inactivo', 'retirado'], default: 'activo' },
   hasSystemAccess: { type: Boolean, default: false },
+  systemRole: { type: Number },
   userId: { type: Schema.Types.ObjectId, ref: 'User' },
   createdAt: { type: Date, default: Date.now }
 });

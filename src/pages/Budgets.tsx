@@ -18,6 +18,7 @@ import BudgetStatusModal from '@/components/BudgetStatusModal';
 import BudgetPaymentModal from '@/components/BudgetPaymentModal';
 import { CircleDollarSign } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const Budgets: React.FC = () => {
   const { profile, isAdmin, isManager, isSales } = useAuth();
@@ -28,6 +29,9 @@ const Budgets: React.FC = () => {
   const [statusEditingBudget, setStatusEditingBudget] = useState<any | null>(null);
   const [payEditingBudget, setPayEditingBudget] = useState<any | null>(null);
   const [config, setConfig] = useState<any>(null);
+  const [editingBudget, setEditingBudget] = useState<any | null>(null);
+  const [isMirrorEdit, setIsMirrorEdit] = useState(false);
+  const [activeTab, setActiveTab] = useState('list');
 
   const canEditBudget = (b: any) => {
     if (!profile) return false;
@@ -46,9 +50,13 @@ const Budgets: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchBudgets();
+    if (activeTab === 'list') {
+      fetchBudgets(false);
+    } else if (activeTab === 'deleted') {
+      fetchBudgets(true);
+    }
     fetchConfig();
-  }, []);
+  }, [activeTab]);
 
   const fetchConfig = async () => {
     try {
@@ -62,11 +70,13 @@ const Budgets: React.FC = () => {
     }
   };
 
-  const fetchBudgets = async () => {
+  const fetchBudgets = async (fetchDeleted = false) => {
+    setIsLoading(true);
     try {
       const emailQuery = profile?.email ? `creatorEmail=${encodeURIComponent(profile.email)}` : '';
       const roleQuery = profile?.role !== undefined ? `role=${profile.role}` : '';
-      const queryParams = [emailQuery, roleQuery].filter(Boolean).join('&');
+      const deletedQuery = fetchDeleted ? 'deleted=true' : '';
+      const queryParams = [emailQuery, roleQuery, deletedQuery].filter(Boolean).join('&');
       const url = queryParams ? `/api/budgets?${queryParams}` : '/api/budgets';
 
       const res = await fetch(url);
@@ -85,15 +95,26 @@ const Budgets: React.FC = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("¿Está seguro de eliminar este presupuesto?")) return;
+  const [searchParams, setSearchParams] = useState('');
+  const [budgetToDelete, setBudgetToDelete] = useState<any>(null);
+
+  const handleDeleteClick = (budget: any) => {
+    setBudgetToDelete(budget);
+  };
+
+  const confirmDelete = async () => {
+    if (!budgetToDelete) return;
     try {
-      const res = await fetch(`/api/budgets/${id}`, { method: 'DELETE' });
+      const isHardDelete = activeTab === 'deleted';
+      const url = isHardDelete ? `/api/budgets/${budgetToDelete._id}?force=true` : `/api/budgets/${budgetToDelete._id}`;
+      const res = await fetch(url, { method: 'DELETE' });
       if (res.ok) {
-        fetchBudgets();
+        fetchBudgets(activeTab === 'deleted');
       }
     } catch (e) {
       console.error(e);
+    } finally {
+      setBudgetToDelete(null);
     }
   };
 
@@ -136,10 +157,6 @@ const Budgets: React.FC = () => {
     }
   };
 
-  const [editingBudget, setEditingBudget] = useState<any | null>(null);
-  const [isMirrorEdit, setIsMirrorEdit] = useState(false);
-  const [activeTab, setActiveTab] = useState('list');
-
   const handleEdit = (budget: any) => {
     setIsMirrorEdit(false);
     setEditingBudget(budget);
@@ -162,16 +179,20 @@ const Budgets: React.FC = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="bg-slate-100/50 p-1 rounded-xl h-auto flex-wrap">
           <TabsTrigger value="list" className="px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-tight">Lista de Presupuestos</TabsTrigger>
+          <TabsTrigger value="deleted" className="px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-tight text-rose-600 data-[state=active]:bg-rose-100">Eliminados</TabsTrigger>
           <TabsTrigger value="new" className="px-4 py-2 rounded-lg font-bold text-xs uppercase tracking-tight">
             {editingBudget ? 'Editar Presupuesto' : 'Nuevo Presupuesto'}
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="list" className="space-y-4">
+        {(activeTab === 'list' || activeTab === 'deleted') && (
+          <div className="space-y-4">
           <Card className="border-none shadow-none bg-transparent md:bg-white md:border md:shadow-sm">
             <CardHeader className="px-1 md:px-6">
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <CardTitle className="text-xl font-black uppercase tracking-tight italic">Historial</CardTitle>
+                <CardTitle className="text-xl font-black uppercase tracking-tight italic">
+                  {activeTab === 'deleted' ? 'Presupuestos Eliminados' : 'Historial'}
+                </CardTitle>
                 <div className="relative w-full sm:w-72">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input 
@@ -203,6 +224,7 @@ const Budgets: React.FC = () => {
                       <TableHeader className="bg-slate-50 border-y border-slate-100">
                         <TableRow>
                           <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Fecha</TableHead>
+                          <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Asesor</TableHead>
                           <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Cliente</TableHead>
                           <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5">Descripción</TableHead>
                           <TableHead className="font-black uppercase text-[10px] tracking-widest text-slate-500 py-5 text-right">Total ($)</TableHead>
@@ -215,6 +237,11 @@ const Budgets: React.FC = () => {
                           <TableRow key={b._id} className="hover:bg-slate-50/80 transition-colors border-slate-100 group">
                             <TableCell className="font-bold text-slate-500">
                               {new Date(b.fecha || b.createdAt).toLocaleDateString('es-VE')}
+                            </TableCell>
+                            <TableCell>
+                              <div className="font-bold text-slate-700 capitalize text-xs">
+                                {b.creatorName && !b.creatorName.includes('@') ? b.creatorName : (b.creatorEmail ? b.creatorEmail.split('@')[0].split('.').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Asesor de Ventas')}
+                              </div>
                             </TableCell>
                             <TableCell>
                               <div className="font-black text-slate-900 group-hover:text-primary transition-colors leading-tight uppercase tabular-nums">
@@ -256,7 +283,7 @@ const Budgets: React.FC = () => {
                                     </Button>
                                   </>
                                 )}
-                                <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50" onClick={() => handleDelete(b._id)} title="Eliminar"><Trash2 size={16} /></Button>
+                                <Button variant="ghost" size="icon" className="h-9 w-9 text-rose-500 hover:bg-rose-50" onClick={() => handleDeleteClick(b)} title="Eliminar"><Trash2 size={16} /></Button>
                               </div>
                             </TableCell>
                           </TableRow>
@@ -290,6 +317,12 @@ const Budgets: React.FC = () => {
                               </p>
                               <p className="text-[11px] font-bold text-slate-900 mt-0.5">
                                 {b.clientId?.celular || b.clientId?.telefono || '-'}
+                              </p>
+                            </div>
+                            <div className="flex flex-col mt-2">
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Asesor Comercial</p>
+                              <p className="text-[11px] font-bold text-slate-700 capitalize mt-0.5">
+                                {b.creatorName && !b.creatorName.includes('@') ? b.creatorName : (b.creatorEmail ? b.creatorEmail.split('@')[0].split('.').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ') : 'Asesor de Ventas')}
                               </p>
                             </div>
                             <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 mt-2">
@@ -345,7 +378,7 @@ const Budgets: React.FC = () => {
                                 variant="outline" 
                                 size="lg" 
                                 className="w-[45%] h-12 rounded-xl border-rose-200 text-rose-500"
-                                onClick={() => handleDelete(b._id)}
+                                onClick={() => handleDeleteClick(b)}
                               >
                                 <Trash2 size={16} />
                               </Button>
@@ -408,7 +441,25 @@ const Budgets: React.FC = () => {
               // or they can add another.
             }}
           />
-        </TabsContent>
+
+          <Dialog open={!!budgetToDelete} onOpenChange={(open) => !open && setBudgetToDelete(null)}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Confirmar eliminación</DialogTitle>
+                <DialogDescription>
+                  {activeTab === 'deleted' 
+                    ? '¿Está seguro de eliminar DE FORMA PERMANENTE este presupuesto? Esta acción no se puede deshacer y el presupuesto será borrado de la base de datos.'
+                    : '¿Está seguro de eliminar este presupuesto? Esta acción marcará el presupuesto como eliminado y será enviado a la papelera.'}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="mt-4">
+                <Button variant="outline" onClick={() => setBudgetToDelete(null)}>Cancelar</Button>
+                <Button variant="destructive" onClick={confirmDelete}>Sí, eliminar presupuesto</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+        )}
 
         <TabsContent value="new">
           <Card>

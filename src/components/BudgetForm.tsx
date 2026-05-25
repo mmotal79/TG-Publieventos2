@@ -321,6 +321,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, isMirrorEdit = fal
       creatorEmail: profile?.email || 'unknown',
       creatorRole: profile?.role ?? 2,
       creatorId: profile?._id || 'unknown',
+      creatorName: profile?.displayName || profile?.email || 'unknown',
       items: data.items.map((item: any, idx: number) => ({
         ...item,
         precioUnitario: finalItemCalculations[idx].unit,
