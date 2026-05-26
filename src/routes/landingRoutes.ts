@@ -289,4 +289,47 @@ router.post("/configs", async (req, res) => {
   }
 });
 
+// --- Test endpoint for syncing existing DB records to sheets ---
+router.post("/test-sync-sheets", async (req, res) => {
+  try {
+    const existingRequests = await ContactRequestModel.find({}).sort({ createdAt: 1 });
+    
+    if (!existingRequests || existingRequests.length === 0) {
+      return res.status(200).json({ message: "No existen registros en la base de datos para sincronizar." });
+    }
+
+    const results = [];
+    
+    for (const request of existingRequests) {
+      console.log(`[Sync] Sincronizando: ${request.nombre}`);
+      
+      const syncResult = await enviarRafagaAGoogleSheets({
+        idSolicitud: request._id.toString(),
+        nombreCliente: request.nombre,
+        empresa: request.empresa || 'Particular',
+        telefono: request.telefono,
+        email: request.email,
+        mensajePeticion: request.mensaje
+      });
+      
+      results.push({
+        id: request._id.toString(),
+        nombre: request.nombre,
+        success: !!syncResult
+      });
+      
+      // Delay artificial para no sobrepasar límites de cuota de la API de Google Sheets en inserciones continuas rápidas
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+    
+    res.status(200).json({ 
+      message: `Sincronización finalizada. Se procesaron ${results.length} registros.`,
+      results 
+    });
+  } catch (error: any) {
+    console.error("[Test Sync] Error general:", error);
+    res.status(500).json({ message: "Error sincronizando datos", error: error.message });
+  }
+});
+
 export default router;
