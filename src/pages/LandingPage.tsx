@@ -118,6 +118,25 @@ const LandingPage: React.FC = () => {
   const [footerElements, setFooterElements] = useState<IElementoFooter[]>([]);
   const [selectedFooterEl, setSelectedFooterEl] = useState<IElementoFooter | null>(null);
 
+  const nombreInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFormalizarPropuesta = () => {
+    const model = modelos.find(p => p._id === calcModel)?.nombre || 'N/A';
+    const tela = telas.find(t => t._id === calcTela)?.nombre || 'N/A';
+    const corte = cortes.find(c => c._id === calcCorte)?.nombre || 'N/A';
+    const estructura = estructuras.find(e => e._id === calcEstructura)?.nombre || 'N/A';
+
+    const messagePayload = `Estoy interesado en este presupuesto: \n\nPerfil Cliente / Estructura: ${estructura}\nTipo Prenda / Modelo: ${model}\nTextura Material: ${tela}\nEstilo Ajuste: ${corte}\nCantidad de Elementos: ${calcQty}`;
+
+    setContactForm(prev => ({ ...prev, mensaje: messagePayload }));
+
+    scrollToSection('contacto');
+    
+    setTimeout(() => {
+      nombreInputRef.current?.focus();
+    }, 600);
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -394,12 +413,14 @@ const LandingPage: React.FC = () => {
               Transformamos conceptos en realidades tangibles con la precisión técnica y el diseño vanguardista que su marca merece. Calidad premium garantizada.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 lg:gap-6 justify-center lg:justify-start">
-              <Button 
-                onClick={() => scrollToSection('estimador')}
-                className="rounded-2xl h-14 lg:h-16 px-8 lg:px-12 font-black uppercase tracking-widest text-[10px] lg:text-xs shadow-[0_20px_50px_rgba(var(--primary),0.3)] bg-primary hover:bg-primary/90 text-white transition-all hover:scale-105 active:scale-95"
-              >
-                Planificar Orden
-              </Button>
+              {showCalculator && (
+                <Button 
+                  onClick={() => scrollToSection('estimador')}
+                  className="rounded-2xl h-14 lg:h-16 px-8 lg:px-12 font-black uppercase tracking-widest text-[10px] lg:text-xs shadow-[0_20px_50px_rgba(var(--primary),0.3)] bg-primary hover:bg-primary/90 text-white transition-all hover:scale-105 active:scale-95"
+                >
+                  Planificar Orden
+                </Button>
+              )}
               <Button 
                 onClick={() => scrollToSection('proceso')}
                 className="rounded-2xl h-14 lg:h-16 px-8 lg:px-12 border-2 border-white/10 font-black uppercase tracking-widest text-[10px] lg:text-xs hover:bg-white/10 text-white bg-transparent transition-all backdrop-blur-sm"
@@ -764,7 +785,7 @@ const LandingPage: React.FC = () => {
                 </div>
 
                 <Button 
-                  onClick={() => scrollToSection('acceso')}
+                  onClick={handleFormalizarPropuesta}
                   size="lg"
                   className="w-full h-20 rounded-3xl font-black uppercase tracking-[0.3em] text-xs bg-white text-slate-950 hover:bg-slate-100 shadow-3xl flex items-center justify-center group"
                 >
@@ -914,6 +935,7 @@ const LandingPage: React.FC = () => {
                   <div className="space-y-2">
                     <Label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nombre Completo</Label>
                     <Input 
+                      ref={nombreInputRef}
                       required
                       placeholder="Ej: Juan Pérez"
                       className="h-14 bg-slate-50 border-slate-100 rounded-2xl text-slate-900 font-bold px-6 focus:ring-primary"

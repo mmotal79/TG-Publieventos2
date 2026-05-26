@@ -4,6 +4,7 @@ import { SectionImageModel } from "../models/SectionImage.model.js";
 import { SectionConfigModel } from "../models/SectionConfig.model.js";
 import { FooterElementModel } from "../models/FooterElement.model.js";
 import { ContactRequestModel } from "../models/ContactRequest.model.js";
+import { enviarRafagaAGoogleSheets } from "../services/googleSheets.service.js";
 
 const router = Router();
 
@@ -28,6 +29,16 @@ router.post("/contact", async (req, res) => {
     await newRequest.save();
 
     console.log(`[Notification] Nueva solicitud de contacto recibida de ${validatedData.nombre}`);
+    
+    // 3. RÁFAGA EN CALIENTE: Insertar en Google Sheets (de forma síncrona)
+    await enviarRafagaAGoogleSheets({
+      idSolicitud: newRequest._id.toString(),
+      nombreCliente: validatedData.nombre,
+      empresa: validatedData.empresa || 'Particular',
+      telefono: validatedData.telefono,
+      email: validatedData.email,
+      mensajePeticion: validatedData.mensaje
+    });
     
     res.status(201).json({ 
       message: "Solicitud recibida correctamente",
