@@ -4,39 +4,36 @@
 Este sistema es una aplicación **Full-Stack** diseñada para la gestión operativa y administrativa de una empresa textil (TG-Textiles). Permite centralizar la recepción de leads desde el Landing Page, la creación de presupuestos, el control de pagos y la gestión de personal/clientes. Recientemente se ha extendido para dar soporte completo al rol de **Vendedor**, robusteciendo la estructura de seguridad y permitiendo operaciones descentralizadas sin alterar la base administrativa central.
 
 ## 2. Funcionalidad Actual
-*   **Gestión de Notificaciones (Leads):**
-    *   Recepción en tiempo real de formularios de contacto (Leads desde la Web).
-    *   Sistema de lectura (marcado como leído con modal asociado) con decremento persistente en tiempo real de los contadores en el layout principal y cabeceras.
-    *   Borrado seguro con modal pop-up de doble confirmación (con diseño accesible y contraste de botón rojo con texto blanco).
+*   **Gestión de Notificaciones (Leads) e Integración con Landing Page:**
+    *   **Recepción en tiempo real** de formularios de contacto (Leads desde la Web).
+    *   **Flujo UX Calculadora -> Contacto**: Se conectó dinámicamente el botón "Formalizar Propuesta" de la calculadora. Al hacer clic, captura el estado, formatea el texto, realiza un _smooth-scroll_ hacia el contacto, auto-rellena el mensaje con el presupuesto estructurado, y transfiere foco al input de "Nombre Completo".
+    *   **Renderizado Condicional de Hero**: El botón "Planificar Orden" se acopla a un parámetro global y estricto, que se habilita/deshabilita sincronizado con la configuración base.
+    *   **Inyección en Ráfaga a Google Sheets**: Se acopló el servicio `googleSheets.service.ts` para enviar los prospectos en caliente después de guardar en local de modo que los sistemas de automatización de mensajería (bot de WhatsApp) detecten inmediatamente este Lead.
 *   **Presupuestos y Facturación (Estructura Base):**
     *   Generación de presupuestos detallados con cálculo de costos dinámicos e IVA.
-    *   Control de estados del flujo de vida administrativo (`pendiente`, `aceptado_con_abono`, `en_proceso`, `culminado`, `entregado_y_pagado`, `anulado`).
+    *   Control de estados del flujo de vida administrativo.
     *   Modales dinámicos para gestión de abonos y previsualizaciones dinámicas imprimibles.
 *   **Nueva Extensión de Seguridad y Rol Vendedor (RBAC):**
-    *   **Aislamiento Estricto de Datos (Multi-Tenant Local):** Los usuarios con rol de Vendedor (Sales, Rol 2) solo pueden ver y gestionar sus propios clientes creados, sus propios presupuestos y las transacciones asociadas, garantizando total privacidad. Los administradores y mánagers retienen el control global.
-    *   **Presupuesto Espejo (Calculadora Dinámica / Modo de Edición Espejo):**
-        *   **Interfaz Responsiva Dedicada:** Integración de un botón interactivo elegante e iconográfico (`SquarePen` de Lucide) en el listado de presupuestos, condicionado bajo reglas RBAC estrictas: solo visible para administradores, gerentes y el propio vendedor creador del presupuesto.
-        *   **Bloqueo Absoluto de Estructura original:** Al editar, se activa un banner de alerta que restringe toda modificación técnica. La identidad del cliente, tipo de tela, diseño, modelo, corte, nivel de urgencia, y cantidades de prendas requeridas se inhabilitan por completo (`disabled` / `readOnly`).
-        *   **Campo Único Mutable (Precio Unitario):** Único parámetro modificable interactivo, con validación persistente en tiempo real que previene registrar montos inferiores al costo base asignado por la lógica de costeo central.
-        *   **Mapeo de Cálculos y Recálculo Lineal:** Una calculadora plana reactiva multiplica de forma instantánea el nuevo precio de oferta asignado (`Cantidad * Nuevo Precio Vendedor`), actualizando los subtotals y el gran total final visualizado en pantalla de manera inmediata.
-    *   **Emisión de Cotizaciones sin Fricción (Diseño de Impresión/PDF):** El módulo de previsualización oculta automáticamente desgloses de costos internos, nomenclaturas técnicas o descuentos por volumen para el cliente final, y asocia dinámicamente el nombre y contacto del vendedor en lugar de los datos corporativos genéricos.
-*   **Módulo de Producción con Acceso Restringido:**
-    *   Registro y actualización de órdenes de confección por fases de producción.
-    *   Para el rol de **Vendedor**, esta vista funciona de forma exclusivamente **lectura (Read-only)**, inhabilitando los botones de cambios de estados y modales de guardado para resguardar la consistencia del taller.
+    *   Aislamiento Estricto de Datos y Presupuesto Espejo (Modo de Edición Espejo Responsivo).
+    *   Emisión de Cotizaciones sin Fricción orientada al cliente.
+*   **Módulo de Producción con Acceso Restringido.**
 
-## 3. Debilidades Actuales
-*   **Dependencia de Sincronización Local:** La isolación de datos recae principalmente sobre filtrado por API de `creatorEmail` y roles del perfil. Para entornos masivos se sugiere implementar índices compuestos en la base de datos a nivel de base de datos.
-*   **Caché Frontend:** Al editar un rubro el refresco depende del trigger de recarga; se sugiere integrar React Query / SWR para una experiencia SPA reactiva.
+## 3. Debilidades Detectadas (Acción Crítica Requerida)
+*   **Google Sheets API Deshabilitada (Causa de fallos de subida):** En el entorno de prueba del servidor se detectó el error clave `Error 403: Google Sheets API has not been used in project 870797762910 before or it is disabled.`. **Solución Urgente:** El administrador de Google Cloud debe habilitar la API de Sheets.
+*   **Dependencia Fuerte a Variables de Entorno al Build:** Carencia de aserciones críticas para que la app se detenga inmediatamente si falta `GOOGLE_PRIVATE_KEY`; actualmente el sistema falla silenciosamente al faltar keys sin una alerta roja en la UI.
+*   **Manejo de Errores en Ráfaga (Superficial):** Si Sheets falla por límite de red temporal o bloqueo de API, la ráfaga de datos colapsa. El catch del error solo envía detalles a Logger de consola en lugar de un reagendamiento (retries).
+*   **Dependencia de Sincronización Local & Caché:** La isolación de datos recae sobre la capa de aplicación y su API; adicionalmente, no hay un state global cache (como React Query) para el manejo masivo de carga del lado del gestor.
 
-## 4. Posibilidades de Mejora
-*   **Módulo de Inventario:** Integración de stocks de telas y suministros vinculados directamente al costo base de los presupuestos.
-*   **Pasarela de Pagos Móvil:** Registro automatizado de pagos directos mediante integraciones de pago móvil o códigos QR dinámicos en el PDF de cotización del vendedor.
-*   **Reportes de Conversión para Vendedores:** Gráficas de rendimiento individuales y metas de comisiones mensuales para incentivar al equipo de ventas.
+## 4. Posibilidades de Mejora a Implementar
+*   **Sistemas de Recuperación/Retry a Google Sheets:** Implementar una cola persistida / _exponential backoff_ local en la ráfaga a Google Sheets para volver a intentar insertarlos cuando se alcancen _rate limits_.
+*   **Validación Estricta de Editor de Drive:** Agregar un endpoint tipo "Health Check" que compruebe tanto si la API GCP está viva, como si la cuenta `mensajeria-ia@...` tiene acceso `Editor` al Spreadsheet específico del cliente.
+*   **Sanitización Robusta de Áreas de Texto Múltiple:** Implementar un middleware que formatee automáticamente los saltos de líneas complejos incrustados por usuarios finales garantizando que el diseño matricial en Google Sheets mantenga su estética regular.
+*   **Facturación Móvil & Notificaciones:** Añadir automatizaciones push nativas, pagos de pasarela rápida y tableros estadísticos interactivos diferenciados por vendedor (Recharts/D3.js).
 
 ## 5. Propuesta de Desarrollo (Roadmap)
-1.  **Fase 1: Analítica General (En Desarrollo):** Implementar tableros estadísticos con `D3.js` / `Recharts` que diferencien el volumen de ventas por cada representante registrado.
-2.  **Fase 2: Notificaciones Comerciales:** Envío automático de presupuestos formateados y aprobados directamente al WhatsApp o Correo electrónico del cliente.
-3.  **Fase 3: Refactor de Estado Global:** Migración a Redux Toolkit para simplificar la compartición de estados mutables del carrito del vendedor.
+1.  **Fase 1: Correción de API y Ráfagas (Urgente):** Reactivar Google Sheets desde el panel GCP y aplicar endpoints correctivos.
+2.  **Fase 2: Analítica Comercial:** Estadísticas y gráficas para comisiones de representantes.
+3.  **Fase 3: Refactor de Estado y Persistencia UI:** Migración a Redux Toolkit y robustecimiento de colas asíncronas para el guardado local y cloud.
 
 ---
-*Este documento es dinámico y refleja el estado actual de las implementaciones del módulo de ventas y seguridad al 25 de mayo de 2026.*
+*Este documento es dinámico y refleja el estado actual de las integraciones comerciales del sistema y módulos de Landing Page al 26 de mayo de 2026.*
