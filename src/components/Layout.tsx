@@ -99,7 +99,7 @@ const AppLayout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Telas', path: '/catalogs/telas', icon: Layers, show: true },
     { name: 'Modelos', path: '/catalogs/modelos', icon: Shirt, show: true },
     { name: 'Cortes', path: '/catalogs/cortes', icon: Scissors, show: true },
-    { name: 'Personalización', path: '/catalogs/personalizacion', icon: Palette, show: true },
+    { name: 'Personalización', path: '/catalogs/personalizacion', icon: Palette, show: isAdmin },
     { name: 'Acabados', path: '/catalogs/acabados', icon: BookOpen, show: true },
     { name: 'Fases Producción', path: '/catalogs/fases-produccion', icon: Settings, show: true },
     { name: 'Estructura de Costos', path: '/catalogs/estructura-costos', icon: Calculator, show: isAdminOrManager },

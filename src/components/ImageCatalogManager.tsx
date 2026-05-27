@@ -50,7 +50,7 @@ export default function ImageCatalogManager() {
     setError(null);
     setSuccess(null);
 
-    // Validation: 1.5MB
+    // Validation: 1.5MB (Keep as safety, but we will compress heavily)
     if (file.size > 1.5 * 1024 * 1024) {
       setError("El archivo excede el límite de 1.5 MB.");
       return;
@@ -59,27 +59,69 @@ export default function ImageCatalogManager() {
     setUploading(true);
     try {
       const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = reader.result as string;
-        
-        const res = await fetch('/api/landing/images', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sectionKey: selectedSection,
-            base64Data: base64,
-            order: images.filter(img => img.sectionKey === selectedSection).length
-          })
-        });
+      reader.onloadend = () => {
+        const img = new Image();
+        img.src = reader.result as string;
+        img.onload = async () => {
+          try {
+            // Target maximum dimension of 1000px for speedy landing display and minimal storage footprint
+            const maxDimension = 1000;
+            let width = img.width;
+            let height = img.height;
 
-        if (res.ok) {
-          setSuccess("Imagen cargada correctamente.");
-          fetchData();
-        } else {
-          const data = await res.json();
-          setError(data.error || "Error al cargar imagen");
-        }
-        setUploading(false);
+            if (width > maxDimension || height > maxDimension) {
+              if (width > height) {
+                height = Math.round((height * maxDimension) / width);
+                width = maxDimension;
+              } else {
+                width = Math.round((width * maxDimension) / height);
+                height = maxDimension;
+              }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            
+            if (!ctx) {
+              throw new Error("No se pudo obtener el contexto 2D del canvas para la compresión.");
+            }
+
+            // Draw image scaled
+            ctx.drawImage(img, 0, 0, width, height);
+            
+            // Output compressed Base64 as JPEG quality 0.8 to make it extremely lightweight
+            const compressedBase64 = canvas.toDataURL('image/jpeg', 0.8);
+
+            const res = await fetch('/api/landing/images', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                sectionKey: selectedSection,
+                base64Data: compressedBase64,
+                order: images.filter(img => img.sectionKey === selectedSection).length
+              })
+            });
+
+            if (res.ok) {
+              setSuccess("Imagen cargada y optimizada Correctamente (10x más ligera).");
+              fetchData();
+            } else {
+              const data = await res.json();
+              setError(data.error || "Error al cargar la imagen");
+            }
+          } catch (uploadError: any) {
+            console.error(uploadError);
+            setError(uploadError.message || "Error al procesar y subir la imagen.");
+          } finally {
+            setUploading(false);
+          }
+        };
+        img.onerror = () => {
+          setError("Error al procesar el formato de la imagen.");
+          setUploading(false);
+        };
       };
       reader.readAsDataURL(file);
     } catch (e) {
@@ -198,49 +240,79 @@ export default function ImageCatalogManager() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
         {images.filter(img => img.sectionKey === selectedSection).map((img, idx, filtered) => (
-          <div key={img._id} className="group relative bg-slate-50 border border-slate-100 rounded-[2rem] overflow-hidden transition-all hover:shadow-2xl hover:shadow-slate-200">
-            <div className="aspect-[4/5] overflow-hidden relative">
-              <img src={img.base64Data} alt="Landing" className="w-full h-full object-cover" />
-              <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div key={img._id} className="group relative bg-slate-50 border border-slate-100 rounded-[1.5rem] overflow-hidden transition-all hover:shadow-2xl hover:shadow-slate-200">
+            <div className="aspect-square overflow-hidden relative bg-slate-100">
+              <img 
+                src={img.base64Data} 
+                alt="Landing" 
+                className="w-full h-full object-cover" 
+                loading="lazy"
+                decoding="async"
+              />
+              
+              {/* Overlay for Hidden Image State */}
+              {!img.isVisible && (
+                <div className="absolute inset-0 bg-slate-950/45 backdrop-blur-[2px] flex items-center justify-center z-10">
+                  <Badge variant="outline" className="bg-white/95 text-slate-900 border-none px-2.5 py-0.5 font-black uppercase text-[8px] tracking-wider shadow-sm select-none">
+                    OCULTA
+                  </Badge>
+                </div>
+              )}
+
+              {/* Top-Right Actions: Always accessible; permanently visible if hidden, hover-triggered otherwise */}
+              <div className={cn(
+                "absolute top-2 right-2 flex flex-col gap-1.5 transition-opacity z-20",
+                !img.isVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              )}>
                  <Button 
                    size="icon" 
                    variant="secondary" 
-                   className="h-8 w-8 rounded-full bg-white/90 backdrop-blur"
+                   className="h-7.5 w-7.5 rounded-full bg-white/95 backdrop-blur shadow-md hover:bg-white text-slate-700 hover:text-slate-900 transition-transform active:scale-90"
                    onClick={() => toggleVisibility(img._id!, img.isVisible)}
                  >
-                   {img.isVisible ? <Eye size={14} /> : <EyeOff size={14} />}
+                   {img.isVisible ? <Eye size={13} /> : <EyeOff size={13} className="text-rose-500" />}
                  </Button>
                  <Button 
                    size="icon" 
                    variant="destructive" 
-                   className="h-8 w-8 rounded-full bg-rose-500 text-white"
+                   className="h-7.5 w-7.5 rounded-full bg-rose-500 hover:bg-rose-600 text-white shadow-md transition-transform active:scale-90"
                    onClick={() => handleDeleteImagen(img._id!)}
                  >
-                   <Trash2 size={14} />
+                   <Trash2 size={13} />
                  </Button>
               </div>
               
-              <div className="absolute bottom-4 left-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                <Button size="icon" variant="secondary" className="h-7 w-7 rounded-lg" onClick={() => moveOrder(idx, 'up', img.sectionKey)} disabled={idx === 0}>
-                  <ChevronUp size={14} />
+              {/* Bottom-Left Controls: Always accessible; permanently visible if hidden, hover-triggered otherwise */}
+              <div className={cn(
+                "absolute bottom-2 left-2 flex gap-1 transition-opacity z-20",
+                !img.isVisible ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              )}>
+                <Button 
+                  size="icon" 
+                  variant="secondary" 
+                  className="h-6.5 w-6.5 rounded-md bg-white/95 backdrop-blur shadow-md hover:bg-white text-slate-700 disabled:opacity-40 transition-transform active:scale-90" 
+                  onClick={() => moveOrder(idx, 'up', img.sectionKey)} 
+                  disabled={idx === 0}
+                >
+                  <ChevronUp size={13} />
                 </Button>
-                <Button size="icon" variant="secondary" className="h-7 w-7 rounded-lg" onClick={() => moveOrder(idx, 'down', img.sectionKey)} disabled={idx === filtered.length - 1}>
-                  <ChevronDown size={14} />
+                <Button 
+                  size="icon" 
+                  variant="secondary" 
+                  className="h-6.5 w-6.5 rounded-md bg-white/95 backdrop-blur shadow-md hover:bg-white text-slate-700 disabled:opacity-40 transition-transform active:scale-90" 
+                  onClick={() => moveOrder(idx, 'down', img.sectionKey)} 
+                  disabled={idx === filtered.length - 1}
+                >
+                  <ChevronDown size={13} />
                 </Button>
               </div>
             </div>
             
-            {!img.isVisible && (
-              <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center">
-                <Badge variant="outline" className="bg-white/90 text-slate-900 border-none px-4 py-1 font-black uppercase text-[9px] tracking-widest">OCULTA</Badge>
-              </div>
-            )}
-            
-            <div className="p-4 flex justify-between items-center">
-               <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">ORDEN: #{img.order}</span>
-               <span className="text-[9px] font-bold text-blue-500 uppercase px-2 py-0.5 bg-blue-50 rounded-full">{img.sectionKey}</span>
+            <div className="p-3 flex justify-between items-center bg-white border-t border-slate-50">
+               <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ORDEN: #{img.order}</span>
+               <span className="text-[8px] font-bold text-blue-500 uppercase px-2 py-0.5 bg-blue-50 rounded-full">{img.sectionKey}</span>
             </div>
           </div>
         ))}
