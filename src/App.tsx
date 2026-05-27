@@ -100,6 +100,39 @@ const AppContent = () => {
 };
 
 export default function App() {
+  React.useEffect(() => {
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(config => {
+        if (config) {
+          if (config.nombreComercial) {
+            document.title = config.nombreComercial;
+            
+            // Set dynamic meta description
+            let metaDesc = document.querySelector('meta[name="description"]');
+            if (!metaDesc) {
+              metaDesc = document.createElement('meta');
+              metaDesc.setAttribute('name', 'description');
+              document.head.appendChild(metaDesc);
+            }
+            metaDesc.setAttribute('content', `Portal oficial de ${config.nombreComercial} - Gestión Integral de Producción y Presupuestos`);
+          }
+          
+          if (config.logoBase64) {
+            // Set dynamic favicon (handles existing and creates new if missing)
+            let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+            if (!link) {
+              link = document.createElement('link');
+              link.rel = 'icon';
+              document.head.appendChild(link);
+            }
+            link.href = config.logoBase64;
+          }
+        }
+      })
+      .catch(err => console.error("Error setting custom title/favicon:", err));
+  }, []);
+
   return (
     <AuthProvider>
       <NotificationProvider>
