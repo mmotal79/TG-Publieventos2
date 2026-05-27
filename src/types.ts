@@ -128,6 +128,9 @@ export interface Budget {
   items: BudgetItem[];
   totalCost: number;
   status: 'pendiente' | 'aceptado_con_abono' | 'en_proceso' | 'culminado' | 'entregado_y_pagado' | 'anulado';
+  isLegacy?: boolean;
+  bypassCalculationEngine?: boolean;
+  legacySubtotalOverride?: number;
   disenoVectorialAprobado?: boolean;
   tallasValidadasConMuestra?: boolean;
   frozenVolumeData?: any;

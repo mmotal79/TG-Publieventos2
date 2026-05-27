@@ -89,6 +89,33 @@ router.get("/:id", async (req, res) => {
 // Create new budget
 router.post("/", async (req, res) => {
   try {
+    if (req.body.isLegacy || req.body.bypassCalculationEngine) {
+      const userRole = req.body.creatorRole !== undefined ? Number(req.body.creatorRole) : 99;
+      if (userRole > 1) {
+        return res.status(403).json({ 
+          error: "No autorizado", 
+          message: "Solo los roles de Administrador y Gerente disponen de permisos para habilitar cargas manuales de presupuestos históricos/legados." 
+        });
+      }
+      
+      // Sanitización/Forzar Regla de Tres Lineal en el backend para seguridad
+      req.body.isLegacy = true;
+      req.body.bypassCalculationEngine = true;
+      req.body.volumeDiscountAmount = 0;
+      req.body.volumeDiscountPercent = 0;
+      if (req.body.items && Array.isArray(req.body.items)) {
+        let sum = 0;
+        req.body.items.forEach((item: any) => {
+          const qty = Number(item.cantidad) || 0;
+          const unitPrice = Number(item.precioUnitario) || 0;
+          item.precioUnitario = unitPrice;
+          item.totalItem = qty * unitPrice;
+          sum += item.totalItem;
+        });
+        req.body.totalCost = sum;
+      }
+    }
+
     const newBudget = new BudgetModel(req.body);
     await newBudget.save();
     res.status(201).json(newBudget);
@@ -149,6 +176,33 @@ router.patch("/:id/status", async (req, res) => {
 // Update budget
 router.put("/:id", async (req, res) => {
   try {
+    if (req.body.isLegacy || req.body.bypassCalculationEngine) {
+      const userRole = req.body.creatorRole !== undefined ? Number(req.body.creatorRole) : 99;
+      if (userRole > 1) {
+        return res.status(403).json({ 
+          error: "No autorizado", 
+          message: "Solo los roles de Administrador y Gerente disponen de permisos para habilitar cargas manuales de presupuestos históricos/legados." 
+        });
+      }
+      
+      // Sanitización/Forzar Regla de Tres Lineal en el backend para seguridad
+      req.body.isLegacy = true;
+      req.body.bypassCalculationEngine = true;
+      req.body.volumeDiscountAmount = 0;
+      req.body.volumeDiscountPercent = 0;
+      if (req.body.items && Array.isArray(req.body.items)) {
+        let sum = 0;
+        req.body.items.forEach((item: any) => {
+          const qty = Number(item.cantidad) || 0;
+          const unitPrice = Number(item.precioUnitario) || 0;
+          item.precioUnitario = unitPrice;
+          item.totalItem = qty * unitPrice;
+          sum += item.totalItem;
+        });
+        req.body.totalCost = sum;
+      }
+    }
+
     const updatedBudget = await BudgetModel.findByIdAndUpdate(req.params.id, req.body, { new: true });
     res.json(updatedBudget);
   } catch (error: any) {

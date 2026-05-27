@@ -12,6 +12,7 @@ import Payroll from './pages/Payroll';
 import SecurityDashboard from './pages/SecurityDashboard';
 import Clients from './pages/Clients';
 import Production from './pages/Production';
+import Reports from './pages/Reports';
 import Login from './pages/Login';
 import LandingPage from './pages/LandingPage';
 import Transactions from './pages/Transactions';
@@ -71,6 +72,7 @@ const AppContent = () => {
           <Route path="/budgets" element={<Budgets />} />
           <Route path="/transactions" element={<Transactions />} />
           <Route path="/production" element={<Production />} />
+          <Route path="/reports" element={<Reports />} />
           <Route path="/payroll" element={<Payroll />} />
           <Route path="/security" element={<SecurityDashboard />} />
           

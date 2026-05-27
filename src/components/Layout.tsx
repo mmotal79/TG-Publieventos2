@@ -26,6 +26,7 @@ import {
   Briefcase,
   Sparkles,
   Bell,
+  BarChart3,
   Layout as LayoutIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -79,6 +80,7 @@ const AppLayout: React.FC<LayoutProps> = ({ children }) => {
     { name: 'Presupuestos', path: '/budgets', icon: FileText, show: true },
     { name: 'Transacciones', path: '/transactions', icon: CreditCard, show: true },
     { name: 'Producción', path: '/production', icon: Factory, show: true },
+    { name: 'Reportes', path: '/reports', icon: BarChart3, show: currentRole <= 2 },
     { name: 'Notificaciones', path: '/notifications', icon: Bell, show: isAdminOrManager, badge: unreadCount > 0 ? unreadCount : undefined },
     { name: 'Nómina', path: '/payroll', icon: Wallet, show: canSeePayroll },
   ];

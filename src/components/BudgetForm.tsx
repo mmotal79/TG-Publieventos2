@@ -29,6 +29,7 @@ const budgetItemSchema = z.object({
   personalizacion: z.number().default(0),
   acabados: z.number().default(0),
   cantidad: z.number().int("La cantidad debe ser un número entero").min(1, "Mínimo 1"),
+  precioUnitario: z.number().optional().default(0),
 });
 
 const budgetSchema = z.object({
@@ -38,6 +39,9 @@ const budgetSchema = z.object({
   description: z.string().min(1, "Ingrese una descripción"),
   observations: z.string().nullish().default(""),
   items: z.array(budgetItemSchema).min(1, "Agregue al menos un item"),
+  isLegacy: z.boolean().optional().default(false),
+  bypassCalculationEngine: z.boolean().optional().default(false),
+  legacySubtotalOverride: z.number().optional().default(0),
 });
 
 type BudgetFormValues = z.infer<typeof budgetSchema>;
@@ -153,6 +157,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, isMirrorEdit = fal
   const watchedItems = useWatch({ control, name: "items" }) || [];
   const watchedEstructuraId = useWatch({ control, name: "estructuraCostosId" });
   const watchedUrgencia = useWatch({ control, name: "urgencia" });
+  const isLegacyChecked = watch("isLegacy") || false;
 
   const watchedClientId = useWatch({ control, name: "clientId" });
 
@@ -200,6 +205,22 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, isMirrorEdit = fal
   );
 
   const { itemCalculations, volumeDiscountInfo } = useMemo(() => {
+    if (isLegacyChecked) {
+      const calculations = watchedItems.map(item => {
+        const cantidad = isNaN(item.cantidad) ? 0 : (item.cantidad || 0);
+        const precioUnitario = isNaN(item.precioUnitario) ? 0 : (item.precioUnitario || 0);
+        return {
+          unit: precioUnitario,
+          total: precioUnitario * cantidad,
+          baseUnit: 0
+        };
+      });
+      return {
+        itemCalculations: calculations,
+        volumeDiscountInfo: { hasDiscount: false, amount: 0, percent: 0 }
+      };
+    }
+
     if (!selectedEstructura) {
       return { 
         itemCalculations: watchedItems.map(() => ({ unit: 0, total: 0, baseUnit: 0 })),
@@ -275,10 +296,18 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, isMirrorEdit = fal
         percent: percentResult
       }
     };
-  }, [watchedItems, selectedEstructura, watchedUrgencia, modelos, telas, cortes]);
+  }, [watchedItems, selectedEstructura, watchedUrgencia, modelos, telas, cortes, isLegacyChecked]);
 
   const finalItemCalculations = useMemo(() => {
     return itemCalculations.map((calc, index) => {
+      if (isLegacyChecked) {
+        return {
+          unit: calc.unit,
+          total: calc.total,
+          baseUnit: 0,
+          isOverridden: false
+        };
+      }
       if (showVendorPriceModifier && isPriceOverridden[index]) {
         const customPrice = vendorOverriddenPrices[index] !== undefined ? vendorOverriddenPrices[index] : calc.unit;
         const cantidad = watchedItems[index]?.cantidad || 1;
@@ -294,9 +323,10 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, isMirrorEdit = fal
         isOverridden: false
       };
     });
-  }, [itemCalculations, vendorOverriddenPrices, isPriceOverridden, watchedItems, showVendorPriceModifier]);
+  }, [itemCalculations, vendorOverriddenPrices, isPriceOverridden, watchedItems, showVendorPriceModifier, isLegacyChecked]);
 
   const hasFloorError = useMemo(() => {
+    if (isLegacyChecked) return false;
     if (!showVendorPriceModifier) return false;
     return finalItemCalculations.some((calc, idx) => {
       if (isPriceOverridden[idx]) {
@@ -305,7 +335,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, isMirrorEdit = fal
       }
       return false;
     });
-  }, [finalItemCalculations, itemCalculations, isPriceOverridden, showVendorPriceModifier]);
+  }, [finalItemCalculations, itemCalculations, isPriceOverridden, showVendorPriceModifier, isLegacyChecked]);
 
   const grandTotal = useMemo(() => 
     finalItemCalculations.reduce((acc, curr) => acc + curr.total, 0),
@@ -318,6 +348,8 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, isMirrorEdit = fal
     const shouldOmitVolumeDiscount = profile?.role === 2 || Object.values(isPriceOverridden).some(v => v);
     const finalBudget = {
       ...data,
+      isLegacy: isLegacyChecked,
+      bypassCalculationEngine: isLegacyChecked,
       creatorEmail: profile?.email || 'unknown',
       creatorRole: profile?.role ?? 2,
       creatorId: profile?._id || 'unknown',
@@ -328,8 +360,8 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, isMirrorEdit = fal
         totalItem: finalItemCalculations[idx].total
       })),
       totalCost: grandTotal,
-      volumeDiscountAmount: shouldOmitVolumeDiscount ? 0 : volumeDiscountInfo.amount,
-      volumeDiscountPercent: shouldOmitVolumeDiscount ? 0 : volumeDiscountInfo.percent,
+      volumeDiscountAmount: isLegacyChecked ? 0 : (shouldOmitVolumeDiscount ? 0 : volumeDiscountInfo.amount),
+      volumeDiscountPercent: isLegacyChecked ? 0 : (shouldOmitVolumeDiscount ? 0 : volumeDiscountInfo.percent),
       status: 'pendiente', // Normalize status to match standard options
       tasaBCV: exchangeRate,
       fecha: new Date().toISOString()
@@ -468,7 +500,7 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, isMirrorEdit = fal
                     <Select 
                       value={field.value || ""} 
                       onValueChange={field.onChange}
-                      disabled={isMirrorEditActive}
+                      disabled={isMirrorEditActive || (isLegacyChecked && !!field.value)}
                     >
                       <SelectTrigger id="budgets-structure-select">
                         <SelectValue placeholder="Seleccione lógica de cálculo...">
@@ -483,10 +515,16 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, isMirrorEdit = fal
                     </Select>
                   )}
                 />
-                {selectedEstructura && (
-                  <div className="text-[10px] bg-blue-50 p-2 rounded border border-blue-100 text-blue-700 mt-2">
-                    Margen: {selectedEstructura.margenGanancia}% | IVA: {selectedEstructura.iva}%
+                {isLegacyChecked ? (
+                  <div className="text-[10px] bg-amber-50 p-2 rounded border border-amber-200 text-amber-800 mt-2 font-bold select-none">
+                    ⚠️ Motor de costos bloqueado (Presupuesto Legado activo)
                   </div>
+                ) : (
+                  selectedEstructura && (
+                    <div className="text-[10px] bg-blue-50 p-2 rounded border border-blue-100 text-blue-700 mt-2">
+                      Margen: {selectedEstructura.margenGanancia}% | IVA: {selectedEstructura.iva}%
+                    </div>
+                  )
                 )}
                 {errors.estructuraCostosId && <p className="text-xs text-destructive">{errors.estructuraCostosId.message?.toString()}</p>}
               </div>
@@ -503,6 +541,28 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, isMirrorEdit = fal
                 <Input {...register("observations")} disabled={isMirrorEditActive} placeholder="Ej: Reclamo por entrega anterior, requiere bordado extra..." />
               </div>
             </div>
+
+            {profile && profile.role <= 1 && !isMirrorEditActive && (
+              <div className="pt-4 border-t border-slate-100 flex flex-col gap-2">
+                <div className="flex items-center space-x-2">
+                  <input 
+                    type="checkbox" 
+                    id="isLegacy"
+                    className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-4 w-4 cursor-pointer"
+                    {...register("isLegacy")}
+                  />
+                  <Label htmlFor="isLegacy" className="font-bold text-xs text-slate-705 cursor-pointer select-none">
+                    ⚡ Cargar como Presupuesto Histórico / Legado
+                  </Label>
+                </div>
+                {isLegacyChecked && (
+                  <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-800 font-medium">
+                    <span className="font-bold uppercase block text-amber-900 mb-1">Carga Lineal Activa (Regla de 3 Simple)</span>
+                    Este presupuesto se tratará como legado/histórico. Se desactiva el motor avanzado de cálculo paramétrico, recargos automáticos, comisiones y descuentos por volumen. Las cantidades se multiplicarán linealmente por el precio unitario introducido manualmente a continuación. Sin embargo, se mantiene el esquema tipado compatible para la planilla de taller.
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -765,7 +825,18 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, isMirrorEdit = fal
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {showVendorPriceModifier ? (
+                      {isLegacyChecked ? (
+                        <div className="flex flex-col items-end gap-1">
+                          <Input 
+                            type="number" 
+                            step="0.01"
+                            placeholder="0.00"
+                            className="w-28 h-8 text-right font-bold text-xs border-amber-500 bg-amber-50/50 text-amber-900 focus-visible:ring-amber-500"
+                            {...register(`items.${index}.precioUnitario`, { valueAsNumber: true })}
+                          />
+                          <span className="text-[9px] font-black text-amber-650 uppercase tracking-widest italic select-none">PRECIO MANUAL</span>
+                        </div>
+                      ) : showVendorPriceModifier ? (
                         <div className="flex flex-col items-end gap-1">
                           {isPriceOverridden[index] ? (
                             <div className="flex flex-col items-end gap-1 select-none">
@@ -1019,7 +1090,18 @@ const BudgetForm: React.FC<BudgetFormProps> = ({ initialData, isMirrorEdit = fal
                       <div className="flex justify-between items-start w-full">
                         <div className="text-left">
                           <p className="text-[8px] font-black text-white/40 uppercase tracking-widest mb-1 italic">Precio Unitario</p>
-                          {showVendorPriceModifier ? (
+                          {isLegacyChecked ? (
+                            <div className="flex flex-col gap-1">
+                              <Input 
+                                type="number" 
+                                step="0.01" 
+                                placeholder="0.00"
+                                className="w-28 h-8 text-right font-bold text-xs bg-slate-800 text-amber-400 border-amber-600 focus-visible:ring-amber-550 focus-visible:ring-1"
+                                {...register(`items.${index}.precioUnitario`, { valueAsNumber: true })}
+                              />
+                              <span className="text-[8px] font-black text-amber-550 uppercase tracking-wider select-none">PRECIO MANUAL</span>
+                            </div>
+                          ) : showVendorPriceModifier ? (
                             isPriceOverridden[index] ? (
                               <div className="flex flex-col gap-1">
                                 <Input 

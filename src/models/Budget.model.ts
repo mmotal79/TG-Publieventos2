@@ -45,6 +45,9 @@ const BudgetSchema = new Schema({
   totalCost: { type: Number, required: true },
   volumeDiscountAmount: { type: Number, default: 0 },
   volumeDiscountPercent: { type: Number, default: 0 },
+  isLegacy: { type: Boolean, default: false },
+  bypassCalculationEngine: { type: Boolean, default: false },
+  legacySubtotalOverride: { type: Number, default: 0 },
   status: { type: String, enum: ['pendiente', 'aceptado_con_abono', 'en_proceso', 'culminado', 'entregado_y_pagado', 'anulado'], default: 'pendiente' },
   disenoVectorialAprobado: { type: Boolean, default: false },
   tallasValidadasConMuestra: { type: Boolean, default: false },
@@ -57,6 +60,29 @@ const BudgetSchema = new Schema({
   isDeleted: { type: Boolean, default: false },
   fecha: { type: Date, default: Date.now }
 }, { timestamps: true });
+
+BudgetSchema.pre('save', function (this: any, next: any) {
+  const doc = this;
+  if (doc.isLegacy || doc.bypassCalculationEngine) {
+    doc.isLegacy = true;
+    doc.bypassCalculationEngine = true;
+    doc.volumeDiscountAmount = 0;
+    doc.volumeDiscountPercent = 0;
+    
+    if (doc.items && doc.items.length > 0) {
+      let sum = 0;
+      doc.items.forEach((item: any) => {
+        const qty = Number(item.cantidad) || 0;
+        const unitPrice = Number(item.precioUnitario) || 0;
+        item.precioUnitario = unitPrice;
+        item.totalItem = qty * unitPrice;
+        sum += item.totalItem;
+      });
+      doc.totalCost = sum;
+    }
+  }
+  next();
+});
 
 export const BudgetModel = mongoose.model('Budget', BudgetSchema);
 
