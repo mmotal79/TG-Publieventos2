@@ -16,6 +16,7 @@ export interface IGlobalConfig extends Document {
   showPortfolio: boolean;
   showCreations: boolean;
   showPayroll: boolean;
+  showAuthConsole: boolean;
   updatedAt: Date;
 }
 
@@ -30,6 +31,7 @@ const GlobalConfigSchema: Schema = new Schema({
   showPortfolio: { type: Boolean, default: true },
   showCreations: { type: Boolean, default: true },
   showPayroll: { type: Boolean, default: true },
+  showAuthConsole: { type: Boolean, default: true },
   updatedAt: { type: Date, default: Date.now }
 });
 

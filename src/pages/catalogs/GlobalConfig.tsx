@@ -45,7 +45,12 @@ export default function GlobalConfigPage() {
       telefonoCorporativo: '',
       nombreAsesor: '',
       informacionPago: '',
-      logoBase64: ''
+      logoBase64: '',
+      mostrarConfiguradorLanding: true,
+      showPortfolio: true,
+      showCreations: true,
+      showPayroll: true,
+      showAuthConsole: true
     }
   });
 
@@ -355,16 +360,29 @@ export default function GlobalConfigPage() {
                 </div>
 
                 {profile?.role === 0 && (
-                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div className="flex flex-col">
-                      <span className="font-bold text-slate-900 text-sm">Visibilidad de Nómina</span>
-                      <span className="text-[10px] text-slate-500">Habilitar/Deshabilitar para Gerentes</span>
+                  <>
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-900 text-sm">Visibilidad de Nómina</span>
+                        <span className="text-[10px] text-slate-500">Habilitar/Deshabilitar para Gerentes</span>
+                      </div>
+                      <Switch 
+                        checked={watch('showPayroll')}
+                        onCheckedChange={(val) => setValue('showPayroll', val, { shouldDirty: true })}
+                      />
                     </div>
-                    <Switch 
-                      checked={watch('showPayroll')}
-                      onCheckedChange={(val) => setValue('showPayroll', val, { shouldDirty: true })}
-                    />
-                  </div>
+
+                    <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <div className="flex flex-col">
+                        <span className="font-bold text-slate-900 text-sm">Consola de Autenticación (AUTH_MONITOR)</span>
+                        <span className="text-[10px] text-slate-500">Mostrar logs de respuesta en tiempo real en Acceso</span>
+                      </div>
+                      <Switch 
+                        checked={watch('showAuthConsole') !== false}
+                        onCheckedChange={(val) => setValue('showAuthConsole', val, { shouldDirty: true })}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
             </div>

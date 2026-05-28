@@ -54,6 +54,7 @@ export interface GlobalConfig {
   showPortfolio: boolean;
   showCreations: boolean;
   showPayroll: boolean;
+  showAuthConsole: boolean;
   updatedAt?: string;
 }
 

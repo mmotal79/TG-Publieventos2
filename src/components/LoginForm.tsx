@@ -22,6 +22,18 @@ export const LoginForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [steps, setSteps] = useState<string[]>([]);
   const [showSecurityAlert, setShowSecurityAlert] = useState(false);
+  const [showAuthConsole, setShowAuthConsole] = useState(true);
+
+  React.useEffect(() => {
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(config => {
+        if (config && config.showAuthConsole === false) {
+          setShowAuthConsole(false);
+        }
+      })
+      .catch(err => console.error("Error setting console visibility config:", err));
+  }, []);
 
   const addStep = (msg: string) => {
     setSteps(prev => [...prev, `${new Date().toLocaleTimeString()} - ${msg}`]);
@@ -177,7 +189,7 @@ export const LoginForm: React.FC = () => {
               </div>
             )}
 
-            {steps.length > 0 && (
+            {showAuthConsole && steps.length > 0 && (
               <div className="p-3 bg-slate-900 text-emerald-400 rounded-xl text-[9px] font-mono shadow-inner border border-slate-800 overflow-hidden max-h-32 overflow-y-auto">
                 <div className="mb-2 border-b border-slate-700 pb-1 flex justify-between">
                   <span className="opacity-50">AUTH_MONITOR</span>
